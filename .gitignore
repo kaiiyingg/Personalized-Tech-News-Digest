@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.Python
+.env
+.env.*
+.DS_Store # macOS specific
+*.log
+*.sqlite3 # If you use SQLite for development sometimes
+.vscode/ # VS Code specific settings that you might not want to commit

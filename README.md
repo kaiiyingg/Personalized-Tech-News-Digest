@@ -2,8 +2,7 @@
 
 **Learning Stream: Your Personalized Tech Digest**
 
-[![Build Status](https://github.com/YOUR_USERNAME/Personalized-Tech-News-Digest/actions/workflows/main.yml/badge.svg)](https://github.com/YOUR_USERNAME/Personalized-Tech-News-Digest/actions/workflows/main.yml)
-*Replace `YOUR_USERNAME` with your GitHub username once the repo is created.*
+[![Build Status](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml/badge.svg)](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml)
 
 ## Table of Contents
 
@@ -11,6 +10,8 @@
 * [Features](#features)
 * [Tech Stack](#tech-stack)
 * [Architecture](#architecture)
+* [Diagram](#diagram)
+* [Demo Video](#demo-video)
 * [DevOps & Best Practices](#devops--best-practices)
 * [Local Setup & Development](#local-setup--development)
 * [Deployment to AWS](#deployment-to-aws)
@@ -101,8 +102,14 @@ The system's architecture is divided into two main flows:
 This decoupled architecture ensures scalability, reliability, and cost-efficiency.
 
 ## Diagram:
+* [to be added]
+
+---
 
 ## Demo Video:
+* [to be added]
+
+---
 
 ---
 
@@ -128,7 +135,7 @@ To get the **Learning Stream: Your Personalized Tech Digest** running on your lo
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/YOUR_USERNAME/Personalized-Tech-News-Digest.git](https://github.com/YOUR_USERNAME/Personalized-Tech-News-Digest.git)
+    git clone [https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git](https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git)
     cd Personalized-Tech-News-Digest
     ```
 2.  **Create and activate a Python virtual environment:**
@@ -189,11 +196,10 @@ The entire application infrastructure and application code are deployed to AWS u
 ## Future Enhancements
 
 * **Advanced Content Filtering:** Implement more sophisticated content filtering based on user engagement, freshness decay, or personalized weighting.
-* **Sentiment Analysis / Summarization:** Integrate AWS Comprehend or other NLP libraries to automatically summarize articles or gauge their sentiment.
+* **Summarization:** Integrate AWS Comprehend or other NLP libraries to automatically summarize articles.
 * **Rich Content Sources:** Expand ingestion to include YouTube channels (via API), specific Twitter lists, or academic paper databases.
 * **Email / Notification Digests:** Allow users to receive their personalized digest via email (AWS SES) or other notification channels (AWS SNS).
-* **"Hot Topics" / Trending Section:** Develop algorithms to identify and display trending tech topics based on content volume and recency.
-* **UI/UX Improvements:** Enhance the frontend with more dynamic components using a modern JavaScript framework (React/Vue/Angular).
+* **Personal Project Idea Recommendation feature** Additional feature which offers tailored project ideas and curated learning resources base on user's interest. The goal is to inspire users and provide clear guidance to starting a personal project which turns passive learning into active creation.
 
 ---
 

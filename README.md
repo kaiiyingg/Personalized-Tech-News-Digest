@@ -1,4 +1,4 @@
-# Personalized-Tech-Digest
+# Personalized-Tech-News-Digest
 
 **Learning Stream: Your Personalized Tech Digest**
 

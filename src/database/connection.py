@@ -19,7 +19,7 @@ It loads database credentials from environment variables and uses psycopg2 to in
 def get_db_connection():
     """Establishes and returns a database connection."""
     conn = psycopg2.connect(
-        dbname=DB_NAME;
+        dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD,      
         host=DB_HOST,

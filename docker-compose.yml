@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: learning_stream_db
+      POSTGRES_USER: localuser
+      POSTGRES_PASSWORD: localpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    command: flask run --host=0.0.0.0
+    environment:
+      FLASK_APP: src/app.py
+      FLASK_ENV: development # Good to set this for local development
+      DB_NAME: learning_stream_db
+      DB_USER: localuser
+      DB_PASSWORD: localpassword
+      DB_HOST: db # Correctly references the 'db' service name
+      DB_PORT: 5432
+      FLASK_SECRET_KEY: 'a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890'
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    volumes:
+      - .:/app # This mounts your local code into the container for live reloading
+
+volumes:
+  postgres_data:

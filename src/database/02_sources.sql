@@ -1,4 +1,4 @@
-CREATE sources TABLE IF NOT EXISTS sources (
+CREATE TABLE IF NOT EXISTS sources (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Foreign key referencing the 'id' column in the 'users' table & automatically deletes related records if the referenced user is removed.
     source_name VARCHAR(100) NOT NULL, -- Name of the source (e.g., title of the article or video)

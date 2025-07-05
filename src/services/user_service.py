@@ -28,9 +28,16 @@ def create_user(username: str, email: str, password: str) -> Optional[User]:
             "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id, created_at, updated_at;",
             (username, email, hashed_password)
         )
-        user_id, created_at, updated_at = cur.fetchone()
+        result = cur.fetchone()
+        if result is None:
+            if conn:
+                conn.rollback()
+            print("Error: Failed to insert user or retrieve user data.")
+            return None
+        user_id, created_at, updated_at = result
         conn.commit()
         return User(user_id, username, email, hashed_password, created_at, updated_at)
+    
     except pg_errors.UniqueViolation as e:
         # Handle unique constraint violation (username or email already exists)
         print(f"Error: Username or email already exists. {e}")

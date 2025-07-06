@@ -6,7 +6,13 @@ class User:
     Represents a user in the Learning Stream application, mapping to the 'users' database table.
     """
     #Constructor to initialize the User object with attributes corresponding to the database columns.
-    def __init__(self, id: int, username: str, email: str, password_hash: str ,created_at: datetime, updated_at: Optional[datetime] = None):  # Use Optional as updated_at might be null initially   
+    def __init__(self,
+                id: int, 
+                username: str, 
+                email: str, 
+                password_hash: str ,
+                created_at: datetime, 
+                updated_at: Optional[datetime] = None):  # Use Optional as updated_at might be null initially   
         self.id = id
         self.username = username
         self.email = email

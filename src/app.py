@@ -75,5 +75,5 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-# Ensures Flask app runs in debug mode only when script is executed directly
+# Ensures Flask app runs in debug mode only when script is executed directly. For production, set debug=False in app.run()
 if __name__ == '__main__': app.run(debug=True)

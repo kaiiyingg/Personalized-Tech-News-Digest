@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Digest - Learning Stream</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Learning Stream, {{username}}</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        <p>This is your personalized tech digest dashboard. More content coming soon!</p>
+        <p><a href="{{ url_for('logout') }}">Logout</a></p>
+
+        {# Placeholder for the content digest stream #}
+        <div class="digest-stream">
+            <h2>Latest Tech Articles</h2>
+            <p>Articles will appear here once you add sources.</p>
+            {# Dynamic content will be loaded here by JavaScript or Flask #}
+        </div>
+    </div>
+</body>
+</html>

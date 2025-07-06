@@ -12,8 +12,8 @@ class Source:
                  name: str,
                  feed_url: str,
                  type: str,
+                 created_at: datetime,
                  last_fetched_at: Optional[datetime] = None,
-                 created_at: datetime = None,
                  updated_at: Optional[datetime] = None):
         """
         Initializes a new Source object.

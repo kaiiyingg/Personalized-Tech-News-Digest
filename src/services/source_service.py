@@ -25,9 +25,15 @@ def create_source(user_id: int, name: str, feed_url: str, type: str) -> Optional
             "INSERT INTO sources (user_id, name, feed_url, type) VALUES (%s, %s, %s, %s) RETURNING id, last_fetched_at, created_at, updated_at;",
             (user_id, name, feed_url, type)
         )
-        source_id, last_fetched_at, created_at, updated_at = cur.fetchone()
-        conn.commit()
-        return Source(source_id, user_id, name, feed_url, type, last_fetched_at, created_at, updated_at)
+        result = cur.fetchone()
+        if result:
+            source_id, last_fetched_at, created_at, updated_at = result
+            conn.commit()
+            return Source(source_id, user_id, name, feed_url, type, last_fetched_at, created_at, updated_at)
+        else:
+            print("No row returned from INSERT.")
+            conn.rollback()
+            return None
     except pg_errors.UniqueViolation as e:
         print(f"Error: Source URL already exists for this user or globally. {e}")
         if conn: conn.rollback()

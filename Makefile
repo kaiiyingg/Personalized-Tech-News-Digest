@@ -1,29 +1,33 @@
+SHELL := /bin/bash
+
+VENV_PATH := ./.venv
+VENV_PIP := $(VENV_PATH)/bin/pip
+VENV_PYTHON := $(VENV_PATH)/bin/python
+VENV_PYTHON3 := $(VENV_PATH)/bin/python3
+
 .PHONY: install setup-db-local run test lint format activate_venv
 
 install:
-	pip install -r requirements.txt
+	$(VENV_PIP) install -r requirements.txt
 
 setup-db-local:
-	python3 src/database/connection.py
+	$(VENV_PYTHON3) src/database/connection.py
 
 run:
-	flask run -h 0.0.0.0 -p 5000
+	$(VENV_PYTHON) -m flask run -h 0.0.0.0 -p 5000
 
 test:
-	# Placeholder for running tests (e.g., pytest)
-	echo "Running tests..."
-	# python -m pytest tests/
+	@echo "Running tests..."
+	# $(VENV_PYTHON) -m pytest tests/
 
 lint:
-	# Placeholder for linting (e.g., pylint)
-	echo "Running linting..."
-	# pylint src/
+	@echo "Running linting..."
+	# $(VENV_PYTHON) -m pylint src/
 
 format:
-	# Placeholder for formatting (e.g., black)
-	echo "Running formatting..."
-	# black src/
+	@echo "Running formatting..."
+	# $(VENV_PYTHON) -m black src/
 
 activate_venv:
-	@echo "Activating virtual environment..."
-	@source .venv/bin/activate
+	@echo "To activate manually, run:"
+	@echo "source $(VENV_PATH)/bin/activate"

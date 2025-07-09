@@ -1,9 +1,8 @@
 # Dockerfile
 
 # Use an official Python runtime as a parent image.
-# We'll use a specific version (3.9-slim-buster) for consistency.
-# 'slim-buster' is a smaller image, good for production.
-FROM python:3.9-slim-buster
+# Using Python 3.11-slim-bullseye for a lightweight and up-to-date base image.
+FROM python:3.11-slim-bullseye
 
 # Set the working directory inside the container.
 # All subsequent commands will run from this directory.

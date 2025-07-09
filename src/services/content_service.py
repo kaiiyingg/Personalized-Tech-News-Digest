@@ -1,25 +1,23 @@
 from src.database.connection import get_db_connection, close_db_connection
-from src.models.content import Content
-from src.models.user_content_interaction import UserContentInteraction # NEW import
+from src.models.content import content
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
 
-def create_content_item(source_id: int, original_id: str, title: str, summary: str,
-                        article_url: str, published_at: Optional[datetime]) -> Optional[Content]:
+def create_content_item(source_id: int, title: str, summary: str,
+                        article_url: str, published_at: Optional[datetime]) -> Optional[content]:
     """
     Creates a new content item in the database. Used by the ingestion pipeline.
 
     Args:
         source_id (int): The ID of the source from which this content was fetched.
-        original_id (str): A unique ID for the content from its original source (for deduplication).
         title (str): The title of the content.
         summary (str): A summary or snippet of the content.
         article_url (str): The URL to the full article.
         published_at (Optional[datetime]): The original publication date/time.
 
     Returns:
-        Optional[Content]: The created Content object if successful, None if original_id/url already exists.
+        Optional[content]: The created content object if successful, None if article_url already exists.
     """
     conn = None
     try:
@@ -27,17 +25,21 @@ def create_content_item(source_id: int, original_id: str, title: str, summary: s
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO content_items (source_id, original_id, title, summary, article_url, published_at)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO content (source_id, title, summary, article_url, published_at)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING id, ingested_at, updated_at;
             """,
-            (source_id, original_id, title, summary, article_url, published_at)
+            (source_id, title, summary, article_url, published_at)
         )
-        content_id, ingested_at, updated_at = cur.fetchone()
+        row = cur.fetchone()
+        if row is None:
+            if conn: conn.rollback()
+            return None
+        content_id, ingested_at, updated_at = row
         conn.commit()
-        return Content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at)
+        return content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at)
     except pg_errors.UniqueViolation as e:
-        print(f"Error: Content item with original_id '{original_id}' or URL '{article_url}' already exists. {e}")
+        print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()
         return None
     except Exception as e:
@@ -48,11 +50,10 @@ def create_content_item(source_id: int, original_id: str, title: str, summary: s
         close_db_connection(conn)
 
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
-                             include_read: bool = False, search_query: Optional[str] = None,
-                             interest_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+                             include_read: bool = False, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Retrieves a personalized digest of content items for a user.
-    Includes user-specific interaction status (read, saved, feedback).
+    Includes user-specific interaction status (read, saved, liked, disliked).
 
     Args:
         user_id (int): The ID of the logged-in user.
@@ -60,7 +61,6 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         offset (int): Offset for pagination.
         include_read (bool): If True, includes articles already marked as read.
         search_query (Optional[str]): A keyword to search in title/summary.
-        interest_ids (Optional[List[int]]): List of interest IDs to filter by (future feature).
 
     Returns:
         List[Dict[str, Any]]: A list of dictionaries, each representing an article
@@ -72,34 +72,33 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Base query: Join content_items with user_content_interactions
+        # Base query: Join content with user_content_interactions
         # LEFT JOIN ensures all content items are included, even if no interaction yet
         query = """
             SELECT
-                ci.id, ci.source_id, ci.title, ci.summary, ci.article_url,
-                ci.published_at, ci.ingested_at, ci.updated_at,
-                uci.is_read, uci.is_saved, uci.feedback_rating, uci.interaction_at,
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.ingested_at, c.updated_at,
+                uci.is_read, uci.is_saved, uci.is_liked, uci.disliked, uci.interaction_at,
                 s.name AS source_name, s.feed_url AS source_feed_url
             FROM
-                content_items ci
+                content c
             JOIN
-                sources s ON ci.source_id = s.id
+                sources s ON c.source_id = s.id
             LEFT JOIN
-                user_content_interactions uci ON ci.id = uci.content_item_id AND uci.user_id = %s
+                user_content_interactions uci ON c.id = uci.content_id AND uci.user_id = %s
             WHERE
                 s.user_id = %s -- Only show content from sources this user subscribed to
         """
-        params = [user_id, user_id] # Parameters for the WHERE clause
+        params: List[Any] = [user_id, user_id] # Parameters for the WHERE clause
 
         # Add filters
         if not include_read:
             query += " AND (uci.is_read IS NULL OR uci.is_read = FALSE)" # Filter out read articles
         if search_query:
-            query += " AND (ci.title ILIKE %s OR ci.summary ILIKE %s)" # Case-insensitive search
+            query += " AND (c.title ILIKE %s OR c.summary ILIKE %s)" # Case-insensitive search
             params.extend([f"%{search_query}%", f"%{search_query}%"])
-        # TODO: Add interest_ids filtering logic here later (requires interests table and join)
 
-        query += " ORDER BY ci.published_at DESC, ci.ingested_at DESC LIMIT %s OFFSET %s;"
+        query += " ORDER BY c.published_at DESC, c.ingested_at DESC LIMIT %s OFFSET %s;"
         params.extend([limit, offset])
 
         cur.execute(query, tuple(params))
@@ -117,10 +116,11 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 'updated_at': row[7].isoformat() if row[7] else None,
                 'is_read': row[8] if row[8] is not None else False, # Default to False if no interaction record
                 'is_saved': row[9] if row[9] is not None else False, # Default to False
-                'feedback_rating': row[10] if row[10] is not None else 0, # Default to 0
-                'interaction_at': row[11].isoformat() if row[11] else None,
-                'source_name': row[12],
-                'source_feed_url': row[13]
+                'is_liked': row[10] if row[10] is not None else False, # Default to False
+                'disliked': row[11] if row[11] is not None else False, # Default to False
+                'interaction_at': row[12].isoformat() if row[12] else None,
+                'source_name': row[13],
+                'source_feed_url': row[14]
             })
     except Exception as e:
         print(f"An error occurred while fetching personalized digest for user {user_id}: {e}")

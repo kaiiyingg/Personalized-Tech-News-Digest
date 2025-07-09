@@ -1,5 +1,5 @@
 from typing import Optional
-from flask_bcrypt import Bcrypt
+from flask_bcrypt import Bcrypt #type: ignore
 from src.database.connection import get_db_connection, close_db_connection
 from src.models.user import User 
 from psycopg2 import errors as pg_errors # To catch specific database errors

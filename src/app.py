@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify # type: ignore
 from src.services.user_service import create_user, find_user_by_username, check_password
+from src.services.source_service import get_sources_by_user, create_source, update_source, delete_source, get_source_by_id
 from src.models.user import User
 from src.models.source import Source
 import os #Needed to get environment variables 
@@ -176,4 +177,5 @@ def logout():
     return redirect(url_for('index'))
 
 # Ensures Flask app runs in debug mode only when script is executed directly. For production, set debug=False in app.run()
-if __name__ == '__main__': app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

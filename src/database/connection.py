@@ -1,6 +1,6 @@
 import os
 import psycopg2
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 
 load_dotenv()  # Load environment variables from .env file
 # Database connection details from .env

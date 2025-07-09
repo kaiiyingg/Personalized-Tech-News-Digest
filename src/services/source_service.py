@@ -2,7 +2,6 @@ from src.database.connection import get_db_connection, close_db_connection
 from src.models.source import Source
 from typing import List, Optional
 from psycopg2 import errors as pg_errors
-from datetime import datetime
 
 def create_source(user_id: int, name: str, feed_url: str, type: str) -> Optional[Source]:
     """

@@ -1,11 +1,11 @@
 from src.database.connection import get_db_connection, close_db_connection
-from src.models.content import content
+from src.models.content import Content
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
 
 def create_content_item(source_id: int, title: str, summary: str,
-                        article_url: str, published_at: Optional[datetime]) -> Optional[content]:
+                        article_url: str, published_at: Optional[datetime]) -> Optional[Content]:
     """
     Creates a new content item in the database. Used by the ingestion pipeline.
 
@@ -37,7 +37,7 @@ def create_content_item(source_id: int, title: str, summary: str,
             return None
         content_id, ingested_at, updated_at = row
         conn.commit()
-        return content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at)
+        return Content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at)
     except pg_errors.UniqueViolation as e:
         print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()

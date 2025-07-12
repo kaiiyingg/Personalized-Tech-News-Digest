@@ -7,8 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Learning Stream, {{username}}</h1>
+    <nav class="navbar">
+        <div class="navbar-brand">Learning Stream</div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('add_source') }}">Add Source</a></li>
+            <li><a href="{{ url_for('saved') }}">Saved</a></li>
+            <li><a href="{{ url_for('profile') }}">Profile</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+    <div class="container dashboard">
+        <h1>Welcome, {{username}}!</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <ul class="flashes">
@@ -18,15 +28,54 @@
                 </ul>
             {% endif %}
         {% endwith %}
-        <p>This is your personalized tech digest dashboard. More content coming soon!</p>
-        <p><a href="{{ url_for('logout') }}">Logout</a></p>
-
-        {# Placeholder for the content digest stream #}
+        <div class="dashboard-header">
+            <form class="search-form" method="GET" action="{{ url_for('index') }}">
+                <input type="text" name="q" placeholder="Search articles..." value="{{ request.args.get('q', '') }}">
+                <button type="submit">Search</button>
+            </form>
+            <div class="user-summary">
+                <span>Sources: {{ sources_count }}</span>
+                <span>Saved: {{ saved_count }}</span>
+            </div>
+        </div>
         <div class="digest-stream">
             <h2>Latest Tech Articles</h2>
-            <p>Articles will appear here once you add sources.</p>
-            {# Dynamic content will be loaded here by JavaScript or Flask #}
+            {% if articles %}
+                <div class="articles-list">
+                    {% for article in articles %}
+                        <div class="article-card">
+                            <h3><a href="{{ article.article_url }}" target="_blank">{{ article.title }}</a></h3>
+                            <div class="article-meta">
+                                <span class="source">Source: {{ article.source_name }}</span>
+                                <span class="date">Published: {{ article.published_at or 'No date' }}</span>
+                                <span class="ingested">Ingested: {{ article.ingested_at }}</span>
+                                <span class="updated">Updated: {{ article.updated_at or 'N/A' }}</span>
+                            </div>
+                            <p>{{ article.summary }}</p>
+                            <div class="article-actions">
+                                <form method="POST" action="{{ url_for('save_article', article_id=article.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-save">{% if article.is_saved %}Unsave{% else %}Save{% endif %}</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('mark_read', article_id=article.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-read">{% if article.is_read %}Mark Unread{% else %}Mark Read{% endif %}</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('like_article', article_id=article.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-like" {% if article.is_liked %}disabled{% endif %}>👍 Like{% if article.is_liked %}d{% endif %}</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('dislike_article', article_id=article.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-dislike" {% if article.disliked %}disabled{% endif %}>👎 Dislike{% if article.disliked %}d{% endif %}</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No articles found. Add sources to get started!</p>
+            {% endif %}
         </div>
     </div>
+    <footer class="footer">
+        <p>&copy; {{ current_year }} Learning Stream &mdash; Personalized Tech Digest</p>
+    </footer>
 </body>
 </html>

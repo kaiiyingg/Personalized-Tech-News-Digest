@@ -23,6 +23,74 @@ def login_required_api(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/')
+def index():
+    '''
+    This route will check if a user is logged in. 
+    If so, it displays a welcome message. Otherwise, it redirects to the login page.
+    '''
+    # 'session' stores data for each user between requests (e.g., login status)
+    # 'request' contains data sent by the client (form data, query params, etc.)
+    if 'user_id' in session:
+        username = session.get('username', 'Guest') # Get username from session
+        return render_template('index.html', username=username, logged_in=True)
+    else:
+        return redirect(url_for('login')) # Redirect to login if not logged in
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    '''
+    This route handles user registration. 
+    GET displays the registration form, and POST processes the registration data.
+    '''
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        
+        # Create a new user using the service function
+        user = create_user(username, email, password)
+        
+        if user:
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Username or email already exists. Please try again.', 'danger')
+    
+    # For GET request or failed POST, render the registration form
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    '''
+    This route handles user login. 
+    GET displays the login form, and POST processes the login credentials.
+    '''
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = find_user_by_username(username)
+        
+        if user and check_password(user, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    '''
+    This route handles user logout by clearing the session.
+    '''
+    session.pop('user_id', None)  # Remove user_id from session
+    session.pop('username', None)  # Remove username from session   
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))
+
 @app.route('/api/sources', methods=['GET'])
 @login_required_api # Apply the decorator to protect the API endpoint (created above)
 def get_sources():
@@ -108,73 +176,65 @@ def delete_source_api(source_id):
         # Return 404 if the source wasn't found or wasn't owned by the user
         return jsonify({'error': 'Not Found', 'message': 'Source not found or not owned by user.'}), 404
 
-@app.route('/')
-def index():
-    '''
-    This route will check if a user is logged in. 
-    If so, it displays a welcome message. Otherwise, it redirects to the login page.
-    '''
-    # 'session' stores data for each user between requests (e.g., login status)
-    # 'request' contains data sent by the client (form data, query params, etc.)
-    if 'user_id' in session:
-        username = session.get('username', 'Guest') # Get username from session
-        return render_template('index.html', username=username, logged_in=True)
+@app.route('/api/digest', methods=['GET'])   
+@login_required_api
+def get_digest():
+    user_id = session['user_id']
+    # Optional: support limit, offset, search_query from query params
+    limit = int(request.args.get('limit', 20))
+    offset = int(request.args.get('offset', 0))
+    search_query = request.args.get('q')
+    from src.services.content_service import get_personalized_digest
+    articles = get_personalized_digest(user_id, limit=limit, offset=offset, search_query=search_query)
+    return jsonify({'articles': articles}), 200
+
+@app.route('/api/content/<int:content_id>/read', methods=['POST'])
+@login_required_api
+def mark_content_read_api(content_id):
+    user_id = session['user_id']
+    data = request.json or {}
+    is_read = data.get('is_read', True)
+    from src.services.content_service import mark_content_as_read
+    success = mark_content_as_read(user_id, content_id, is_read=bool(is_read))
+    if success:
+        return jsonify({'message': 'Content marked as read.'}), 200
     else:
-        return redirect(url_for('login')) # Redirect to login if not logged in
+        return jsonify({'error': 'Failed to update read status.'}), 400
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    '''
-    This route handles user registration. 
-    GET displays the registration form, and POST processes the registration data.
-    '''
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        
-        # Create a new user using the service function
-        user = create_user(username, email, password)
-        
-        if user:
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('Username or email already exists. Please try again.', 'danger')
-    
-    # For GET request or failed POST, render the registration form
-    return render_template('register.html')
+@app.route('/api/content/<int:content_id>/save', methods=['POST'])
+@login_required_api
+def save_content_api(content_id):
+    user_id = session['user_id']
+    data = request.json or {}
+    is_saved = data.get('is_saved', True)
+    from src.services.content_service import toggle_content_saved
+    success = toggle_content_saved(user_id, content_id, is_saved=bool(is_saved))
+    if success:
+        return jsonify({'message': 'Content saved status updated.'}), 200
+    else:
+        return jsonify({'error': 'Failed to update saved status.'}), 400
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    '''
-    This route handles user login. 
-    GET displays the login form, and POST processes the login credentials.
-    '''
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = find_user_by_username(username)
-        
-        if user and check_password(user, password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            flash('Login successful!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid username or password', 'danger')
-    
-    return render_template('login.html')
+@app.route('/api/content/<int:content_id>/like', methods=['POST'])
+@login_required_api
+def like_content_api(content_id):
+    user_id = session['user_id']
+    from src.services.content_service import update_content_feedback
+    success = update_content_feedback(user_id, content_id, feedback_rating=1)
+    if success:
+        return jsonify({'message': 'Content liked.'}), 200
+    else:
+        return jsonify({'error': 'Failed to like content.'}), 400
 
-@app.route('/logout')
-def logout():
-    '''
-    This route handles user logout by clearing the session.
-    '''
-    session.pop('user_id', None)  # Remove user_id from session
-    session.pop('username', None)  # Remove username from session   
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('index'))
+@app.route('/api/content/<int:content_id>/dislike', methods=['POST'])
+@login_required_api
+def dislike_content_api(content_id):
+    user_id = session['user_id']
+    from src.services.content_service import update_content_feedback
+    success = update_content_feedback(user_id, content_id, feedback_rating=-1)
+    if success:
+        return jsonify({'message': 'Content disliked.'}), 200
+    else:
+        return jsonify({'error': 'Failed to dislike content.'}), 400
 
 # Ensures Flask app runs in debug mode only when script is executed directly. For production, set debug=False in app.run()
 if __name__ == '__main__':

@@ -4,8 +4,35 @@ from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
 
+def assign_topic(title: str, summary: str) -> str:
+    """
+    Assigns a topic to content based on keywords in the title or summary.
+    """
+    text = f"{title} {summary}".lower()
+    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta"]):
+        return "Big Tech & Industry Trends"
+    if any(word in text for word in ["launch", "update", "release", "feature"]):
+        return "Product Launches & Updates"
+    if any(word in text for word in ["startup", "funding", "acquisition", "vc", "unicorn"]):
+        return "Startups & Funding"
+    if any(word in text for word in ["ai", "machine learning", "deep learning", "model", "gpt", "llm"]):
+        return "AI & Machine Learning"
+    if any(word in text for word in ["security", "cyber", "breach", "privacy", "threat"]):
+        return "Cybersecurity & Privacy"
+    if any(word in text for word in ["fintech", "crypto", "blockchain", "defi", "bitcoin", "ethereum"]):
+        return "FinTech & Crypto"
+    if any(word in text for word in ["web", "javascript", "react", "vue", "angular", "dev tool", "library", "framework"]):
+        return "Web Development & Dev Tools"
+    if any(word in text for word in ["cloud", "aws", "azure", "gcp", "devops", "infrastructure", "ci/cd"]):
+        return "Cloud, DevOps & Infrastructure"
+    if any(word in text for word in ["policy", "regulation", "antitrust", "law", "ban", "government"]):
+        return "Policy, Regulation & Antitrust"
+    if any(word in text for word in ["culture", "work", "layoff", "remote", "productivity", "diversity"]):
+        return "Tech Culture & Work"
+    return "Other"
+
 def create_content_item(source_id: int, title: str, summary: str,
-                        article_url: str, published_at: Optional[datetime]) -> Optional[Content]:
+                        article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:
     """
     Creates a new content item in the database. Used by the ingestion pipeline.
 
@@ -23,21 +50,23 @@ def create_content_item(source_id: int, title: str, summary: str,
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        # Assign topic if not provided
+        topic_val = topic if topic else assign_topic(title, summary)
         cur.execute(
             """
-            INSERT INTO content (source_id, title, summary, article_url, published_at)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id, ingested_at, updated_at;
+            INSERT INTO content (source_id, title, summary, article_url, published_at, topic)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, ingested_at, updated_at, topic;
             """,
-            (source_id, title, summary, article_url, published_at)
+            (source_id, title, summary, article_url, published_at, topic_val)
         )
         row = cur.fetchone()
         if row is None:
             if conn: conn.rollback()
             return None
-        content_id, ingested_at, updated_at = row
+        content_id, ingested_at, updated_at, topic_db = row
         conn.commit()
-        return Content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at)
+        return Content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at, topic_db)
     except pg_errors.UniqueViolation as e:
         print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()
@@ -77,8 +106,8 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         query = """
             SELECT
                 c.id, c.source_id, c.title, c.summary, c.article_url,
-                c.published_at, c.ingested_at, c.updated_at,
-                uci.is_read, uci.is_saved, uci.is_liked, uci.disliked, uci.interaction_at,
+                c.published_at, c.ingested_at, c.updated_at, c.topic,
+                uci.is_read, uci.is_liked, uci.interaction_at,
                 s.name AS source_name, s.feed_url AS source_feed_url
             FROM
                 content c
@@ -114,14 +143,18 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 'published_at': row[5].isoformat() if row[5] else None,
                 'ingested_at': row[6].isoformat(),
                 'updated_at': row[7].isoformat() if row[7] else None,
-                'is_read': row[8] if row[8] is not None else False, # Default to False if no interaction record
-                'is_saved': row[9] if row[9] is not None else False, # Default to False
+                'topic': row[8],
+                'is_read': row[9] if row[9] is not None else False, # Default to False if no interaction record
                 'is_liked': row[10] if row[10] is not None else False, # Default to False
-                'disliked': row[11] if row[11] is not None else False, # Default to False
-                'interaction_at': row[12].isoformat() if row[12] else None,
-                'source_name': row[13],
-                'source_feed_url': row[14]
+                'is_saved': row[10] if row[10] is not None else False, # is_liked means saved
+                'interaction_at': row[11].isoformat() if row[11] else None,
+                'source_name': row[12],
+                'source_feed_url': row[13]
             })
+        # Add an aesthetic instruction for the user (for frontend display)
+        digest_items.insert(0, {
+            'instruction': "<div style='background: linear-gradient(90deg, #232526 0%, #414345 100%); color: #fff; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); text-align: center;'>\u2B50 Like the articles you enjoy! The more you like, the smarter your recommendations become. Your personalized tech digest will adapt to your interests. \u2B50</div>"
+        })
     except Exception as e:
         print(f"An error occurred while fetching personalized digest for user {user_id}: {e}")
     finally:
@@ -130,8 +163,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
 
 def _upsert_user_content_interaction(user_id: int, content_item_id: int,
                                      is_read: Optional[bool] = None,
-                                     is_saved: Optional[bool] = None,
-                                     feedback_rating: Optional[int] = None) -> bool:
+                                     is_liked: Optional[bool] = None) -> bool:
     """
     Helper function to insert or update a user's interaction with a content item.
     Uses ON CONFLICT (UPSERT) to handle existing records.
@@ -148,12 +180,9 @@ def _upsert_user_content_interaction(user_id: int, content_item_id: int,
         if is_read is not None:
             set_clauses.append("is_read = %s")
             params.append(is_read)
-        if is_saved is not None:
-            set_clauses.append("is_saved = %s")
-            params.append(is_saved)
-        if feedback_rating is not None:
-            set_clauses.append("feedback_rating = %s")
-            params.append(feedback_rating)
+        if is_liked is not None:
+            set_clauses.append("is_liked = %s")
+            params.append(is_liked)
 
         if not set_clauses: # No fields to update
             return False
@@ -184,14 +213,11 @@ def mark_content_as_read(user_id: int, content_item_id: int, is_read: bool = Tru
     """Marks a content item as read/unread for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_read=is_read)
 
-def toggle_content_saved(user_id: int, content_item_id: int, is_saved: bool) -> bool:
-    """Toggles the saved status of a content item for a specific user."""
-    return _upsert_user_content_interaction(user_id, content_item_id, is_saved=is_saved)
 
-def update_content_feedback(user_id: int, content_item_id: int, feedback_rating: int) -> bool:
-    """Updates the feedback rating for a content item for a specific user."""
-    # Ensure feedback_rating is -1, 0, or 1
-    if feedback_rating not in [-1, 0, 1]:
-        print("Invalid feedback_rating. Must be -1, 0, or 1.")
-        return False
-    return _upsert_user_content_interaction(user_id, content_item_id, feedback_rating=feedback_rating)
+def toggle_content_liked(user_id: int, content_item_id: int, is_liked: bool) -> bool:
+    """Toggles the liked (and saved) status of a content item for a specific user."""
+    return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+
+def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = True) -> bool:
+    """Marks a content item as liked (and saved) for a specific user."""
+    return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)

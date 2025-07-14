@@ -1,15 +1,18 @@
+import os
+from functools import wraps
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify # type: ignore
 from src.services.user_service import create_user, find_user_by_username, check_password
 from src.services.source_service import get_sources_by_user, create_source, update_source, delete_source, get_source_by_id
+from src.services.content_service import get_personalized_digest, mark_content_as_read, toggle_content_liked, update_content_liked
 from src.models.user import User
 from src.models.source import Source
-import os #Needed to get environment variables 
-from functools import wraps
 
-app = Flask(__name__ )
-
+# ------------------- APP CONFIG -------------------
+app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
+# ------------------- AUTH DECORATOR -------------------
 def login_required_api(f):
     """
     Decorator to ensure a user is logged in for API endpoints.
@@ -18,59 +21,82 @@ def login_required_api(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            # Return a JSON error for API requests, not a redirect
             return jsonify({'error': 'Unauthorized', 'message': 'Login required'}), 401
         return f(*args, **kwargs)
     return decorated_function
 
-@app.route('/')
-def index():
-    '''
-    This route will check if a user is logged in. 
-    If so, it displays a welcome message. Otherwise, it redirects to the login page.
-    '''
-    # 'session' stores data for each user between requests (e.g., login status)
-    # 'request' contains data sent by the client (form data, query params, etc.)
-    if 'user_id' in session:
-        username = session.get('username', 'Guest') # Get username from session
-        return render_template('index.html', username=username, logged_in=True)
-    else:
-        return redirect(url_for('login')) # Redirect to login if not logged in
+# ------------------- ROUTES -------------------
 
+# --- Fast Flashcard View ---
+@app.route('/fast', methods=['GET'])
+@login_required_api
+def fast():
+    user_id = session['user_id']
+    articles = get_personalized_digest(user_id, limit=1, offset=0, include_read=False)
+    article = None
+    for a in articles:
+        if not a.get('is_read', False) and not a.get('is_liked', False):
+            article = a
+            break
+    return render_template('fast.html', article=article, username=session.get('username'), current_year=datetime.now().year)
+
+@app.route('/skip_article/<int:article_id>', methods=['POST'])
+@login_required_api
+def skip_article(article_id):
+    return redirect(url_for('fast'))
+
+# --- Article Interaction Routes for Dashboard Forms ---
+@app.route('/mark_read/<int:article_id>', methods=['POST'])
+def mark_read(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    mark_content_as_read(user_id, article_id, is_read=True)
+    flash('Marked as read.', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/like_article/<int:article_id>', methods=['POST'])
+def like_article(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    update_content_liked(user_id, article_id, is_liked=True)
+    flash('Article liked & saved.', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/unlike_article/<int:article_id>', methods=['POST'])
+def unlike_article(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    update_content_liked(user_id, article_id, is_liked=False)
+    flash('Article unliked & unsaved.', 'info')
+    return redirect(url_for('index'))
+
+# --- Auth & User Management ---
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    '''
-    This route handles user registration. 
-    GET displays the registration form, and POST processes the registration data.
-    '''
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-        
-        # Create a new user using the service function
         user = create_user(username, email, password)
-        
         if user:
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
         else:
             flash('Username or email already exists. Please try again.', 'danger')
-    
-    # For GET request or failed POST, render the registration form
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    '''
-    This route handles user login. 
-    GET displays the login form, and POST processes the login credentials.
-    '''
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         user = find_user_by_username(username)
-        
         if user and check_password(user, password):
             session['user_id'] = user.id
             session['username'] = user.username
@@ -78,26 +104,21 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'danger')
-    
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    '''
-    This route handles user logout by clearing the session.
-    '''
-    session.pop('user_id', None)  # Remove user_id from session
-    session.pop('username', None)  # Remove username from session   
+    session.pop('user_id', None)
+    session.pop('username', None)
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
+# --- API Endpoints ---
 @app.route('/api/sources', methods=['GET'])
-@login_required_api # Apply the decorator to protect the API endpoint (created above)
+@login_required_api
 def get_sources():
-    user_id = session['user_id'] # Get user_id from session, guaranteed by decorator
-    sources = get_sources_by_user(user_id) # Call service function
-
-    # Convert list of Source objects to a list of dictionaries for JSON response
+    user_id = session['user_id']
+    sources = get_sources_by_user(user_id)
     sources_data = []
     for s in sources:
         sources_data.append({
@@ -110,28 +131,22 @@ def get_sources():
             'created_at': s.created_at.isoformat(),
             'updated_at': s.updated_at.isoformat() if s.updated_at else None
         })
-    return jsonify(sources_data), 200 # Return JSON response with 200 OK status
+    return jsonify(sources_data), 200
 
 @app.route('/api/sources', methods=['POST'])
 @login_required_api
 def add_source():
     user_id = session['user_id']
-    data = request.json # Get JSON data from the request body
-
-    # Basic validation: check if required fields are present
+    data = request.json
     if not data or not all(k in data for k in ('name', 'feed_url', 'type')):
         return jsonify({'error': 'Bad Request', 'message': 'Missing name, feed_url, or type'}), 400
-
     name = data['name']
     feed_url = data['feed_url']
-    source_type = data['type'] # Using 'source_type' to avoid conflict with Python's built-in type() function
-
-    new_source = create_source(user_id, name, feed_url, source_type) # Call service function
+    source_type = data['type']
+    new_source = create_source(user_id, name, feed_url, source_type)
     if new_source:
-        # Return 201 Created status for successful resource creation
         return jsonify({'message': 'Source added successfully', 'id': new_source.id}), 201
     else:
-        # Return 409 Conflict if there's a unique constraint violation (e.g., duplicate URL)
         return jsonify({'error': 'Conflict', 'message': 'Source URL might already exist.'}), 409
 
 @app.route('/api/sources/<int:source_id>', methods=['PUT'])
@@ -141,50 +156,38 @@ def update_source_api(source_id):
     data = request.json
     if not data:
         return jsonify({'error': 'Bad Request', 'message': 'No data provided for update'}), 400
-
-    # Pass only the fields that are present in the request JSON to the service function
     updated = update_source(
         source_id,
         user_id,
         name=data.get('name'),
         feed_url=data.get('feed_url'),
         type=data.get('type')
-    ) # Call service function
-
+    )
     if updated:
         return jsonify({'message': 'Source updated successfully'}), 200
     else:
-        # Check if source exists but doesn't belong to user, or if no fields were updated
-        # A more robust check here would be to first try to get the source by ID
-        # to differentiate between a 404 (not found) and 403 (forbidden/not owned)
         existing_source = get_source_by_id(source_id, user_id)
         if not existing_source:
             return jsonify({'error': 'Not Found', 'message': 'Source not found or not owned by user.'}), 404
-
-        # If source exists but no valid fields were provided or no change happened
         return jsonify({'error': 'No Change', 'message': 'No valid fields to update or no change detected.'}), 400
-
 
 @app.route('/api/sources/<int:source_id>', methods=['DELETE'])
 @login_required_api
 def delete_source_api(source_id):
     user_id = session['user_id']
-    deleted = delete_source(source_id, user_id) # Call service function
+    deleted = delete_source(source_id, user_id)
     if deleted:
         return jsonify({'message': 'Source deleted successfully'}), 200
     else:
-        # Return 404 if the source wasn't found or wasn't owned by the user
         return jsonify({'error': 'Not Found', 'message': 'Source not found or not owned by user.'}), 404
 
-@app.route('/api/digest', methods=['GET'])   
+@app.route('/api/digest', methods=['GET'])
 @login_required_api
 def get_digest():
     user_id = session['user_id']
-    # Optional: support limit, offset, search_query from query params
     limit = int(request.args.get('limit', 20))
     offset = int(request.args.get('offset', 0))
     search_query = request.args.get('q')
-    from src.services.content_service import get_personalized_digest
     articles = get_personalized_digest(user_id, limit=limit, offset=offset, search_query=search_query)
     return jsonify({'articles': articles}), 200
 
@@ -194,48 +197,22 @@ def mark_content_read_api(content_id):
     user_id = session['user_id']
     data = request.json or {}
     is_read = data.get('is_read', True)
-    from src.services.content_service import mark_content_as_read
     success = mark_content_as_read(user_id, content_id, is_read=bool(is_read))
     if success:
         return jsonify({'message': 'Content marked as read.'}), 200
     else:
         return jsonify({'error': 'Failed to update read status.'}), 400
 
-@app.route('/api/content/<int:content_id>/save', methods=['POST'])
-@login_required_api
-def save_content_api(content_id):
-    user_id = session['user_id']
-    data = request.json or {}
-    is_saved = data.get('is_saved', True)
-    from src.services.content_service import toggle_content_saved
-    success = toggle_content_saved(user_id, content_id, is_saved=bool(is_saved))
-    if success:
-        return jsonify({'message': 'Content saved status updated.'}), 200
-    else:
-        return jsonify({'error': 'Failed to update saved status.'}), 400
-
 @app.route('/api/content/<int:content_id>/like', methods=['POST'])
 @login_required_api
 def like_content_api(content_id):
     user_id = session['user_id']
-    from src.services.content_service import update_content_feedback
-    success = update_content_feedback(user_id, content_id, feedback_rating=1)
+    success = update_content_liked(user_id, content_id, is_liked=True)
     if success:
-        return jsonify({'message': 'Content liked.'}), 200
+        return jsonify({'message': 'Content liked & saved.'}), 200
     else:
         return jsonify({'error': 'Failed to like content.'}), 400
 
-@app.route('/api/content/<int:content_id>/dislike', methods=['POST'])
-@login_required_api
-def dislike_content_api(content_id):
-    user_id = session['user_id']
-    from src.services.content_service import update_content_feedback
-    success = update_content_feedback(user_id, content_id, feedback_rating=-1)
-    if success:
-        return jsonify({'message': 'Content disliked.'}), 200
-    else:
-        return jsonify({'error': 'Failed to dislike content.'}), 400
-
-# Ensures Flask app runs in debug mode only when script is executed directly. For production, set debug=False in app.run()
+# ------------------- MAIN -------------------
 if __name__ == '__main__':
     app.run(debug=True)

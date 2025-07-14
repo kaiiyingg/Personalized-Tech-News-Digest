@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-class content:
+class Content:
     """
     Represents a piece of content (e.g., article, post) fetched from a source.
     Maps to the 'content' database table.
@@ -14,7 +14,8 @@ class content:
                  article_url: str,
                  published_at: Optional[datetime],
                  ingested_at: datetime,
-                 updated_at: Optional[datetime] = None):
+                 updated_at: Optional[datetime] = None,
+                 topic: Optional[str] = None):
         """
         Initializes a new Content object.
         
@@ -36,9 +37,10 @@ class content:
         self.published_at = published_at
         self.ingested_at = ingested_at
         self.updated_at = updated_at # This will be set by DB trigger
+        self.topic = topic
 
     def __repr__(self) -> str:
         """
         Provides a string representation of the Content object for debugging.
         """
-        return f"<Content(id={self.id}, title='{self.title[:30]}...', source_id={self.source_id})>"
+        return f"<Content(id={self.id}, title='{self.title[:30]}...', source_id={self.source_id}, topic={self.topic})>"

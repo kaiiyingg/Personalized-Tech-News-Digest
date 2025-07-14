@@ -1,23 +1,289 @@
 /* src/static/css/style.css */
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #181a1b;
+    color: #e3e3e3;
     margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
     min-height: 100vh;
 }
 
+.navbar {
+    background: #23272a;
+    color: #fff;
+    padding: 0.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+}
+.navbar-links li a {
+    color: #e3e3e3;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+.navbar-links li a:hover {
+    color: #00bfff;
+}
+
+.dashboard-wrapper {
+    display: flex;
+    min-height: 80vh;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto 0 auto;
+    gap: 2rem;
+}
+
+aside.sidebar {
+    background: #23272a;
+    color: #e3e3e3;
+    width: 240px;
+    border-radius: 10px;
+    padding: 2rem 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-height: 400px;
+}
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+.sidebar-section h2, .sidebar-section h3 {
+    color: #00bfff;
+    margin-bottom: 0.5rem;
+}
+.sidebar-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.sidebar-section ul li {
+    margin-bottom: 0.7rem;
+}
+.sidebar-section ul li a {
+    color: #e3e3e3;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+.sidebar-section ul li a:hover {
+    color: #00bfff;
+}
+
+main.main-content {
+    flex: 1;
+    background: #23272a;
+    border-radius: 10px;
+    padding: 2rem 2rem 2rem 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-width: 0;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.search-form input[type="text"] {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: none;
+    font-size: 1rem;
+    background: #181a1b;
+    color: #e3e3e3;
+    margin-right: 0.5rem;
+}
+.search-form button {
+    background: #00bfff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.search-form button:hover {
+    background: #0099cc;
+}
+
+.digest-stream h2 {
+    color: #00bfff;
+    margin-bottom: 1.5rem;
+}
+.articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.article-card {
+    background: #181a1b;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    color: #e3e3e3;
+    transition: box-shadow 0.2s;
+}
+.article-card:hover {
+    box-shadow: 0 4px 16px rgba(0,191,255,0.10);
+}
+.article-card h3 a {
+    color: #00bfff;
+    text-decoration: none;
+    font-size: 1.2rem;
+}
+.article-card h3 a:hover {
+    text-decoration: underline;
+}
+.article-meta {
+    font-size: 0.95em;
+    color: #b0b0b0;
+    margin-bottom: 0.7rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.article-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.7rem;
+}
+.article-actions button {
+    background: #23272a;
+    color: #00bfff;
+    border: 1px solid #00bfff;
+    border-radius: 5px;
+    padding: 0.4rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.article-actions button:hover {
+    background: #00bfff;
+    color: #181a1b;
+}
+
+footer.footer {
+    text-align: center;
+    color: #b0b0b0;
+    margin: 2rem 0 0 0;
+    padding: 1rem 0 0 0;
+    font-size: 0.95rem;
+}
+
+/* Flash messages and forms (keep existing styles, but darken backgrounds) */
 .container {
-    background-color: #fff;
+    background-color: #23272a;
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 500px;
     text-align: center;
+}
+
+h1 {
+    color: #00bfff;
+    margin-bottom: 25px;
+}
+
+form {
+    text-align: left;
+    margin-top: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 16px;
+    background: #181a1b;
+    color: #e3e3e3;
+}
+
+button[type="submit"] {
+    background-color: #00bfff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+button[type="submit"]:hover {
+    background-color: #0099cc;
+}
+
+.flashes {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+    text-align: left;
+}
+
+.flashes li {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.flashes li.success {
+    background-color: #1e5631;
+    color: #b6fcd5;
+    border: 1px solid #28a745;
+}
+
+.flashes li.danger {
+    background-color: #5a1a1a;
+    color: #ffb3b3;
+    border: 1px solid #f5c6cb;
+}
+
+.flashes li.info {
+    background-color: #1a2a3a;
+    color: #b3e0ff;
+    border: 1px solid #bee5eb;
+}
+
+p {
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+a {
+    color: #00bfff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 h1 {

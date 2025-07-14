@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Fast View - Flashcard Swipe{% endblock %}
+{% block content %}
+<div class="fast-view-wrapper">
+    {% if article %}
+    <div class="flashcard">
+        <div class="flashcard-image">
+            {% if article.image_url %}
+                <img src="{{ article.image_url }}" alt="Article image">
+            {% else %}
+                <div class="placeholder-image">📰</div>
+            {% endif %}
+        </div>
+        <div class="flashcard-content">
+            <h2><a href="{{ article.article_url }}" target="_blank">{{ article.title }}</a></h2>
+            <div class="meta">
+                <span class="source">Source: {{ article.source_name }}</span>
+                <span class="date">{{ article.published_at or 'No date' }}</span>
+                <span class="topic">Topic: {{ article.topic }}</span>
+            </div>
+            <p>{{ article.summary }}</p>
+        </div>
+        <div class="flashcard-actions">
+            <form method="POST" action="{{ url_for('like_article', article_id=article.id, next='fast') }}" style="display:inline;">
+                <button type="submit" class="btn-like-flash">❤️ Like</button>
+            </form>
+            <form method="POST" action="{{ url_for('skip_article', article_id=article.id) }}" style="display:inline;">
+                <button type="submit" class="btn-skip">Skip</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+        <div class="no-more-flashcards">
+            <h3>No more articles to swipe!</h3>
+            <p>Check back later for new content.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -6,17 +6,14 @@ from psycopg2 import errors as pg_errors # To catch specific database errors
 
 bcrypt = Bcrypt()
 
-def create_user(username: str, email: str, password: str) -> Optional[User]:
+def create_user(username: str, password: str) -> Optional[User]:
     """
     Creates a new user in the database after hashing the password.
-
     Args:
-        username (str): The desired username.
-        email (str): The user's email address.
-        password (str): The plain text password to hash.
-
+        username (str): The user's username.
+        password (str): The user's password.
     Returns:
-        Optional[User]: The created User object if successful, None if user/email already exists.
+        Optional[User]: The created User object if successful, None if user already exists.
     """
     conn = None
     try:
@@ -25,8 +22,8 @@ def create_user(username: str, email: str, password: str) -> Optional[User]:
         cur = conn.cursor()
 
         cur.execute(
-            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id, created_at, updated_at;",
-            (username, email, hashed_password)
+            "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id, created_at, updated_at;",
+            (username, hashed_password)
         )
         result = cur.fetchone()
         if result is None:
@@ -36,11 +33,11 @@ def create_user(username: str, email: str, password: str) -> Optional[User]:
             return None
         user_id, created_at, updated_at = result
         conn.commit()
-        return User(user_id, username, email, hashed_password, created_at, updated_at)
+        return User(user_id, username, hashed_password, created_at, updated_at)
     
     except pg_errors.UniqueViolation as e:
-        # Handle unique constraint violation (username or email already exists)
-        print(f"Error: Username or email already exists. {e}")
+        # Handle unique constraint violation (username already exists)
+        print(f"Error: Username already exists. {e}")
         if conn:
             conn.rollback() # Rollback the transaction
         return None
@@ -68,7 +65,7 @@ def find_user_by_username(username: str) -> Optional[User]:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = %s;",
+            "SELECT id, username, password_hash, created_at, updated_at FROM users WHERE username = %s;",
             (username,)
         )
         user_data = cur.fetchone()

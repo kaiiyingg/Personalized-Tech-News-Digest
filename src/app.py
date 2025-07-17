@@ -70,14 +70,13 @@ def like_article(article_id):
 def register():
     if request.method == 'POST':
         username = request.form['username']
-        email = request.form['email']
         password = request.form['password']
-        user = create_user(username, email, password)
+        user = create_user(username, password)
         if user:
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
         else:
-            flash('Username or email already exists. Please try again.', 'danger')
+            flash('Username already exists. Please try again.', 'danger')
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])

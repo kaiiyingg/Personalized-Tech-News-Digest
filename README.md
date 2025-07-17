@@ -89,7 +89,7 @@ Built with **DevOps best practices** at its core, the entire AWS infrastructure 
 The system's architecture is divided into two main flows:
 
 1.  **User Interaction Flow:**
-    * Users access the web application through a browser.
+    * Users access the web application through any devices.
     * The Flask application (hosted on AWS Elastic Beanstalk) handles user authentication and serves the personalized digest.
     * It interacts with AWS RDS (PostgreSQL) to retrieve user-specific data, sources, interests, and content.
 
@@ -196,7 +196,7 @@ The entire application infrastructure and application code are deployed to AWS u
 ## Future Enhancements
 
 * **Advanced Content Filtering:** Implement more sophisticated content filtering based on user engagement, freshness decay, or personalized weighting.
-* **Summarization:** Integrate AWS Comprehend or other NLP libraries to automatically summarize articles.
+* **Light Mode:** Include toggle button to allow user to switch between light and dark mode for better user experience.
 * **Rich Content Sources:** Expand ingestion to include YouTube channels (via API), specific Twitter lists, or academic paper databases.
 * **Email / Notification Digests:** Allow users to receive their personalized digest via email (AWS SES) or other notification channels (AWS SNS).
 * **Personal Project Idea Recommendation feature** Additional feature which offers tailored project ideas and curated learning resources base on user's interest. The goal is to inspire users and provide clear guidance to starting a personal project which turns passive learning into active creation.

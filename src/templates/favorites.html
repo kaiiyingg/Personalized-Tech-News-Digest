@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Favorites{% endblock %}
+{% block content %}
+    <h2 style="margin-bottom: 24px;">Your Favorites</h2>
+    {% if articles|length > 1 %}
+        <div class="card-list">
+            {% for article in articles if article.get('id') %}
+                <div class="card">
+                    <h3>{{ article.title }}</h3>
+                    <p>{{ article.summary }}</p>
+                    <p><strong>Source:</strong> {{ article.source_name }}</p>
+                    <p><strong>Topic:</strong> {{ article.topic }}</p>
+                    <a href="{{ article.article_url }}" target="_blank">Read full article</a>
+                    <form action="{{ url_for('unlike_article', article_id=article.id) }}" method="post" style="margin-top: 10px;">
+                        <button type="submit" class="btn btn-warning">Remove from Favorites</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">You haven't liked any articles yet. Like articles to add them to your Favorites!</div>
+    {% endif %}
+{% endblock %}

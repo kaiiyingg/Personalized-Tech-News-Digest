@@ -27,23 +27,21 @@ def login_required_api(f):
 
 # ------------------- ROUTES -------------------
 
-# --- Fast Flashcard View ---
-@app.route('/fast', methods=['GET'])
-@login_required_api
-def fast():
-    user_id = session['user_id']
-    articles = get_personalized_digest(user_id, limit=1, offset=0, include_read=False)
-    article = None
-    for a in articles:
-        if not a.get('is_read', False) and not a.get('is_liked', False):
-            article = a
-            break
-    return render_template('fast.html', article=article, username=session.get('username'), current_year=datetime.now().year)
+# --- Home route: redirect to login page ---
+@app.route('/', methods=['GET'])
+def home():
+    return redirect(url_for('login'))
 
-@app.route('/skip_article/<int:article_id>', methods=['POST'])
-@login_required_api
-def skip_article(article_id):
-    return redirect(url_for('fast'))
+@app.route('/index', methods=['GET'])
+def index():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    articles = get_personalized_digest(user_id)
+    username = session.get('username')
+    current_year = datetime.now().year
+    # Optionally add more context: sources_count, liked_count, etc.
+    return render_template('index.html', articles=articles, username=username, current_year=current_year)
 
 # --- Article Interaction Routes for Dashboard Forms ---
 @app.route('/mark_read/<int:article_id>', methods=['POST'])
@@ -66,15 +64,6 @@ def like_article(article_id):
     flash('Article liked & saved.', 'success')
     return redirect(url_for('index'))
 
-@app.route('/unlike_article/<int:article_id>', methods=['POST'])
-def unlike_article(article_id):
-    if 'user_id' not in session:
-        flash('You must be logged in to perform this action.', 'danger')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    update_content_liked(user_id, article_id, is_liked=False)
-    flash('Article unliked & unsaved.', 'info')
-    return redirect(url_for('index'))
 
 # --- Auth & User Management ---
 @app.route('/register', methods=['GET', 'POST'])
@@ -113,7 +102,6 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-# --- API Endpoints ---
 @app.route('/api/sources', methods=['GET'])
 @login_required_api
 def get_sources():
@@ -133,53 +121,6 @@ def get_sources():
         })
     return jsonify(sources_data), 200
 
-@app.route('/api/sources', methods=['POST'])
-@login_required_api
-def add_source():
-    user_id = session['user_id']
-    data = request.json
-    if not data or not all(k in data for k in ('name', 'feed_url', 'type')):
-        return jsonify({'error': 'Bad Request', 'message': 'Missing name, feed_url, or type'}), 400
-    name = data['name']
-    feed_url = data['feed_url']
-    source_type = data['type']
-    new_source = create_source(user_id, name, feed_url, source_type)
-    if new_source:
-        return jsonify({'message': 'Source added successfully', 'id': new_source.id}), 201
-    else:
-        return jsonify({'error': 'Conflict', 'message': 'Source URL might already exist.'}), 409
-
-@app.route('/api/sources/<int:source_id>', methods=['PUT'])
-@login_required_api
-def update_source_api(source_id):
-    user_id = session['user_id']
-    data = request.json
-    if not data:
-        return jsonify({'error': 'Bad Request', 'message': 'No data provided for update'}), 400
-    updated = update_source(
-        source_id,
-        user_id,
-        name=data.get('name'),
-        feed_url=data.get('feed_url'),
-        type=data.get('type')
-    )
-    if updated:
-        return jsonify({'message': 'Source updated successfully'}), 200
-    else:
-        existing_source = get_source_by_id(source_id, user_id)
-        if not existing_source:
-            return jsonify({'error': 'Not Found', 'message': 'Source not found or not owned by user.'}), 404
-        return jsonify({'error': 'No Change', 'message': 'No valid fields to update or no change detected.'}), 400
-
-@app.route('/api/sources/<int:source_id>', methods=['DELETE'])
-@login_required_api
-def delete_source_api(source_id):
-    user_id = session['user_id']
-    deleted = delete_source(source_id, user_id)
-    if deleted:
-        return jsonify({'message': 'Source deleted successfully'}), 200
-    else:
-        return jsonify({'error': 'Not Found', 'message': 'Source not found or not owned by user.'}), 404
 
 @app.route('/api/digest', methods=['GET'])
 @login_required_api
@@ -212,6 +153,37 @@ def like_content_api(content_id):
         return jsonify({'message': 'Content liked & saved.'}), 200
     else:
         return jsonify({'error': 'Failed to like content.'}), 400
+
+# --- Fast Flashcard View ---
+@app.route('/fast', methods=['GET'])
+@login_required_api
+def fast():
+    user_id = session['user_id']
+    articles = get_personalized_digest(user_id, limit=1, offset=0, include_read=False)
+    article = None
+    for a in articles:
+        if not a.get('is_read', False) and not a.get('is_liked', False):
+            article = a
+            break
+    return render_template('fast.html', article=article, username=session.get('username'), current_year=datetime.now().year)
+
+@app.route('/skip_article/<int:article_id>', methods=['POST'])
+@login_required_api
+def skip_article(article_id):
+    return redirect(url_for('fast'))
+
+# --- Favorites (Liked Content) ---
+@app.route('/favorites', methods=['GET'])
+def favorites():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    # Get only liked articles
+    articles = get_personalized_digest(user_id, limit=100)
+    liked_articles = [a for a in articles if a.get('is_liked')]
+    username = session.get('username')
+    current_year = datetime.now().year
+    return render_template('favorites.html', articles=liked_articles, username=username, current_year=current_year)
 
 # ------------------- MAIN -------------------
 if __name__ == '__main__':

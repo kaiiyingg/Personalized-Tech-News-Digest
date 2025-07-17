@@ -2,18 +2,13 @@
 {% extends 'base.html' %}
 {% block title %}My Digest - Learning Stream{% endblock %}
 {% block content %}
-<nav class="navbar">
-  <ul class="navbar-links">
-    <li><a href="{{ url_for('index') }}">Home</a></li>
-    <li><a href="{{ url_for('fast') }}">Fast</a></li>
-    <li><a href="{{ url_for('favorites') }}">Favorites</a></li>
-    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-  </ul>
-</nav>
 <div class="search-bar-wrapper">
-  <form class="search-form" method="GET" action="{{ url_for('index') }}">
-    <input type="text" name="q" placeholder="Search articles..." value="{{ request.args.get('q', '') }}">
-    <button type="submit">Search</button>
+  <form class="search-form" method="GET" action="{{ url_for('index') }}" style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
+    <input type="text" name="q" placeholder="Explore tech news…" value="{{ request.args.get('q', '') }}" style="flex: 1; min-width: 300px; max-width: 700px; font-size: 1.1rem; height: 48px; padding: 0 1.2rem; border-radius: 100px; border: 2px solid #00bfff; background: #181a1b; color: #e3e3e3; box-sizing: border-box;">
+    <button type="submit" class="super-button" style="height: 48px; padding: 0 22px; font-size: 15px; min-width: 80px; border-radius: 100px;">
+      Search
+      <span class="arrow">&#8594;</span>
+    </button>
   </form>
 </div>
 <main class="main-content">
@@ -51,8 +46,6 @@
           </div>
         {% endfor %}
       </div>
-    {% else %}
-      <p>No articles found. Add sources to get started!</p>
     {% endif %}
   </div>
 </main>

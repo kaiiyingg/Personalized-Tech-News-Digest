@@ -354,6 +354,7 @@ h1 {
   width: 300px;
   padding: 64px 15px 24px;
   margin: 0 auto;
+  background: transparent;
 }
 .form .control {
   margin: 0 0 24px;

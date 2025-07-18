@@ -11,8 +11,9 @@ DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT', 5432)
 
 """
-This module handles database connections and table creation for the Learning Stream application.
+This module handles database connections and table creation for the TechPulse application.
 It loads database credentials from environment variables and uses psycopg2 to interact with PostgreSQL.
+Run "python src/database/connection.py" to create tables based on SQL scripts in the same directory.
 """
 
 def get_db_connection():

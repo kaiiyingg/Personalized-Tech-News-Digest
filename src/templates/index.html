@@ -1,19 +1,18 @@
-
 {% extends 'base.html' %}
-{% block title %}My Digest - Learning Stream{% endblock %}
+{% block title %}Good to See You, {{ username }}! Your Pulse is Live.{% endblock %}
 {% block content %}
-<div class="search-bar-wrapper">
-  <form class="search-form" method="GET" action="{{ url_for('index') }}" style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
-    <input type="text" name="q" placeholder="Explore tech news…" value="{{ request.args.get('q', '') }}" style="flex: 1; min-width: 300px; max-width: 700px; font-size: 1.1rem; height: 48px; padding: 0 1.2rem; border-radius: 100px; border: 2px solid #00bfff; background: #181a1b; color: #e3e3e3; box-sizing: border-box;">
-    <button type="submit" class="super-button" style="height: 48px; padding: 0 22px; font-size: 15px; min-width: 80px; border-radius: 100px;">
-      Search
-      <span class="arrow">&#8594;</span>
-    </button>
-  </form>
-</div>
 <main class="main-content">
   <div class="digest-stream">
-    <h2>Latest Tech Articles</h2>
+    <h2 style="text-align:center; font-size:2.6em; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:900; color:#00bfff; margin-bottom:2.5rem;">Good to See You, {{ username }}! Your Pulse is Live.</h2>
+    <div class="search-bar-wrapper" style="width:100%; display:flex; justify-content:center; align-items:center; margin-bottom:2.5rem;">
+      <form class="search-form" method="GET" action="{{ url_for('index') }}" style="display: flex; align-items: center; gap: 1.2rem; max-width: 700px; width:100%; justify-content:center;">
+        <input type="text" name="q" placeholder="Explore tech news…" value="{{ request.args.get('q', '') }}" style="flex: 1; min-width: 300px; max-width: 500px; font-size: 1.5rem; height: 60px; padding: 0 2rem; border-radius: 100px; border: 2px solid #00bfff; background: transparent; color: #e3e3e3; box-sizing: border-box; vertical-align: middle; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:600;">
+        <button type="submit" class="super-button" style="height: 60px; padding: 0 32px; font-size: 1.3rem; min-width: 120px; border-radius: 100px; display: flex; align-items: center; justify-content: center; vertical-align: middle; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:700;">
+          Search
+          <span class="arrow" style="font-size:1.5em;">&#8594;</span>
+        </button>
+      </form>
+    </div>
     {% if articles and articles[0].instruction %}
       {{ articles[0].instruction | safe }}
     {% endif %}

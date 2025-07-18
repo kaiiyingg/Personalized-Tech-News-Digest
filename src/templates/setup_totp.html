@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up Authenticator - TechPulse</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="cube-header">Set Up Your Authenticator App</div>
+  <form class="form" autocomplete="off">
+    <div class="control">
+      <h1>Scan this QR code with Microsoft Authenticator, Google Authenticator, or any TOTP app.</h1>
+      <p>If you can't scan, enter this code manually:</p>
+      <code>{{ provisioning_uri }}</code>
+    </div>
+    <div class="control block-cube block-input" style="text-align:center;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?data={{ provisioning_uri }}&amp;size=200x200" alt="Authenticator QR Code" />
+    </div>
+    <p style="text-align:center;">Once set up, you can use your app to generate 6-digit codes for login and password reset.</p>
+    <p style="text-align:center;"><a href="{{ url_for('login') }}">Go to Login</a></p>
+  </form>
+</body>
+</html>

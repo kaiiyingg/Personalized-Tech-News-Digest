@@ -1,8 +1,10 @@
+import random
+import pyotp # type: ignore
 import os
 from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify # type: ignore
-from src.services.user_service import create_user, find_user_by_username, check_password
+from src.services.user_service import create_user, check_password, find_user_by_email, update_user_password
 from src.services.source_service import get_sources_by_user, create_source, update_source, delete_source, get_source_by_id
 from src.services.content_service import get_personalized_digest, mark_content_as_read, toggle_content_liked, update_content_liked
 from src.models.user import User
@@ -43,6 +45,41 @@ def index():
     # Optionally add more context: sources_count, liked_count, etc.
     return render_template('index.html', articles=articles, username=username, current_year=current_year)
 
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = find_user_by_email(email)
+        if not user:
+            flash('No account found with that email.', 'danger')
+            return render_template('forgot_password.html')
+        session['reset_email'] = email
+        flash('Enter the 6-digit code from your authenticator app and your new password.', 'info')
+        return redirect(url_for('reset_password'))
+    return render_template('forgot_password.html')
+
+# --- Reset Password Page ---
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        code = request.form['code']
+        new_password = request.form['new_password']
+        user = find_user_by_email(email)
+        if not user:
+            flash('No account found for password reset.', 'danger')
+            return render_template('reset_password.html')
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code):
+            flash('Invalid code. Please try again.', 'danger')
+            return render_template('reset_password.html')
+        # Update password
+        update_user_password(user.id, new_password)
+        flash('Password reset successful! You can now log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html')
 # --- Article Interaction Routes for Dashboard Forms ---
 @app.route('/mark_read/<int:article_id>', methods=['POST'])
 def mark_read(article_id):
@@ -71,27 +108,50 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = create_user(username, password)
+        email = request.form['email']
+        user = create_user(username, password, email)
         if user:
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('login'))
+            flash('Registration successful! Please set up your authenticator app.', 'success')
+            # Show QR code for TOTP setup
+            session['setup_email'] = email
+            return redirect(url_for('setup_totp'))
         else:
-            flash('Username already exists. Please try again.', 'danger')
+            flash('Username or email already exists. Please try again.', 'danger')
+            return render_template('register.html')
     return render_template('register.html')
+# --- TOTP Setup Page ---
+@app.route('/setup_totp', methods=['GET'])
+def setup_totp():
+    email = session.get('setup_email')
+    user = find_user_by_email(email)
+    if not user:
+        flash('No account found for TOTP setup.', 'danger')
+        return redirect(url_for('register') )
+    totp = pyotp.TOTP(user.totp_secret)
+    provisioning_uri = totp.provisioning_uri(name=email, issuer_name="TechPulse")
+    return render_template('setup_totp.html', provisioning_uri=provisioning_uri)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        code = request.form.get('code')
+        from src.services.user_service import find_user_by_username
         user = find_user_by_username(username)
         if user and check_password(user, password):
+            if code:
+                totp = pyotp.TOTP(user.totp_secret)
+                if not totp.verify(code):
+                    flash('Invalid authenticator code.', 'danger')
+                    return render_template('login.html')
             session['user_id'] = user.id
             session['username'] = user.username
             flash('Login successful!', 'success')
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'danger')
+            return render_template('login.html')
     return render_template('login.html')
 
 @app.route('/logout')

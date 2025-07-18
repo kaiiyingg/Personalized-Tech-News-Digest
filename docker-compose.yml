@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: learning_stream_db
+      POSTGRES_DB: TechPulse_db
       POSTGRES_USER: localuser
       POSTGRES_PASSWORD: localpassword
     ports:
@@ -18,7 +18,7 @@ services:
     environment:
       FLASK_APP: src/app.py
       FLASK_ENV: development # Good to set this for local development
-      DB_NAME: learning_stream_db
+      DB_NAME: TechPulse_db
       DB_USER: localuser
       DB_PASSWORD: localpassword
       DB_HOST: db # Correctly references the 'db' service name

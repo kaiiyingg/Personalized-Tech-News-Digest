@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Learning Stream{% endblock %}</title>
+    <title>{% block title %}TechPulse{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
-        <div class="navbar-brand">Learning Stream: Your Personalized Tech Digest</div>
+        <div class="navbar-brand">TechPulse: Your personalised tech news digest</div>
         <ul class="navbar-links">
             <li><a href="{{ url_for('index') }}">Home</a></li>
             <li><a href="{{ url_for('fast') }}">Fast</a></li> <!-- Flashcard swipe view for quick likes -->
@@ -17,20 +17,18 @@
             <li><a href="{{ url_for('logout') }}">Logout</a></li>
         </ul>
     </nav>
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flashes">
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
     <footer class="footer">
-        <p>&copy; {{ current_year }} Learning Stream &mdash; Personalized Tech Digest by Chong Kai Ying</p>
+        <p>&copy; {{ current_year }} TechPulse &mdash; Your personalised tech news digest by Chong Kai Ying</p>
     </footer>
     {% block scripts %}{% endblock %}
 </body>

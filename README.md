@@ -1,6 +1,6 @@
 # Personalized-Tech-News-Digest
 
-**Learning Stream: Your Personalized Tech Digest**
+**TechPulse: Your personalised tech news digest**
 
 [![Build Status](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml/badge.svg)](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml)
 
@@ -23,7 +23,7 @@
 
 ## Overview
 
-In today's fast-paced tech landscape, information overload is a significant challenge for learners and professionals alike. The **Learning Stream: Your Personalized Tech Digest** is a cloud-native web application designed to combat this by providing a centralized, customizable, and intelligent feed of the latest tech news and learning resources tailored specifically to your interests.
+In today's fast-paced tech landscape, information overload is a significant challenge for learners and professionals alike. The **TechPulse: Your personalised tech news digest** is a cloud-native web application designed to combat this by providing a centralized, customizable, and intelligent feed of the latest tech news and learning resources tailored specifically to your interests.
 
 This project empowers users to define their preferred content sources – such as RSS feeds from leading tech blogs, news sites, and even specific subreddits. Behind the scenes, an asynchronous, event-driven pipeline leverages **AWS Lambda** and **SQS** to ingest and process new content, ensuring a continuous flow of information without overwhelming the user. The core Flask API, containerized with **Docker** and deployed via **AWS Elastic Beanstalk**, serves the personalized digest, which is dynamically filtered based on user-defined interests stored securely in **AWS RDS (PostgreSQL)**.
 
@@ -131,7 +131,7 @@ This project rigorously applies the following DevOps principles:
 
 ## Local Setup & Development
 
-To get the **Learning Stream: Your Personalized Tech Digest** running on your local machine:
+To get the **TechPulse: Your personalised tech news digest** running on your local machine:
 
 1.  **Clone the repository:**
     ```bash

@@ -1,38 +1,57 @@
 {% extends 'base.html' %}
 {% block title %}Fast View{% endblock %}
 {% block content %}
-<div class="fast-view-wrapper">
+<div class="fast-view-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 2rem;">
     {% if article %}
-    <div class="flashcard">
-        <div class="flashcard-image">
-            {% if article.image_url %}
-                <img src="{{ article.image_url }}" alt="Article image">
-            {% else %}
-                <div class="placeholder-image">📰</div>
-            {% endif %}
+        <div class="button-row" style="flex-shrink:0;">
+            <button class="button" id="prev-article-btn" title="Previous">
+                <i class="ph-skip-back"></i>
+            </button>
         </div>
-        <div class="flashcard-content">
-            <h2><a href="{{ article.article_url }}" target="_blank">{{ article.title }}</a></h2>
-            <div class="meta">
-                <span class="source">Source: {{ article.source_name }}</span>
-                <span class="date">{{ article.published_at or 'No date' }}</span>
-                <span class="topic">Topic: {{ article.topic }}</span>
+        <div class="flashcard" data-article-id="{{ article.id }}" style="flex:1; max-width:500px;">
+            <div class="flashcard-image">
+                {% if article.image_url %}
+                    <img src="{{ article.image_url }}" alt="Article image">
+                {% else %}
+                    <div class="placeholder-image">📰</div>
+                {% endif %}
             </div>
-            <p>{{ article.summary }}</p>
+            <div class="flashcard-content">
+                <h2>{{ article.title }}</h2>
+                <div style="margin-bottom:0.7em;"><a href="{{ article.article_url }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
+                <div class="meta">
+                    <span class="source">Source: {{ article.source_name }}</span>
+                    <span class="date">{{ article.published_at or 'No date' }}</span>
+                    <span class="topic">Topic: {{ article.topic }}</span>
+                    {% if article.is_read %}
+                      <span class="read-indicator" style="color: #00bfff; font-weight: bold; margin-left: 1em;">&#10003; Read</span>
+                    {% endif %}
+                </div>
+                <p>{{ article.summary }}</p>
+            </div>
+            <div class="flashcard-actions">
+                <form method="POST" action="{{ url_for('like_article', article_id=article.id, next='fast') }}" style="display:inline;">
+                    <button type="submit" class="btn-like-flash heart-button" id="heart"></button>
+                </form>
+                <form method="POST" action="{{ url_for('skip_article', article_id=article.id) }}" style="display:inline;">
+                    <button type="submit" class="btn-skip">Skip</button>
+                </form>
+            </div>
         </div>
-        <div class="flashcard-actions">
-            <form method="POST" action="{{ url_for('like_article', article_id=article.id, next='fast') }}" style="display:inline;">
-                <button type="submit" class="btn-like-flash">❤️ Like</button>
-            </form>
-            <form method="POST" action="{{ url_for('skip_article', article_id=article.id) }}" style="display:inline;">
-                <button type="submit" class="btn-skip">Skip</button>
-            </form>
+        <div class="button-row" style="flex-shrink:0;">
+            <button class="button" id="next-article-btn" title="Next">
+                <i class="ph-skip-forward"></i>
+            </button>
         </div>
-    </div>
     {% else %}
         <div class="no-more-flashcards">
-            <h3>No more articles to swipe!</h3>
-            <p>Check back later for new content.</p>
+            {% if articles_read < total_articles %}
+                <h3>You've read {{ articles_read }} out of {{ total_articles }} articles today.</h3>
+                <p>Keep going! Swipe through all articles to complete your digest.</p>
+            {% else %}
+                <h3>No more articles to swipe!</h3>
+                <p>Check back later for new content.</p>
+            {% endif %}
         </div>
     {% endif %}
 </div>

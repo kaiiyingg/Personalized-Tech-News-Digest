@@ -218,18 +218,27 @@ def like_content_api(content_id):
 @login_required_api
 def fast():
     user_id = session['user_id']
-    articles = get_personalized_digest(user_id, limit=1, offset=0, include_read=False)
-    article = None
-    for a in articles:
-        if not a.get('is_read', False) and not a.get('is_liked', False):
-            article = a
-            break
-    return render_template('fast.html', article=article, username=session.get('username'), current_year=datetime.now().year)
+    skipped = session.get('skipped_articles', set())
+    # Get all articles for today (including read)
+    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
+    total_articles = len(all_articles)
+    articles_read = sum(1 for a in all_articles if a.get('is_read', False))
+    # Get unread articles for flashcard view
+    unread_articles = [a for a in all_articles if not a.get('is_read', False) and not a.get('is_liked', False)]
+    # Prioritize skipped articles at the top
+    skipped_articles = [a for a in unread_articles if a['id'] in skipped]
+    unskipped_articles = [a for a in unread_articles if a['id'] not in skipped]
+    ordered_articles = skipped_articles + unskipped_articles
+    article = ordered_articles[0] if ordered_articles else None
+    return render_template(
+        'fast.html',
+        article=article,
+        username=session.get('username'),
+        current_year=datetime.now().year,
+        articles_read=articles_read,
+        total_articles=total_articles
+    )
 
-@app.route('/skip_article/<int:article_id>', methods=['POST'])
-@login_required_api
-def skip_article(article_id):
-    return redirect(url_for('fast'))
 
 # --- Favorites (Liked Content) ---
 @app.route('/favorites', methods=['GET'])
@@ -243,6 +252,38 @@ def favorites():
     username = session.get('username')
     current_year = datetime.now().year
     return render_template('favorites.html', articles=liked_articles, username=username, current_year=current_year)
+
+
+# --- Skip Article (Flashcard View) ---
+# This route allows a user to skip an article in the fast (flashcard) view.
+# Skipped articles are tracked in the session for the current day and prioritized at the top of the flashcard list.
+# Skipping does NOT mark the article as read while unskipped articles will be marked as read.
+@app.route('/skip_article/<int:article_id>', methods=['POST'])
+def skip_article(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    # Track skip in session for the day (not persisted in DB)
+    skipped = session.get('skipped_articles', set())
+    skipped.add(article_id)
+    session['skipped_articles'] = skipped
+    flash('Article skipped.', 'info')
+    return redirect(url_for('fast'))
+
+# --- Unlike Article (Remove from Favorites) ---
+# This route allows a user to unlike an article, removing it from their favorites.
+# It sets is_liked=False for the user and article in the database.
+# After unliking, the article will no longer appear in the favorites page.
+@app.route('/unlike_article/<int:article_id>', methods=['POST'])
+def unlike_article(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    update_content_liked(user_id, article_id, is_liked=False)
+    flash('Article unliked & removed from favorites.', 'info')
+    return redirect(url_for('index'))
 
 # ------------------- MAIN -------------------
 if __name__ == '__main__':

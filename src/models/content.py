@@ -13,8 +13,6 @@ class Content:
                  summary: str,
                  article_url: str,
                  published_at: Optional[datetime],
-                 ingested_at: datetime,
-                 updated_at: Optional[datetime] = None,
                  topic: Optional[str] = None):
         """
         Initializes a new Content object.
@@ -26,8 +24,6 @@ class Content:
             summary (str): A summary or short description of the content.
             article_url (str): The unique URL where the original content can be accessed.
             published_at (Optional[datetime]): The original publication timestamp of the content. Can be None.
-            ingested_at (datetime): The timestamp when this content was first pulled/ingested by the system.
-            updated_at (Optional[datetime]): The timestamp of the last update to this content record within the system.
         """
         self.id = id
         self.source_id = source_id
@@ -35,8 +31,6 @@ class Content:
         self.summary = summary
         self.article_url = article_url
         self.published_at = published_at
-        self.ingested_at = ingested_at
-        self.updated_at = updated_at # This will be set by DB trigger
         self.topic = topic
 
     def __repr__(self) -> str:

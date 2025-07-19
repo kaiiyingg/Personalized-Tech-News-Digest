@@ -56,7 +56,7 @@ def create_content_item(source_id: int, title: str, summary: str,
             """
             INSERT INTO content (source_id, title, summary, article_url, published_at, topic)
             VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, ingested_at, updated_at, topic;
+            RETURNING id, topic;
             """,
             (source_id, title, summary, article_url, published_at, topic_val)
         )
@@ -64,9 +64,9 @@ def create_content_item(source_id: int, title: str, summary: str,
         if row is None:
             if conn: conn.rollback()
             return None
-        content_id, ingested_at, updated_at, topic_db = row
+        content_id, topic_db = row
         conn.commit()
-        return Content(content_id, source_id, title, summary, article_url, published_at, ingested_at, updated_at, topic_db)
+        return Content(content_id, source_id, title, summary, article_url, published_at, topic_db)
     except pg_errors.UniqueViolation as e:
         print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()
@@ -106,7 +106,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         query = """
             SELECT
                 c.id, c.source_id, c.title, c.summary, c.article_url,
-                c.published_at, c.ingested_at, c.updated_at, c.topic,
+                c.published_at, c.topic,
                 uci.is_read, uci.is_liked, uci.interaction_at,
                 s.name AS source_name, s.feed_url AS source_feed_url
             FROM
@@ -127,7 +127,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
             query += " AND (c.title ILIKE %s OR c.summary ILIKE %s)" # Case-insensitive search
             params.extend([f"%{search_query}%", f"%{search_query}%"])
 
-        query += " ORDER BY c.published_at DESC, c.ingested_at DESC LIMIT %s OFFSET %s;"
+        query += " ORDER BY c.published_at DESC LIMIT %s OFFSET %s;"
         params.extend([limit, offset])
 
         cur.execute(query, tuple(params))
@@ -141,8 +141,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 'summary': row[3],
                 'article_url': row[4],
                 'published_at': row[5].isoformat() if row[5] else None,
-                'ingested_at': row[6].isoformat(),
-                'updated_at': row[7].isoformat() if row[7] else None,
+                # removed: ingested_at, updated_at
                 'topic': row[8],
                 'is_read': row[9] if row[9] is not None else False, # Default to False if no interaction record
                 'is_liked': row[10] if row[10] is not None else False, # Default to False

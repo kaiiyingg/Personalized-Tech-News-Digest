@@ -23,25 +23,21 @@
       <div class="articles-list">
         {% for article in articles %}
           <div class="article-card">
-            <h3><a href="{{ article.article_url }}" target="_blank">{{ article.title }}</a></h3>
+            <h3>{{ article.title }}</h3>
+            <div style="margin-bottom:0.7em;"><a href="{{ article.article_url }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
             <div class="article-meta">
               <span class="source">Source: {{ article.source_name }}</span>
               <span class="date">Published: {{ article.published_at or 'No date' }}</span>
-              <span class="ingested">Ingested: {{ article.ingested_at }}</span>
-              <span class="updated">Updated: {{ article.updated_at or 'N/A' }}</span>
             </div>
             <p>{{ article.summary }}</p>
             <div class="article-actions">
-              <form method="POST" action="{{ url_for('mark_read', article_id=article.id) }}" style="display:inline;">
-                <button type="submit" class="btn-read">{% if article.is_read %}Mark Unread{% else %}Mark Read{% endif %}</button>
-              </form>
               {% if article.is_liked %}
                 <form method="POST" action="{{ url_for('unlike_article', article_id=article.id) }}" style="display:inline;">
                   <button type="submit" class="btn-like liked">&#9733; Liked</button>
                 </form>
               {% else %}
                 <form method="POST" action="{{ url_for('like_article', article_id=article.id) }}" style="display:inline;">
-                  <button type="submit" class="btn-like">&#9734; Like</button>
+                  <button type="submit" class="btn-like heart-button" id="heart-{{ article.id }}"></button>
                 </form>
               {% endif %}
             </div>

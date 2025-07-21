@@ -152,7 +152,7 @@ To get the **TechPulse: Your personalised tech news digest** running on your loc
     * Copy the content from `.env.example` and fill in your local database credentials.
     ```
     # .env example
-    DB_NAME=learning_stream_db
+    DB_NAME=TechPulse_db
     DB_USER=localuser
     DB_PASSWORD=localpassword
     DB_HOST=localhost

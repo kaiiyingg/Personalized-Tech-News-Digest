@@ -1,0 +1,155 @@
+# infra/application.yaml
+# Defines the AWS Elastic Beanstalk application and environment for the Flask app,
+# and an ECR repository for Docker images.
+# Imports network components from network.yaml and database endpoint from database.yaml.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for the TechPulse Elastic Beanstalk Application.
+
+Parameters:
+  # Import network outputs from the network stack
+  VPCId:
+    Type: String
+    Description: The ID of the VPC from the Network stack.
+    Default: !ImportValue TechPulse-Network-VPCId
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-delimited list of private subnet IDs from the Network stack.
+    Default: !ImportValue TechPulse-Network-PrivateSubnetIds 
+  ApplicationSecurityGroupId:
+    Type: String
+    Description: Security Group ID for the application from the Network stack.
+    Default: !ImportValue TechPulse-Network-ApplicationSecurityGroupId
+  
+  # Import database outputs for Flask app environment variables
+  DBEndpointAddress:
+    Type: String
+    Description: The endpoint address of the RDS DB instance from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBEndpointAddress
+    Type: String
+    Description: The port of the RDS DB instance from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBEndpointPort 
+  DBName:
+    Type: String
+    Description: The name of the database from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBName 
+  DBMasterUsername:
+    Type: String
+    Description: The master username for the database from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBMasterUsername 
+
+  # Application specific parameters
+  EnvironmentName:
+    Type: String
+    Default: techpulse-env 
+    Description: Name for the Elastic Beanstalk environment.
+  EBAppName:
+    Type: String
+    Default: TechPulseApp 
+    Description: Name for the Elastic Beanstalk application.
+  ECRRepositoryName:
+    Type: String
+    Default: techpulse-app-repo
+    Description: Name for the ECR repository for the Docker image.
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 instance type for Elastic Beanstalk instances.
+  KeyName:
+    Type: String
+    Description: EC2 Key Pair name for SSH access to Elastic Beanstalk instances.
+    ConstraintDescription: Must be an existing EC2 KeyPair. # Ensure you create this in EC2 Dashboard!
+
+Resources:
+  # ECR Repository for Docker Image
+  ApplicationECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref ECRRepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      Tags:
+        - Key: Name
+          Value: TechPulse-ECR-Repo
+
+  # Elastic Beanstalk Application (logical container for environments)
+  ElasticBeanstalkApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      Description: TechPulse Flask Application
+      ApplicationName: !Ref EBAppName
+
+  # Elastic Beanstalk Environment (where the application runs)
+  ElasticBeanstalkEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref EBAppName
+      EnvironmentName: !Ref EnvironmentName
+      SolutionStackName: "64bit Amazon Linux 2 v3.4.1 running Docker" # Or specific Python version if not using Docker directly
+      Tier:
+        Name: WebServer
+        Type: Standard
+      OptionSettings:
+        # VPC configuration
+        - Namespace: aws:ec2:vpc
+          OptionName: VPCId
+          Value: !Ref VPCId
+        - Namespace: aws:ec2:vpc
+          OptionName: Subnets
+          Value: !Join [",", !Ref PrivateSubnetIds] # Deploy to private subnets
+        - Namespace: aws:ec2:vpc
+          OptionName: ELBScheme
+          Value: public # Load balancer is public, but instances are private
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: SecurityGroups
+          Value: !Ref ApplicationSecurityGroupId # Attach App SG to instances
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: InstanceType
+          Value: !Ref InstanceType
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: EC2KeyName
+          Value: !Ref KeyName # For SSH access to instances
+        - Namespace: aws:autoscaling:asg
+          OptionName: MinSize
+          Value: 1 # Start with 1 instance for free tier
+        - Namespace: aws:autoscaling:asg
+          OptionName: MaxSize
+          Value: 1 # Keep at 1 for free tier
+        # Environment variables for the Flask application
+        # These will be accessed by os.getenv() in your Flask app.
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: FLASK_SECRET_KEY
+          Value: "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890" # LOCAL FLASK_SECRET_KEY
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_HOST
+          Value: !Ref DBEndpointAddress # From Database stack output
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_PORT
+          Value: !Ref DBEndpointPort
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_NAME
+          Value: !Ref DBName
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_USER
+          Value: !Ref DBMasterUsername
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_PASSWORD
+          Value: "T3chPulse!2025$secure" # RDS MASTER PASSWORD
+      Tags:
+        - Key: Name
+          Value: TechPulse-EB-Environment
+    DependsOn: ElasticBeanstalkApplication
+
+Outputs:
+  # Exported values for other CloudFormation stacks or direct use
+  EBEnvironmentURL:
+    Description: The URL of the Elastic Beanstalk environment
+    Value: !GetAtt ElasticBeanstalkEnvironment.EndpointURL
+    Export:
+      Name: !Sub "${AWS::StackName}-EBEnvironmentURL"
+
+  ECRRepositoryUri:
+    Description: The URI of the ECR repository
+    Value: !GetAtt ApplicationECRRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-ECRRepositoryUri"

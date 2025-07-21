@@ -1,0 +1,208 @@
+# infra/ingestion.yaml
+# Defines the serverless content ingestion pipeline:
+# SQS queue, Lambda functions (Orchestrator and Processor),
+# IAM roles, and a CloudWatch Event Rule for scheduling.
+# Imports network and database outputs.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for the TechPulse Content Ingestion Pipeline.
+
+Parameters:
+  # Import network outputs
+  VPCId:
+    Type: String
+    Description: The ID of the VPC from the Network stack.
+    Default: !ImportValue TechPulse-Network-VPCId
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-delimited list of private subnet IDs from the Network stack.
+    Default: !ImportValue TechPulse-Network-PrivateSubnetIds 
+  ApplicationSecurityGroupId:
+    Type: String
+    Description: Security Group ID for the application (Lambdas will use this for VPC access)
+    Default: !ImportValue TechPulse-Network-ApplicationSecurityGroupId 
+
+  # Import database outputs (Lambdas need to connect to RDS directly)
+  DBEndpointAddress:
+    Type: String
+    Description: The endpoint address of the RDS DB instance from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBEndpointAddress 
+  DBEndpointPort:
+    Type: String
+    Description: The port of the RDS DB instance from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBEndpointPort 
+  DBName:
+    Type: String
+    Description: The name of the database from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBName
+  DBMasterUsername:
+    Type: String
+    Description: The master username for the database from the Database stack.
+    Default: !ImportValue TechPulse-Database-DBMasterUsername
+  DBMasterUserPassword: # CRITICAL: REPLACE THIS VALUE
+    Type: String
+    NoEcho: true
+    Description: Master password for the database.
+    Default: "T3chPulse!2025$secure" # RDS MASTER PASSWORD
+
+  # Lambda code location parameters (these will be updated by CI/CD)
+  LambdaCodeS3Bucket: # CRITICAL: REPLACE THIS VALUE
+    Type: String
+    Description: S3 bucket name where Lambda deployment packages are stored.
+    Default: "techpulse-lambda-code-bucket-kaiiyingg" # GLOBALLY UNIQUE S3 BUCKET NAME (e.g., techpulse-lambda-code-yourgithubusername-123)
+  LambdaCodeS3KeyOrchestrator:
+    Type: String
+    Description: S3 key for the Ingestion Orchestrator Lambda deployment package.
+    Default: ingestion_orchestrator.zip
+  LambdaCodeS3KeyProcessor:
+    Type: String
+    Description: S3 key for the Content Processor Lambda deployment package.
+    Default: content_processor.zip
+
+Resources:
+  # SQS Queue for Content Processing
+  ContentProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: techpulse-content-processing-queue
+      VisibilityTimeout: 300 # 5 minutes (adjust based on expected processing time)
+      Tags:
+        - Key: Name
+          Value: TechPulse-ContentProcessingQueue
+
+  # IAM Role for Lambda Functions (shared by both Lambdas)
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole # For CloudWatch Logs
+      Policies:
+        - PolicyName: SQSAndRDSAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                Resource: !GetAtt ContentProcessingQueue.Arn
+              - Effect: Allow
+                Action:
+                  - rds-db:connect
+                # Resource: !Sub "arn:aws:rds:*:*:db-user:${DBInstanceIdentifier}/${DBMasterUsername}" # Use DB username directly
+                # This needs to be more generic like below for the role, as DBInstanceIdentifier might not be easy to get here.
+                Resource: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db-user:*/${DBMasterUsername}" # Connect to any user on any RDS instance in this account/region
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface # Required for Lambda in VPC
+                  - ec2:DescribeNetworkInterfaces # Required for Lambda in VPC
+                  - ec2:DeleteNetworkInterface # Required for Lambda in VPC
+                Resource: "*" # These actions might need broader resource permissions
+      Tags:
+        - Key: Name
+          Value: TechPulse-LambdaExecutionRole
+
+  # Ingestion Orchestrator Lambda Function
+  IngestionOrchestratorLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: techpulse-ingestion-orchestrator
+      Handler: ingestion_orchestrator.handler
+      Runtime: python3.9 # Ensure this matches your Python version in .venv and Dockerfile
+      MemorySize: 128
+      Timeout: 300
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: !Ref LambdaCodeS3KeyOrchestrator
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref ApplicationSecurityGroupId
+        SubnetIds: !Join [",", !Ref PrivateSubnetIds]
+      Environment:
+        Variables:
+          DB_HOST: !Ref DBEndpointAddress
+          DB_PORT: !Ref DBEndpointPort
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBMasterUsername
+          DB_PASSWORD: !Ref DBMasterUserPassword
+      Tags:
+        - Key: Name
+          Value: TechPulse-IngestionOrchestrator
+
+  # Content Processor Lambda Function
+  ContentProcessorLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: techpulse-content-processor
+      Handler: content_processor.handler
+      Runtime: python3.9
+      MemorySize: 256
+      Timeout: 300
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: !Ref LambdaCodeS3KeyProcessor
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref ApplicationSecurityGroupId
+        SubnetIds: !Join [",", !Ref PrivateSubnetIds]
+      Environment:
+        Variables:
+          DB_HOST: !Ref DBEndpointAddress
+          DB_PORT: !Ref DBEndpointPort
+          DB_NAME: !Ref DBName
+          DB_USER: !Ref DBMasterUsername
+          DB_PASSWORD: !Ref DBMasterUserPassword
+      Tags:
+        - Key: Name
+          Value: TechPulse-ContentProcessor
+
+  # CloudWatch Event Rule to schedule the Orchestrator Lambda
+  IngestionScheduler:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: TechPulse-IngestionScheduler
+      Description: Schedules the ingestion orchestrator Lambda to run periodically.
+      ScheduleExpression: rate(1 hour) # Runs every 1 hour. Adjust as needed (e.g., cron(0 0 * * ? *) for daily at midnight UTC)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IngestionOrchestratorLambda.Arn
+          Id: IngestionOrchestratorTarget
+
+  # Permission for CloudWatch Event to invoke the Lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt IngestionOrchestratorLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IngestionScheduler.Arn
+
+Outputs:
+  # Exported values for other CloudFormation stacks or direct use
+  ContentProcessingQueueUrl:
+    Description: URL of the SQS queue for content processing
+    Value: !Ref ContentProcessingQueue
+    Export:
+      Name: !Sub "TechPulse-Ingestion-ContentProcessingQueueUrl"
+
+  IngestionOrchestratorLambdaName:
+    Description: Name of the Ingestion Orchestrator Lambda function
+    Value: !Ref IngestionOrchestratorLambda
+    Export:
+      Name: !Sub "TechPulse-Ingestion-OrchestratorLambdaName"
+
+  ContentProcessorLambdaName:
+    Description: Name of the Content Processor Lambda function
+    Value: !Ref ContentProcessorLambda
+    Export:
+      Name: !Sub "TechPulse-Ingestion-ContentProcessorLambdaName"

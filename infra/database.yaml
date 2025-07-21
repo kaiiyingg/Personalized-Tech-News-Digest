@@ -1,0 +1,111 @@
+# infra/database.yaml
+# Defines the AWS RDS PostgreSQL database instance.
+# Imports network components from network.yaml.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for the TechPulse RDS PostgreSQL Database.
+
+Parameters:
+  # Import network outputs from the network stack
+  VPCId:
+    Type: String
+    Description: The ID of the VPC from the Network stack.
+    Default: !ImportValue TechPulse-Network-VPCId
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-delimited list of private subnet IDs from the Network stack.
+    Default: !ImportValue TechPulse-Network-PrivateSubnetIds 
+  DatabaseSecurityGroupId:
+    Type: String
+    Description: Security Group ID for the database from the Network stack.
+    Default: !ImportValue TechPulse-Network-DatabaseSecurityGroupId 
+
+  # Database specific parameters
+  DBInstanceIdentifier:
+    Type: String
+    Default: techpulse-db 
+    Description: Unique identifier for the RDS DB instance.
+  DBAllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: The amount of storage (in gigabytes) to be initially allocated for the DB instance.
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: The DB instance type (e.g., db.t3.micro).
+  DBMasterUsername:
+    Type: String
+    Default: masteruser
+    Description: Master username for the database.
+  DBMasterUserPassword: # Variable for the master password
+    Type: String
+    NoEcho: true
+    Description: Master password for the database.
+    Default: "T3chPulse!2025$secure" #STRONG PASSWORD
+  DBName:
+    Type: String
+    Default: techpulsedb
+    Description: The name of the database to create.
+  DBEngineVersion:
+    Type: String
+    Default: 15.4
+    Description: The version of the PostgreSQL database engine.
+
+Resources:
+  # DB Subnet Group (required for RDS in a VPC)
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for TechPulse RDS instance
+      SubnetIds: !Ref PrivateSubnetIds
+      Tags:
+        - Key: Name
+          Value: TechPulse-DBSubnetGroup
+
+  # RDS PostgreSQL Instance
+  TechPulseDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: postgres
+      EngineVersion: !Ref DBEngineVersion
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBMasterUserPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref DatabaseSecurityGroupId
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      Tags:
+        - Key: Name
+          Value: TechPulse-RDS-Instance
+    DeletionPolicy: Snapshot
+
+Outputs:
+  # Exported values for other CloudFormation stacks or direct use
+  DBEndpointAddress:
+    Description: The endpoint address of the RDS DB instance
+    Value: !GetAtt TechPulseDBInstance.Endpoint.Address
+    Export:
+      Name: !Sub "${AWS::StackName}-DBEndpointAddress"
+
+  DBEndpointPort:
+    Description: The port of the RDS DB instance
+    Value: !GetAtt TechPulseDBInstance.Endpoint.Port
+    Export:
+      Name: !Sub "${AWS::StackName}-DBEndpointPort"
+
+  DBName:
+    Description: The name of the database
+    Value: !Ref DBName
+    Export:
+      Name: !Sub "${AWS::StackName}-DBName"
+
+  DBMasterUsername:
+    Description: The master username for the database
+    Value: !Ref DBMasterUsername
+    Export:
+      Name: !Sub "${AWS::StackName}-DBMasterUsername"

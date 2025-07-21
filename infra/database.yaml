@@ -45,7 +45,7 @@ Parameters:
     Description: The name of the database to create.
   DBEngineVersion:
     Type: String
-    Default: "15.4"
+    Default: "15.8"
     Description: The version of the PostgreSQL database engine.
 
 Resources:
@@ -69,9 +69,8 @@ Resources:
       EngineVersion: !Ref DBEngineVersion
       MasterUsername: !Ref DBMasterUsername
       MasterUserPassword: !Ref DBMasterUserPassword
-      DBSubnetGroupName: !Ref DBSubnetGroup  
-      VpcSecurityGroupIds:
-        - !Ref DatabaseSecurityGroupId 
+      DBName: !Ref DBName
+      DBSubnetGroupName: !Ref DDBSubnetGroup  
       PubliclyAccessible: false
       BackupRetentionPeriod: 7
       MultiAZ: false

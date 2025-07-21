@@ -1,5 +1,5 @@
 import random
-import pyotp # type: ignore
+import pyotp 
 import os
 from functools import wraps
 from datetime import datetime
@@ -224,13 +224,15 @@ def fast():
     skipped = session.get('skipped_articles', set())
     # Get all articles for today (including read)
     all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
-    total_articles = len(all_articles)
-    articles_read = sum(1 for a in all_articles if a.get('is_read', False))
-    # Get unread articles for flashcard view
-    unread_articles = [a for a in all_articles if not a.get('is_read', False) and not a.get('is_liked', False)]
-    # Prioritize skipped articles at the top
-    skipped_articles = [a for a in unread_articles if a['id'] in skipped]
-    unskipped_articles = [a for a in unread_articles if a['id'] not in skipped]
+    # Filter out instruction items and count
+    actual_articles = [a for a in all_articles if a.get('id')]
+    total_articles = len(actual_articles)
+    articles_read = sum(1 for a in actual_articles if a.get('is_read', False))
+    # Get unread articles for flashcard view (already filtered for articles with ID)
+    unread_articles = [a for a in actual_articles if not a.get('is_read', False)]
+    # Prioritize skipped articles at the top - using safer get() method
+    skipped_articles = [a for a in unread_articles if a.get('id') in skipped]
+    unskipped_articles = [a for a in unread_articles if a.get('id') not in skipped]
     ordered_articles = skipped_articles + unskipped_articles
     article = ordered_articles[0] if ordered_articles else None
     return render_template(

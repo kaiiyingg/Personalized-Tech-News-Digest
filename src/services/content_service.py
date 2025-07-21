@@ -108,7 +108,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 c.id, c.source_id, c.title, c.summary, c.article_url,
                 c.published_at, c.topic,
                 uci.is_read, uci.is_liked, uci.interaction_at,
-                s.name AS source_name, s.feed_url AS source_feed_url
+                s.source_name AS source_name, s.feed_url AS source_feed_url
             FROM
                 content c
             JOIN
@@ -140,15 +140,14 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 'title': row[2],
                 'summary': row[3],
                 'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] else None,
-                # removed: ingested_at, updated_at
-                'topic': row[8],
-                'is_read': row[9] if row[9] is not None else False, # Default to False if no interaction record
-                'is_liked': row[10] if row[10] is not None else False, # Default to False
-                'is_saved': row[10] if row[10] is not None else False, # is_liked means saved
-                'interaction_at': row[11].isoformat() if row[11] else None,
-                'source_name': row[12],
-                'source_feed_url': row[13]
+                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'topic': row[6],
+                'is_read': row[7] if row[7] is not None else False, # Default to False if no interaction record
+                'is_liked': row[8] if row[8] is not None else False, # Default to False
+                'is_saved': row[8] if row[8] is not None else False, # is_liked means saved
+                'interaction_at': row[9].isoformat() if row[9] and hasattr(row[9], 'isoformat') else str(row[9]) if row[9] else None,
+                'source_name': row[10],
+                'source_feed_url': row[11]
             })
         # Add an aesthetic instruction for the user (for frontend display)
         digest_items.insert(0, {

@@ -6,12 +6,12 @@
         <div class="card-list">
             {% for article in articles if article.get('id') %}
                 <div class="card">
-                    <h3>{{ article.title }}</h3>
-                    <p>{{ article.summary }}</p>
-                    <p><strong>Source:</strong> {{ article.source_name }}</p>
-                    <p><strong>Topic:</strong> {{ article.topic }}</p>
-                    <a href="{{ article.article_url }}" target="_blank">Read full article</a>
-                    <form action="{{ url_for('unlike_article', article_id=article.id) }}" method="post" style="margin-top: 10px;">
+                    <h3>{{ article['title'] }}</h3>
+                    <p>{{ article['summary'] }}</p>
+                    <p><strong>Source:</strong> {{ article['source_name'] }}</p>
+                    <p><strong>Topic:</strong> {{ article['topic'] }}</p>
+                    <a href="{{ article['article_url'] }}" target="_blank">Read full article</a>
+                    <form action="{{ url_for('unlike_article', article_id=article['id']) }}" method="post" style="margin-top: 10px;">
                         <button type="submit" class="btn btn-warning">Remove from Favorites</button>
                     </form>
                 </div>

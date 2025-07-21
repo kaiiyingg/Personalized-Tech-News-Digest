@@ -16,32 +16,34 @@
         </button>
       </form>
     </div>
-    {% if articles and articles[0].instruction %}
-      {{ articles[0].instruction | safe }}
+    {% if articles and articles[0].get('instruction') %}
+      {{ articles[0]['instruction'] | safe }}
     {% endif %}
     {% if articles %}
       <div class="articles-list">
         {% for article in articles %}
+          {% if not article.get('instruction') %}
           <div class="article-card">
-            <h3>{{ article.title }}</h3>
-            <div style="margin-bottom:0.7em;"><a href="{{ article.article_url }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
+            <h3>{{ article['title'] }}</h3>
+            <div style="margin-bottom:0.7em;"><a href="{{ article['article_url'] }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
             <div class="article-meta">
-              <span class="source">Source: {{ article.source_name }}</span>
-              <span class="date">Published: {{ article.published_at or 'No date' }}</span>
+              <span class="source">Source: {{ article['source_name'] }}</span>
+              <span class="date">Published: {{ article['published_at'] or 'No date' }}</span>
             </div>
-            <p>{{ article.summary }}</p>
+            <p>{{ article['summary'] }}</p>
             <div class="article-actions">
-              {% if article.is_liked %}
-                <form method="POST" action="{{ url_for('unlike_article', article_id=article.id) }}" style="display:inline;">
+              {% if article['is_liked'] %}
+                <form method="POST" action="{{ url_for('unlike_article', article_id=article['id']) }}" style="display:inline;">
                   <button type="submit" class="btn-like liked">&#9733; Liked</button>
                 </form>
               {% else %}
-                <form method="POST" action="{{ url_for('like_article', article_id=article.id) }}" style="display:inline;">
-                  <button type="submit" class="btn-like heart-button" id="heart-{{ article.id }}"></button>
+                <form method="POST" action="{{ url_for('like_article', article_id=article['id']) }}" style="display:inline;">
+                  <button type="submit" class="btn-like heart-button" id="heart-{{ article['id'] }}"></button>
                 </form>
               {% endif %}
             </div>
           </div>
+          {% endif %}
         {% endfor %}
       </div>
     {% endif %}

@@ -8,34 +8,38 @@
                 <i class="ph-skip-back"></i>
             </button>
         </div>
-        <div class="flashcard" data-article-id="{{ article.id }}" style="flex:1; max-width:500px;">
+        <div class="flashcard" data-article-id="{{ article['id'] }}" style="flex:1; max-width:460px;">
             <div class="flashcard-image">
-                {% if article.image_url %}
-                    <img src="{{ article.image_url }}" alt="Article image">
+                {% if article['image_url'] %}
+                    <img src="{{ article['image_url'] }}" alt="Article image">
                 {% else %}
                     <div class="placeholder-image">📰</div>
                 {% endif %}
             </div>
             <div class="flashcard-content">
-                <h2>{{ article.title }}</h2>
-                <div style="margin-bottom:0.7em;"><a href="{{ article.article_url }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
+                <h2>{{ article['title'] }}</h2>
                 <div class="meta">
-                    <span class="source">Source: {{ article.source_name }}</span>
-                    <span class="date">{{ article.published_at or 'No date' }}</span>
-                    <span class="topic">Topic: {{ article.topic }}</span>
-                    {% if article.is_read %}
-                      <span class="read-indicator" style="color: #00bfff; font-weight: bold; margin-left: 1em;">&#10003; Read</span>
-                    {% endif %}
+                    <div>Source: {{ article['source_name'] }}</div>
+                    <div>{{ article['published_at'] or 'No date' }}</div>
+                    <div>Topic: {{ article['topic'] }}</div>
                 </div>
-                <p>{{ article.summary }}</p>
+                <p>{{ article['summary'] }}</p>
+                <a href="{{ article['article_url'] }}" target="_blank" class="read-more-button">Read More</a>
             </div>
             <div class="flashcard-actions">
-                <form method="POST" action="{{ url_for('like_article', article_id=article.id, next='fast') }}" style="display:inline;">
-                    <button type="submit" class="btn-like-flash heart-button" id="heart"></button>
-                </form>
-                <form method="POST" action="{{ url_for('skip_article', article_id=article.id) }}" style="display:inline;">
-                    <button type="submit" class="btn-skip">Skip</button>
-                </form>
+                <div>
+                    {% if article['is_read'] %}
+                        <span class="read-indicator-icon" title="Read">📖</span>
+                    {% endif %}
+                </div>
+                <div class="action-buttons-right">
+                    <form method="POST" action="{{ url_for('like_article', article_id=article['id'], next='fast') }}" style="display:inline;">
+                        <button type="submit" class="btn-like-flash heart-button" id="heart" title="Like"></button>
+                    </form>
+                    <form method="POST" action="{{ url_for('skip_article', article_id=article['id']) }}" style="display:inline;">
+                        <button type="submit" class="btn-skip" title="Skip">Skip</button>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="button-row" style="flex-shrink:0;">

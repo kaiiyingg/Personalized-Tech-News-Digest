@@ -10,20 +10,17 @@ Parameters:
   VPCId:
     Type: String
     Description: The ID of the VPC from the Network stack.
-    Default: !ImportValue TechPulse-Network-VPCId
   PrivateSubnetIds:
     Type: CommaDelimitedList
     Description: Comma-delimited list of private subnet IDs from the Network stack.
-    Default: !ImportValue TechPulse-Network-PrivateSubnetIds 
   DatabaseSecurityGroupId:
     Type: String
     Description: Security Group ID for the database from the Network stack.
-    Default: !ImportValue TechPulse-Network-DatabaseSecurityGroupId 
 
   # Database specific parameters
   DBInstanceIdentifier:
     Type: String
-    Default: techpulse-db 
+    Default: "techpulse-db"
     Description: Unique identifier for the RDS DB instance.
   DBAllocatedStorage:
     Type: Number
@@ -31,11 +28,11 @@ Parameters:
     Description: The amount of storage (in gigabytes) to be initially allocated for the DB instance.
   DBInstanceClass:
     Type: String
-    Default: db.t3.micro
+    Default: "db.t3.micro"
     Description: The DB instance type (e.g., db.t3.micro).
   DBMasterUsername:
     Type: String
-    Default: masteruser
+    Default: "masteruser"
     Description: Master username for the database.
   DBMasterUserPassword: # Variable for the master password
     Type: String
@@ -44,24 +41,23 @@ Parameters:
     Default: "T3chPulse!2025$secure" #STRONG PASSWORD
   DBName:
     Type: String
-    Default: techpulsedb
+    Default: "techpulsedb"
     Description: The name of the database to create.
   DBEngineVersion:
     Type: String
-    Default: 15.4
+    Default: "15.4"
     Description: The version of the PostgreSQL database engine.
 
 Resources:
   # DB Subnet Group (required for RDS in a VPC)
-  DBSubnetGroup:
+  DDBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: Subnet group for TechPulse RDS instance
-      SubnetIds: !Ref PrivateSubnetIds
+      SubnetIds: !Ref PrivateSubnetIds 
       Tags:
         - Key: Name
           Value: TechPulse-DBSubnetGroup
-
   # RDS PostgreSQL Instance
   TechPulseDBInstance:
     Type: AWS::RDS::DBInstance
@@ -73,9 +69,9 @@ Resources:
       EngineVersion: !Ref DBEngineVersion
       MasterUsername: !Ref DBMasterUsername
       MasterUserPassword: !Ref DBMasterUserPassword
-      DBSubnetGroupName: !Ref DBSubnetGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup  
       VpcSecurityGroupIds:
-        - !Ref DatabaseSecurityGroupId
+        - !Ref DatabaseSecurityGroupId 
       PubliclyAccessible: false
       BackupRetentionPeriod: 7
       MultiAZ: false

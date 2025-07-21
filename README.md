@@ -141,7 +141,7 @@ To get the **TechPulse: Your personalised tech news digest** running on your loc
 2.  **Create and activate a Python virtual environment:**
     ```bash
     python3 -m venv .venv
-    source .venv/bin/activate
+    source .venv/bin/activate.ps1
     ```
 3.  **Install Python dependencies:**
     ```bash

@@ -123,6 +123,9 @@ def register():
 @app.route('/setup_totp', methods=['GET'])
 def setup_totp():
     email = session.get('setup_email')
+    if not email:
+        flash('No email found for TOTP setup.', 'danger')
+        return redirect(url_for('register'))
     user = find_user_by_email(email)
     if not user:
         flash('No account found for TOTP setup.', 'danger')

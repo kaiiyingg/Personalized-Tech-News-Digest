@@ -95,7 +95,7 @@ Resources:
       VpcId: !Ref TechPulseVPC 
       CidrBlock: !Ref PublicSubnet1Cidr
       # Selects the first available Availability Zone in the region
-      AvailabilityZone: !Select [0, !GetAtt TechPulseVPC.AvailabilityZones]
+      AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true # Automatically assigns a public IP to instances launched in this subnet
       Tags:
         - Key: Name
@@ -107,7 +107,7 @@ Resources:
       VpcId: !Ref TechPulseVPC
       CidrBlock: !Ref PublicSubnet2Cidr
       # Selects the second available Availability Zone in the region
-      AvailabilityZone: !Select [1, !GetAtt TechPulseVPC.AvailabilityZones]
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -140,7 +140,7 @@ Resources:
     Properties:
       VpcId: !Ref TechPulseVPC 
       CidrBlock: !Ref PrivateSubnet1Cidr
-      AvailabilityZone: !Select [0, !GetAtt TechPulseVPC.AvailabilityZones]
+      AvailabilityZone: !Select [0, !GetAZs '']
       Tags:
         - Key: Name
           Value: TechPulse-PrivateSubnet-1 
@@ -150,7 +150,7 @@ Resources:
     Properties:
       VpcId: !Ref TechPulseVPC 
       CidrBlock: !Ref PrivateSubnet2Cidr
-      AvailabilityZone: !Select [1, !GetAtt TechPulseVPC.AvailabilityZones]
+      AvailabilityZone: !Select [1, !GetAZs '']
       Tags:
         - Key: Name
           Value: TechPulse-PrivateSubnet-2 

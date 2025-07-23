@@ -1246,3 +1246,51 @@ a:hover {
     font-size: 1.5rem;
   }
 }
+
+/* Read article dimming effect */
+.article-read {
+  opacity: 0.6 !important;
+  filter: grayscale(20%) !important;
+}
+
+.article-read:hover {
+  opacity: 0.8 !important;
+}
+
+/* Custom scrollbar for horizontal scroll */
+.topic-articles::-webkit-scrollbar {
+  height: 8px;
+}
+.topic-articles::-webkit-scrollbar-track {
+  background: #2a2e36;
+  border-radius: 4px;
+}
+.topic-articles::-webkit-scrollbar-thumb {
+  background: #00bfff;
+  border-radius: 4px;
+}
+.topic-articles::-webkit-scrollbar-thumb:hover {
+  background: #0099cc;
+}
+
+/* Card hover effects */
+.topic-article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+.read-more-btn:hover {
+  background: #7C3AED !important;
+  text-decoration: none;
+}
+
+/* Topic-based responsive design */
+@media (max-width: 768px) {
+  .topic-article-card {
+    flex: 0 0 250px !important;
+    padding: 1rem !important;
+  }
+  .article-image, .article-image-placeholder {
+    height: 120px !important;
+  }
+}

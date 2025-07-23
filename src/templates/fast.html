@@ -8,7 +8,7 @@
                 <i class="ph-skip-back"></i>
             </button>
         </div>
-        <div class="flashcard" data-article-id="{{ article['id'] }}" style="flex:1; max-width:460px;">
+        <div class="flashcard {% if article['is_read'] %}article-read{% endif %}" data-article-id="{{ article['id'] }}" style="flex:1; max-width:460px;">
             <div class="flashcard-image">
                 {% if article['image_url'] %}
                     <img src="{{ article['image_url'] }}" alt="Article image">
@@ -27,15 +27,16 @@
                 <a href="{{ article['article_url'] }}" target="_blank" class="read-more-button">Read More</a>
             </div>
             <div class="flashcard-actions">
-                <div>
-                    {% if article['is_read'] %}
-                        <span class="read-indicator-icon" title="Read">📖</span>
-                    {% endif %}
-                </div>
                 <div class="action-buttons-right">
-                    <form method="POST" action="{{ url_for('like_article', article_id=article['id'], next='fast') }}" style="display:inline;">
-                        <button type="submit" class="btn-like-flash heart-button" id="heart" title="Like"></button>
-                    </form>
+                    {% if article['is_liked'] %}
+                        <form method="POST" action="{{ url_for('unlike_article', article_id=article['id']) }}" style="display:inline;">
+                            <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button active" title="Unlike"></button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('like_article', article_id=article['id'], next='fast') }}" style="display:inline;">
+                            <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button" title="Like"></button>
+                        </form>
+                    {% endif %}
                     <form method="POST" action="{{ url_for('skip_article', article_id=article['id']) }}" style="display:inline;">
                         <button type="submit" class="btn-skip" title="Skip">Skip</button>
                     </form>

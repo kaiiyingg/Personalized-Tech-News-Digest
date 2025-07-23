@@ -3,12 +3,11 @@ import pyotp
 import os
 from functools import wraps
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify # type: ignore
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from src.services.user_service import create_user, check_password, find_user_by_email, update_user_password
-from src.services.source_service import get_sources_by_user, create_source, update_source, delete_source, get_source_by_id
-from src.services.content_service import get_personalized_digest, mark_content_as_read, toggle_content_liked, update_content_liked
-from src.models.user import User
-from src.models.source import Source
+from src.services.source_service import get_sources_by_user
+from src.services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
+from src.services.content_service import get_articles_by_topics
 
 # ------------------- APP CONFIG -------------------
 app = Flask(__name__)
@@ -39,13 +38,17 @@ def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
-    articles = get_personalized_digest(user_id)
+    
+    # Get articles grouped by topics
+    topics_articles = get_articles_by_topics(user_id, limit_per_topic=8)
+    
     username = session.get('username')
     current_year = datetime.now().year
-    # Optionally add more context: sources_count, liked_count, etc.
-    return render_template('index.html', articles=articles, username=username, current_year=current_year)
-
-
+    
+    return render_template('index.html', 
+                         topics_articles=topics_articles, 
+                         username=username, 
+                         current_year=current_year)
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():

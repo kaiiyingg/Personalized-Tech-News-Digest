@@ -7,7 +7,8 @@
       Good to See You, {{ username }}! Your Pulse is Live
       <img src="/static/imgs/BlueHeartbeat.jpg" alt="Blue heartbeat" style="height: 1.2em; vertical-align: middle; margin-left: 0.3em;">
     </h2>
-    <div class="search-bar-wrapper" style="width:100%; display:flex; justify-content:center; align-items:center; margin-bottom:2.5rem;">
+    
+    <div class="search-bar-wrapper" style="width:100%; display:flex; justify-content:center; align-items:center; margin-bottom:3rem;">
       <form class="search-form" method="GET" action="{{ url_for('index') }}" style="display: flex; align-items: center; gap: 1.2rem; max-width: 700px; width:100%; justify-content:center;">
         <input type="text" name="q" placeholder="Explore tech news…" value="{{ request.args.get('q', '') }}" style="flex: 1; min-width: 300px; max-width: 500px; font-size: 1.5rem; height: 60px; padding: 0 2rem; border-radius: 100px; border: 2px solid #00bfff; background: transparent; color: #e3e3e3; box-sizing: border-box; vertical-align: middle; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:600;">
         <button type="submit" class="super-button" style="height: 60px; padding: 0 32px; font-size: 1.3rem; min-width: 120px; border-radius: 100px; display: flex; align-items: center; justify-content: center; vertical-align: middle; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:700;">
@@ -16,35 +17,71 @@
         </button>
       </form>
     </div>
-    {% if articles and articles[0].get('instruction') %}
-      {{ articles[0]['instruction'] | safe }}
-    {% endif %}
-    {% if articles %}
-      <div class="articles-list">
-        {% for article in articles %}
-          {% if not article.get('instruction') %}
-          <div class="article-card">
-            <h3>{{ article['title'] }}</h3>
-            <div style="margin-bottom:0.7em;"><a href="{{ article['article_url'] }}" target="_blank" style="color:#00bfff; font-weight:600; text-decoration:underline;">Full Article</a></div>
-            <div class="article-meta">
-              <span class="source">Source: {{ article['source_name'] }}</span>
-              <span class="date">Published: {{ article['published_at'] or 'No date' }}</span>
-            </div>
-            <p>{{ article['summary'] }}</p>
-            <div class="article-actions">
-              {% if article['is_liked'] %}
-                <form method="POST" action="{{ url_for('unlike_article', article_id=article['id']) }}" style="display:inline;">
-                  <button type="submit" class="btn-like liked">&#9733; Liked</button>
-                </form>
+
+    <!-- Topics Section -->
+    {% if topics_articles %}
+      {% for topic, articles in topics_articles.items() %}
+        <div class="topic-section" style="margin-bottom: 3rem;">
+          <div class="topic-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
+              {% if topic == "Recommended For You" %}
+                <span style="color: #00bfff;">🌟</span> {{ topic }}
               {% else %}
-                <form method="POST" action="{{ url_for('like_article', article_id=article['id']) }}" style="display:inline;">
-                  <button type="submit" class="btn-like heart-button" id="heart-{{ article['id'] }}"></button>
-                </form>
+                {{ topic }}
               {% endif %}
+            </h3>
+            <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem;">{{ articles|length }} articles</span>
+          </div>
+          
+          <div class="topic-articles-container" style="position: relative;">
+            <div class="topic-articles" style="display: flex; gap: 1.5rem; overflow-x: auto; padding: 0.5rem 0 1rem; scroll-behavior: smooth; scrollbar-width: thin;">
+              {% for article in articles %}
+                <div class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                  {% if article.get('image_url') %}
+                    <div class="article-image" style="width: 100%; height: 160px; background-image: url('{{ article['image_url'] }}'); background-size: cover; background-position: center; border-radius: 0.8rem; margin-bottom: 1rem;"></div>
+                  {% else %}
+                    <div class="article-image-placeholder" style="width: 100%; height: 160px; background: #3a3e46; border-radius: 0.8rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem;">📰</div>
+                  {% endif %}
+                  
+                  <h4 class="article-title" style="font-size: 1.1rem; font-family: 'Merriweather', serif; font-weight: 600; color: #fff; margin-bottom: 0.8rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{ article['title'] }}
+                  </h4>
+                  
+                  <div class="article-meta" style="margin-bottom: 0.8rem;">
+                    <span style="color: #00bfff; font-size: 0.85rem; font-weight: 600;">{{ article['source_name'] }}</span>
+                    <span style="color: #b3b3b3; font-size: 0.8rem; margin-left: 0.5rem;">{{ article['published_at'][:10] if article['published_at'] else 'No date' }}</span>
+                  </div>
+                  
+                  <p class="article-summary" style="color: #c8c8c8; font-size: 0.9rem; line-height: 1.4; margin-bottom: 1.2rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{ article['summary'] }}
+                  </p>
+                  
+                  <div class="article-actions" style="display: flex; align-items: center; justify-content: space-between;">
+                    <a href="{{ article['article_url'] }}" target="_blank" class="read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
+                      Read More
+                    </a>
+                    <div class="action-buttons" style="display: flex; gap: 0.5rem;">
+                      {% if article['is_liked'] %}
+                        <form method="POST" action="{{ url_for('unlike_article', article_id=article['id']) }}" style="display:inline;">
+                          <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button active" title="Unlike"></button>
+                        </form>
+                      {% else %}
+                        <form method="POST" action="{{ url_for('like_article', article_id=article['id']) }}" style="display:inline;">
+                          <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button" title="Like"></button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
             </div>
           </div>
-          {% endif %}
-        {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="text-align: center; padding: 3rem; color: #b3b3b3;">
+        <h3>No articles available yet</h3>
+        <p>Check back later for fresh content!</p>
       </div>
     {% endif %}
   </div>

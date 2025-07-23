@@ -9,27 +9,57 @@ def assign_topic(title: str, summary: str) -> str:
     Assigns a topic to content based on keywords in the title or summary.
     """
     text = f"{title} {summary}".lower()
-    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta"]):
-        return "Big Tech & Industry Trends"
-    if any(word in text for word in ["launch", "update", "release", "feature"]):
-        return "Product Launches & Updates"
-    if any(word in text for word in ["startup", "funding", "acquisition", "vc", "unicorn"]):
-        return "Startups & Funding"
-    if any(word in text for word in ["ai", "machine learning", "deep learning", "model", "gpt", "llm"]):
-        return "AI & Machine Learning"
-    if any(word in text for word in ["security", "cyber", "breach", "privacy", "threat"]):
+    
+    # AI & Machine Learning
+    if any(word in text for word in ["ai", "artificial intelligence", "machine learning", "ml", "deep learning", "neural network", "neural networks", "nlp", "natural language processing", "computer vision", "ai model", "ai models", "gpt", "llm", "large language model", "transformer", "algorithm", "chatbot", "openai", "anthropic", "ai ethics", "ai research", "generative ai", "supervised learning", "unsupervised learning", "reinforcement learning", "tensorflow", "pytorch", "scikit-learn"]):
+        return "Artificial Intelligence (AI) & Machine Learning (ML)"
+    
+    # Cloud Computing & DevOps
+    if any(word in text for word in ["cloud", "aws", "amazon web services", "azure", "microsoft azure", "gcp", "google cloud", "google cloud platform", "devops", "infrastructure", "ci/cd", "continuous integration", "continuous deployment", "kubernetes", "docker", "container", "containerization", "serverless", "lambda", "microservices", "cloud security", "multi-cloud", "automation tools", "infrastructure as code", "iac", "terraform", "ansible", "jenkins", "gitlab ci", "cloud provider", "cloud computing", "cloud migration"]):
+        return "Cloud Computing & DevOps"
+    
+    # Software Development & Web Technologies
+    if any(word in text for word in ["web", "javascript", "react", "vue", "angular", "node.js", "python", "java", "spring", "django", "flask", "ruby", "rails", "php", "laravel", "programming language", "framework", "library", "programming", "coding", "github", "api", "rest api", "graphql", "frontend", "backend", "full-stack", "agile", "scrum", "development methodology", "web development", "mobile development", "software engineering", "code", "developer tools", "vs code", "ide", "git", "version control"]):
+        return "Software Development & Web Technologies"
+    
+    # Cybersecurity & Privacy
+    if any(word in text for word in ["security", "cyber", "cybersecurity", "breach", "data breach", "privacy", "threat", "hack", "hacker", "vulnerability", "encryption", "malware", "phishing", "ransomware", "zero-day", "firewall", "vpn", "password", "authentication", "authorization", "gdpr", "privacy regulation", "data protection", "security tool", "penetration testing", "incident response", "cyber attack", "security policy", "compliance", "pci dss", "iso 27001"]):
         return "Cybersecurity & Privacy"
-    if any(word in text for word in ["fintech", "crypto", "blockchain", "defi", "bitcoin", "ethereum"]):
-        return "FinTech & Crypto"
-    if any(word in text for word in ["web", "javascript", "react", "vue", "angular", "dev tool", "library", "framework"]):
-        return "Web Development & Dev Tools"
-    if any(word in text for word in ["cloud", "aws", "azure", "gcp", "devops", "infrastructure", "ci/cd"]):
-        return "Cloud, DevOps & Infrastructure"
-    if any(word in text for word in ["policy", "regulation", "antitrust", "law", "ban", "government"]):
-        return "Policy, Regulation & Antitrust"
-    if any(word in text for word in ["culture", "work", "layoff", "remote", "productivity", "diversity"]):
+    
+    # Data Science & Analytics
+    if any(word in text for word in ["data", "analytics", "big data", "data science", "database", "sql", "nosql", "visualization", "data visualization", "business intelligence", "bi", "statistics", "metrics", "insight", "data warehouse", "data warehousing", "data governance", "etl", "data pipeline", "pandas", "numpy", "tableau", "power bi", "apache spark", "hadoop", "data mining", "predictive analytics", "data analysis", "statistical analysis", "data processing"]):
+        return "Data Science & Analytics"
+    
+    # Emerging Technologies
+    if any(word in text for word in ["quantum", "quantum computing", "quantum computer", "vr", "ar", "virtual reality", "augmented reality", "mixed reality", "blockchain", "web3", "metaverse", "iot", "internet of things", "5g", "6g", "edge computing", "robotics", "robot", "biotechnology", "biotech", "nanotechnology", "3d printing", "additive manufacturing", "autonomous", "self-driving", "drone", "uav", "wearable", "smart city", "digital twin"]):
+        return "Emerging Technologies"
+    
+    # Hardware & Consumer Tech
+    if any(word in text for word in ["iphone", "android", "smartphone", "tablet", "laptop", "desktop", "processor", "cpu", "gpu", "chip", "semiconductor", "hardware", "gadget", "device", "samsung", "xiaomi", "oneplus", "apple watch", "smart home", "smart device", "consumer electronics", "gaming console", "headphones", "earbuds", "camera", "display", "monitor", "tv", "smart tv", "wearable device", "fitness tracker"]):
+        return "Hardware & Consumer Tech"
+    
+    # Big Tech & Industry Trends
+    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta", "facebook", "tesla", "nvidia", "netflix", "adobe", "salesforce", "oracle", "ibm", "intel", "acquisition", "merger", "ipo", "earnings", "revenue", "stock", "valuation", "funding", "investment", "venture capital", "startup", "unicorn", "industry trend", "market share", "competition", "partnership", "strategic alliance", "layoffs", "hiring"]):
+        return "Big Tech & Industry Trends"
+    
+    # Fintech & Crypto
+    if any(word in text for word in ["fintech", "financial technology", "crypto", "cryptocurrency", "bitcoin", "ethereum", "defi", "decentralized finance", "nft", "non-fungible token", "payment", "digital payment", "wallet", "digital wallet", "trading", "finance", "banking", "mobile payment", "blockchain finance", "stablecoin", "yield farming", "liquidity mining", "smart contract", "dao", "central bank digital currency", "cbdc", "paypal", "stripe", "square", "coinbase"]):
+        return "Fintech & Crypto"
+    
+    # Tech Policy & Regulation
+    if any(word in text for word in ["policy", "regulation", "antitrust", "law", "legal", "ban", "government", "congress", "senate", "gdpr", "compliance", "regulatory", "legislation", "court", "lawsuit", "fine", "penalty", "data governance", "internet regulation", "net neutrality", "privacy law", "digital rights", "content moderation", "platform regulation", "tech policy", "digital act", "competition law", "monopoly"]):
+        return "Tech Policy & Regulation"
+    
+    # Tech Culture & Work
+    if any(word in text for word in ["culture", "work", "workplace", "layoff", "layoffs", "remote", "remote work", "work from home", "wfh", "productivity", "diversity", "inclusion", "hiring", "talent", "startup", "funding", "career", "workplace culture", "employee", "team", "management", "leadership", "work-life balance", "burnout", "resignation", "job market", "tech jobs", "salary", "compensation", "benefits", "company culture"]):
         return "Tech Culture & Work"
-    return "Other"
+    
+    # Open Source
+    if any(word in text for word in ["open source", "opensource", "github", "gitlab", "linux", "ubuntu", "debian", "apache", "mozilla", "firefox", "gnu", "mit license", "gpl", "contributor", "community", "fork", "pull request", "commit", "repository", "repo", "open-source project", "free software", "copyleft", "creative commons", "kernel", "operating system", "open source software", "oss", "foss", "free and open source"]):
+        return "Open Source"
+    
+    # Default fallback
+    return "Emerging Technologies"
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:
@@ -219,3 +249,92 @@ def toggle_content_liked(user_id: int, content_item_id: int, is_liked: bool) -> 
 def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = True) -> bool:
     """Marks a content item as liked (and saved) for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+
+
+def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Get articles grouped by topics for the main page display.
+    Returns a dictionary with topic names as keys and lists of articles as values.
+    """
+    from collections import defaultdict
+    
+    # Get all articles for the user
+    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=False)
+    
+    # Filter out instruction items
+    articles = [a for a in all_articles if a.get('id')]
+    
+    # Group articles by topic
+    topics_dict = defaultdict(list)
+    
+    # Define topic order 
+    topic_order = [
+        "Recommended For You",
+        "Artificial Intelligence (AI) & Machine Learning (ML)",
+        "Cybersecurity & Privacy", 
+        "Cloud Computing & DevOps",
+        "Software Development & Web Technologies",
+        "Data Science & Analytics",
+        "Emerging Technologies",
+        "Hardware & Consumer Tech",
+        "Big Tech & Industry Trends",
+        "Fintech & Crypto",
+        "Tech Policy & Regulation",
+        "Tech Culture & Work",
+        "Open Source"
+    ]
+    
+    # Get user's liked topics for recommendations
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get topics the user has liked before
+        cur.execute("""
+            SELECT c.topic, COUNT(*) as like_count
+            FROM content c
+            JOIN sources s ON c.source_id = s.id
+            JOIN user_content_interactions uci ON c.id = uci.content_id
+            WHERE s.user_id = %s AND uci.user_id = %s AND uci.is_liked = TRUE
+            GROUP BY c.topic
+            ORDER BY like_count DESC
+        """, (user_id, user_id))
+        
+        liked_topics = [row[0] for row in cur.fetchall()]
+        
+    except Exception as e:
+        print(f"Error getting liked topics: {e}")
+        liked_topics = []
+    finally:
+        if conn:
+            close_db_connection(conn)
+    
+    # Create "Recommended For You" section
+    recommended_articles = []
+    
+    # Add recent articles from user's favorite topics
+    for topic in liked_topics[:3]:  # Top 3 liked topics
+        topic_articles = [a for a in articles if a.get('topic') == topic]
+        recommended_articles.extend(topic_articles[:3])  # 3 articles per favorite topic
+    
+    # Fill remaining with most recent articles if needed
+    if len(recommended_articles) < limit_per_topic:
+        recent_articles = [a for a in articles if a not in recommended_articles]
+        recommended_articles.extend(recent_articles[:limit_per_topic - len(recommended_articles)])
+    
+    topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]
+    
+    # Group remaining articles by their assigned topics
+    for article in articles:
+        topic = article.get('topic', 'Emerging Technologies')
+        if topic != "Recommended For You":  # Don't duplicate recommended articles
+            topics_dict[topic].append(article)
+    
+    # Limit articles per topic and maintain order
+    ordered_topics = {}
+    for topic in topic_order:
+        if topic in topics_dict and topics_dict[topic]:
+            ordered_topics[topic] = topics_dict[topic][:limit_per_topic]
+    
+    return ordered_topics

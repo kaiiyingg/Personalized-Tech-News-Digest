@@ -1,3 +1,4 @@
+ <!-- Parent html file for index, fast and favorites html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +33,12 @@
     <footer class="footer">
         <p>&copy; {{ current_year }} TechPulse &mdash; Your personalised tech news digest by Chong Kai Ying</p>
     </footer>
+    
+    <!-- Common scripts for heart button animations -->
+    <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/heart.js') }}"></script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

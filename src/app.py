@@ -28,12 +28,8 @@ def login_required_api(f):
 
 # ------------------- ROUTES -------------------
 
-# --- Discover route: redirect to login page ---
+# --- Home/Discover route: latest summaries, daily digest ---
 @app.route('/', methods=['GET'])
-def discover():
-    return redirect(url_for('login'))
-
-@app.route('/index', methods=['GET'])
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -49,6 +45,11 @@ def index():
                          topics_articles=topics_articles, 
                          username=username, 
                          current_year=current_year)
+
+# --- Legacy route for backward compatibility ---
+@app.route('/index', methods=['GET'])
+def discover():
+    return redirect(url_for('index'))
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -83,6 +84,7 @@ def reset_password():
         flash('Password reset successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html')
+
 # --- Article Interaction Routes for Dashboard Forms ---
 @app.route('/mark_read/<int:article_id>', methods=['POST'])
 def mark_read(article_id):
@@ -146,6 +148,7 @@ def register():
             flash('Username or email already exists. Please try again.', 'danger')
             return render_template('register.html')
     return render_template('register.html')
+
 # --- TOTP Setup Page ---
 @app.route('/setup_totp', methods=['GET'])
 def setup_totp():
@@ -203,7 +206,6 @@ def get_sources():
             'user_id': s.user_id,
             'name': s.name,
             'feed_url': s.feed_url,
-            'type': s.type,
             'last_fetched_at': s.last_fetched_at.isoformat() if s.last_fetched_at else None,
             'created_at': s.created_at.isoformat(),
             'updated_at': s.updated_at.isoformat() if s.updated_at else None
@@ -235,12 +237,36 @@ def mark_content_read_api(content_id):
 @app.route('/api/content/<int:content_id>/like', methods=['POST'])
 @login_required_api
 def like_content_api(content_id):
-    user_id = session['user_id']
-    success = update_content_liked(user_id, content_id, is_liked=True)
-    if success:
-        return jsonify({'message': 'Content liked & saved.'}), 200
-    else:
-        return jsonify({'error': 'Failed to like content.'}), 400
+    try:
+        user_id = session['user_id']
+        print(f"Like API called - User ID: {user_id}, Content ID: {content_id}")
+        success = update_content_liked(user_id, content_id, is_liked=True)
+        if success:
+            print(f"Successfully liked content {content_id} for user {user_id}")
+            return jsonify({'message': 'Content liked & saved.'}), 200
+        else:
+            print(f"Failed to like content {content_id} for user {user_id}")
+            return jsonify({'error': 'Failed to like content.'}), 400
+    except Exception as e:
+        print(f"Error in like_content_api: {e}")
+        return jsonify({'error': 'Internal server error.'}), 500
+
+@app.route('/api/content/<int:content_id>/unlike', methods=['POST'])
+@login_required_api
+def unlike_content_api(content_id):
+    try:
+        user_id = session['user_id']
+        print(f"Unlike API called - User ID: {user_id}, Content ID: {content_id}")
+        success = update_content_liked(user_id, content_id, is_liked=False)
+        if success:
+            print(f"Successfully unliked content {content_id} for user {user_id}")
+            return jsonify({'message': 'Content unliked & removed from favorites.'}), 200
+        else:
+            print(f"Failed to unlike content {content_id} for user {user_id}")
+            return jsonify({'error': 'Failed to unlike content.'}), 400
+    except Exception as e:
+        print(f"Error in unlike_content_api: {e}")
+        return jsonify({'error': 'Internal server error.'}), 500
 
 # --- Fast Flashcard View ---
 @app.route('/fast', methods=['GET'])

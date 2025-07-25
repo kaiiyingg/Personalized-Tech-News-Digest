@@ -197,38 +197,56 @@ def _upsert_user_content_interaction(user_id: int, content_item_id: int,
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Build SET clause dynamically for UPDATE part of UPSERT
-        set_clauses = []
-        params = []
-
+        # Build the query dynamically based on which fields are being updated
+        update_fields = []
+        update_values = []
+        
         if is_read is not None:
-            set_clauses.append("is_read = %s")
-            params.append(is_read)
+            update_fields.append("is_read")
+            update_values.append(is_read)
         if is_liked is not None:
-            set_clauses.append("is_liked = %s")
-            params.append(is_liked)
-
-        if not set_clauses: # No fields to update
+            update_fields.append("is_liked")
+            update_values.append(is_liked)
+        
+        if not update_fields:  # No fields to update
             return False
-
-        # Add interaction_at update
-        set_clauses.append("interaction_at = NOW()")
-
+            
+        # Always update interaction_at
+        update_fields.append("interaction_at")
+        update_values.append(None)  # Will use NOW() in query
+        
+        # Build INSERT columns and values
+        insert_columns = ["user_id", "content_id"] + update_fields
+        insert_placeholders = ["%s", "%s"] + ["%s" if field != "interaction_at" else "NOW()" for field in update_fields]
+        
+        # Build UPDATE SET clause
+        update_set_clauses = []
+        for field in update_fields:
+            if field == "interaction_at":
+                update_set_clauses.append("interaction_at = NOW()")
+            else:
+                update_set_clauses.append(f"{field} = EXCLUDED.{field}")
+        
         query = f"""
-            INSERT INTO user_content_interactions (user_id, content_id, {', '.join([c.split('=')[0].strip() for c in set_clauses])})
-            VALUES (%s, %s, {', '.join(['%s'] * len(set_clauses))})
+            INSERT INTO user_content_interactions ({', '.join(insert_columns)})
+            VALUES ({', '.join(insert_placeholders)})
             ON CONFLICT (user_id, content_id) DO UPDATE SET
-                {', '.join([f"{c.split('=')[0].strip()} = EXCLUDED.{c.split('=')[0].strip()}" for c in set_clauses])};
+                {', '.join(update_set_clauses)}
         """
-        # Parameters for INSERT part: user_id, content_id, then the values for set_clauses
-        insert_params = [user_id, content_item_id] + params
-
-        cur.execute(query, tuple(insert_params))
+        
+        # Parameters for the query (excluding interaction_at since it uses NOW())
+        params = [user_id, content_item_id] + [v for v in update_values if v is not None]
+        
+        print(f"Executing query: {query}")
+        print(f"With params: {params}")
+        
+        cur.execute(query, params)
         conn.commit()
         return True
     except Exception as e:
         print(f"An error occurred during upserting user content interaction: {e}")
-        if conn: conn.rollback()
+        if conn: 
+            conn.rollback()
         return False
     finally:
         close_db_connection(conn)

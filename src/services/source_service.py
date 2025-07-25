@@ -3,15 +3,14 @@ from src.models.source import Source
 from typing import List, Optional
 from psycopg2 import errors as pg_errors
 
-def create_source(user_id: int, name: str, feed_url: str, type: str) -> Optional[Source]:
+def create_source(user_id: int, name: str, feed_url: str) -> Optional[Source]:
     """
-    Creates a new content source in the database.
+    Creates a new RSS source in the database.
 
     Args:
         user_id (int): The ID of the user adding the source.
-        name (str): The name of the source.
-        feed_url (str): The URL of the content feed.
-        type (str): The type of the source (e.g., 'rss', 'subreddit').
+        name (str): The name of the RSS source.
+        feed_url (str): The URL of the RSS feed.
 
     Returns:
         Optional[Source]: The created Source object if successful, None otherwise.
@@ -21,14 +20,14 @@ def create_source(user_id: int, name: str, feed_url: str, type: str) -> Optional
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO sources (user_id, name, feed_url, type) VALUES (%s, %s, %s, %s) RETURNING id, last_fetched_at, created_at, updated_at;",
-            (user_id, name, feed_url, type)
+            "INSERT INTO sources (user_id, source_name, feed_url) VALUES (%s, %s, %s) RETURNING id, last_fetched_at, created_at, updated_at;",
+            (user_id, name, feed_url)
         )
         result = cur.fetchone()
         if result:
             source_id, last_fetched_at, created_at, updated_at = result
             conn.commit()
-            return Source(source_id, user_id, name, feed_url, type, last_fetched_at, created_at, updated_at)
+            return Source(source_id, user_id, name, feed_url, last_fetched_at, created_at, updated_at)
         else:
             print("No row returned from INSERT.")
             conn.rollback()
@@ -60,7 +59,7 @@ def get_sources_by_user(user_id: int) -> List[Source]:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, user_id, name, feed_url, type, last_fetched_at, created_at, updated_at FROM sources WHERE user_id = %s ORDER BY name;",
+            "SELECT id, user_id, source_name, feed_url, last_fetched_at, created_at, updated_at FROM sources WHERE user_id = %s ORDER BY source_name;",
             (user_id,)
         )
         for row in cur.fetchall():
@@ -87,7 +86,7 @@ def get_source_by_id(source_id: int, user_id: int) -> Optional[Source]:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, user_id, name, feed_url, type, last_fetched_at, created_at, updated_at FROM sources WHERE id = %s AND user_id = %s;",
+            "SELECT id, user_id, source_name, feed_url, last_fetched_at, created_at, updated_at FROM sources WHERE id = %s AND user_id = %s;",
             (source_id, user_id)
         )
         source_data = cur.fetchone()
@@ -100,7 +99,7 @@ def get_source_by_id(source_id: int, user_id: int) -> Optional[Source]:
     finally:
         close_db_connection(conn)
 
-def update_source(source_id: int, user_id: int, name: Optional[str] = None, feed_url: Optional[str] = None, type: Optional[str] = None) -> bool:
+def update_source(source_id: int, user_id: int, name: Optional[str] = None, feed_url: Optional[str] = None) -> bool:
     """
     Updates details of an existing source. Only updates fields that are not None.
 
@@ -109,7 +108,6 @@ def update_source(source_id: int, user_id: int, name: Optional[str] = None, feed
         user_id (int): The ID of the user who owns the source (for authorization).
         name (Optional[str]): New name for the source.
         feed_url (Optional[str]): New feed URL for the source.
-        type (Optional[str]): New type for the source.
 
     Returns:
         bool: True if the source was updated, False otherwise.
@@ -127,9 +125,6 @@ def update_source(source_id: int, user_id: int, name: Optional[str] = None, feed
         if feed_url is not None:
             set_clauses.append("feed_url = %s")
             params.append(feed_url)
-        if type is not None:
-            set_clauses.append("type = %s")
-            params.append(type)
 
         if not set_clauses:
             return False # No fields to update

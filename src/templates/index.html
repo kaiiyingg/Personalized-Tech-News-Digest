@@ -45,7 +45,7 @@
           "Open Source": "open-source",
           "Other": "other"
         }[topic] %}
-        <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; scroll-margin-top: 100px;">
+        <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
           <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
               {% if topic == "Recommended For You" %}
@@ -108,15 +108,13 @@
                       <a href="{{ url_for('read_article', article_id=article['id']) }}" target="_blank" class="read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
                         Read More
                       </a>
-                      {% if article['is_liked'] %}
-                        <form method="POST" action="{{ url_for('unlike_article', article_id=article['id']) }}" style="display:inline; margin: 0;">
-                          <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button active" title="Unlike"></button>
-                        </form>
-                      {% else %}
-                        <form method="POST" action="{{ url_for('like_article', article_id=article['id']) }}" style="display:inline; margin: 0;">
-                          <button type="submit" id="heart-{{ article['id'] }}" class="btn-like-flash heart-button" title="Like"></button>
-                        </form>
-                      {% endif %}
+                      <button 
+                        type="button" 
+                        id="heart-{{ article['id'] }}" 
+                        class="btn-like-flash heart-button{% if article['is_liked'] %} active{% endif %}" 
+                        data-article-id="{{ article['id'] }}"
+                        title="{% if article['is_liked'] %}Unlike{% else %}Like{% endif %}">
+                      </button>
                     </div>
                   </div>
                 {% endfor %}
@@ -138,4 +136,7 @@
     {% endif %}
   </div>
 </main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/topic_url_handler.js') }}"></script>
 {% endblock %}

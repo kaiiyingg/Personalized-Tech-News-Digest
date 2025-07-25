@@ -37,7 +37,7 @@ Built with **DevOps best practices** at its core, the entire AWS infrastructure 
 * **Customizable Sources:** Easily add, edit, and manage RSS feed URLs from your favorite tech websites and blogs.
 * **User Authentication:** Secure login and registration system to manage individual user profiles and preferences.
 * **Intelligent Ingestion:** An automated, serverless backend continuously pulls, parses, and processes new content from defined sources.
-* **"Read Later" & Archiving:** Tools to save articles for deeper review and track already consumed content.
+* **"Favorites:** Tools to save articles that you like.
 * **Interest Management:** Define and refine your specific tech interest keywords for precise content filtering.
 * **Responsive Web UI:** A clean and intuitive web interface accessible from any browser on your laptop.
 

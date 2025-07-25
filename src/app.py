@@ -28,9 +28,9 @@ def login_required_api(f):
 
 # ------------------- ROUTES -------------------
 
-# --- Home route: redirect to login page ---
+# --- Discover route: redirect to login page ---
 @app.route('/', methods=['GET'])
-def home():
+def discover():
     return redirect(url_for('login'))
 
 @app.route('/index', methods=['GET'])
@@ -103,6 +103,30 @@ def like_article(article_id):
     update_content_liked(user_id, article_id, is_liked=True)
     flash('Article liked & saved.', 'success')
     return redirect(url_for('index'))
+
+@app.route('/read_article/<int:article_id>')
+def read_article(article_id):
+    if 'user_id' not in session:
+        flash('You must be logged in to perform this action.', 'danger')
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    # Mark article as read
+    mark_content_as_read(user_id, article_id, is_read=True)
+    
+    # Get the article URL to redirect to
+    articles = get_personalized_digest(user_id, limit=1000)  # Get all articles
+    article_url = None
+    for article in articles:
+        if article.get('id') == article_id:
+            article_url = article.get('article_url')
+            break
+    
+    if article_url:
+        return redirect(article_url)
+    else:
+        flash('Article not found.', 'danger')
+        return redirect(url_for('index'))
 
 
 # --- Auth & User Management ---
@@ -193,8 +217,7 @@ def get_digest():
     user_id = session['user_id']
     limit = int(request.args.get('limit', 20))
     offset = int(request.args.get('offset', 0))
-    search_query = request.args.get('q')
-    articles = get_personalized_digest(user_id, limit=limit, offset=offset, search_query=search_query)
+    articles = get_personalized_digest(user_id, limit=limit, offset=offset)
     return jsonify({'articles': articles}), 200
 
 @app.route('/api/content/<int:content_id>/read', methods=['POST'])
@@ -254,8 +277,8 @@ def favorites():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
-    # Get only liked articles
-    articles = get_personalized_digest(user_id, limit=100)
+    # Get articles (including read ones) and filter for liked articles only
+    articles = get_personalized_digest(user_id, limit=100, include_read=True)
     liked_articles = [a for a in articles if a.get('is_liked')]
     username = session.get('username')
     current_year = datetime.now().year

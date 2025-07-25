@@ -58,8 +58,8 @@ def assign_topic(title: str, summary: str) -> str:
     if any(word in text for word in ["open source", "opensource", "github", "gitlab", "linux", "ubuntu", "debian", "apache", "mozilla", "firefox", "gnu", "mit license", "gpl", "contributor", "community", "fork", "pull request", "commit", "repository", "repo", "open-source project", "free software", "copyleft", "creative commons", "kernel", "operating system", "open source software", "oss", "foss", "free and open source"]):
         return "Open Source"
     
-    # Default fallback
-    return "Emerging Technologies"
+    # Default fallback to Other
+    return "Other"
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:
@@ -109,7 +109,7 @@ def create_content_item(source_id: int, title: str, summary: str,
         close_db_connection(conn)
 
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
-                             include_read: bool = False, search_query: Optional[str] = None) -> List[Dict[str, Any]]:
+                             include_read: bool = False) -> List[Dict[str, Any]]:
     """
     Retrieves a personalized digest of content items for a user.
     Includes user-specific interaction status (read, saved, liked, disliked).
@@ -119,7 +119,6 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         limit (int): Maximum number of articles to return.
         offset (int): Offset for pagination.
         include_read (bool): If True, includes articles already marked as read.
-        search_query (Optional[str]): A keyword to search in title/summary.
 
     Returns:
         List[Dict[str, Any]]: A list of dictionaries, each representing an article
@@ -153,9 +152,6 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         # Add filters
         if not include_read:
             query += " AND (uci.is_read IS NULL OR uci.is_read = FALSE)" # Filter out read articles
-        if search_query:
-            query += " AND (c.title ILIKE %s OR c.summary ILIKE %s)" # Case-insensitive search
-            params.extend([f"%{search_query}%", f"%{search_query}%"])
 
         query += " ORDER BY c.published_at DESC LIMIT %s OFFSET %s;"
         params.extend([limit, offset])
@@ -219,12 +215,12 @@ def _upsert_user_content_interaction(user_id: int, content_item_id: int,
         set_clauses.append("interaction_at = NOW()")
 
         query = f"""
-            INSERT INTO user_content_interactions (user_id, content_item_id, {', '.join([c.split('=')[0].strip() for c in set_clauses])})
+            INSERT INTO user_content_interactions (user_id, content_id, {', '.join([c.split('=')[0].strip() for c in set_clauses])})
             VALUES (%s, %s, {', '.join(['%s'] * len(set_clauses))})
-            ON CONFLICT (user_id, content_item_id) DO UPDATE SET
+            ON CONFLICT (user_id, content_id) DO UPDATE SET
                 {', '.join([f"{c.split('=')[0].strip()} = EXCLUDED.{c.split('=')[0].strip()}" for c in set_clauses])};
         """
-        # Parameters for INSERT part: user_id, content_item_id, then the values for set_clauses
+        # Parameters for INSERT part: user_id, content_id, then the values for set_clauses
         insert_params = [user_id, content_item_id] + params
 
         cur.execute(query, tuple(insert_params))
@@ -256,16 +252,11 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     Get articles grouped by topics for the main page display.
     Returns a dictionary with topic names as keys and lists of articles as values.
     """
-    from collections import defaultdict
-    
-    # Get all articles for the user
-    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=False)
+    # Get all articles for the user (including read ones to show with dimmed effect)
+    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
     
     # Filter out instruction items
     articles = [a for a in all_articles if a.get('id')]
-    
-    # Group articles by topic
-    topics_dict = defaultdict(list)
     
     # Define topic order 
     topic_order = [
@@ -281,8 +272,12 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         "Fintech & Crypto",
         "Tech Policy & Regulation",
         "Tech Culture & Work",
-        "Open Source"
+        "Open Source",
+        "Other"
     ]
+    
+    # Initialize topics dictionary with empty lists for all topics
+    topics_dict = {topic: [] for topic in topic_order}
     
     # Get user's liked topics for recommendations
     conn = None
@@ -327,14 +322,14 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     
     # Group remaining articles by their assigned topics
     for article in articles:
-        topic = article.get('topic', 'Emerging Technologies')
-        if topic != "Recommended For You":  # Don't duplicate recommended articles
+        topic = article.get('topic', 'Other')
+        # Allow articles to appear in both recommendations and their original topics
+        if topic and topic in topic_order:
             topics_dict[topic].append(article)
     
-    # Limit articles per topic and maintain order
-    ordered_topics = {}
+    # Limit articles per topic and return all topics (even empty ones)
     for topic in topic_order:
-        if topic in topics_dict and topics_dict[topic]:
-            ordered_topics[topic] = topics_dict[topic][:limit_per_topic]
+        if len(topics_dict[topic]) > limit_per_topic:
+            topics_dict[topic] = topics_dict[topic][:limit_per_topic]
     
-    return ordered_topics
+    return topics_dict

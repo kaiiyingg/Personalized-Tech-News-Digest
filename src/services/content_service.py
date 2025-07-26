@@ -3,59 +3,35 @@ from src.models.content import Content
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
+from transformers import pipeline #type: ignore
+
+# Define topic labels for zero-shot classification
+TOPIC_LABELS = [
+    "Artificial Intelligence (AI) & Machine Learning (ML)",
+    "Cloud Computing & DevOps",
+    "Software Development & Web Technologies",
+    "Cybersecurity & Privacy",
+    "Data Science & Analytics",
+    "Emerging Technologies",
+    "Big Tech & Industry Trends",
+    "Fintech & Crypto",
+    "Tech Policy & Regulation",
+    "Tech Culture & Work",
+    "Open Source",
+    "Other"
+]
+
+# Load zero-shot classifier once (global)
+zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
 def assign_topic(title: str, summary: str) -> str:
     """
-    Assigns a topic to content based on keywords in the title or summary.
+    Assigns a topic to content using zero-shot classification (HuggingFace).
     """
-    text = f"{title} {summary}".lower()
-    
-    # AI & Machine Learning
-    if any(word in text for word in ["ai", "artificial intelligence", "machine learning", "ml", "deep learning", "neural network", "neural networks", "nlp", "natural language processing", "computer vision", "ai model", "ai models", "gpt", "llm", "large language model", "transformer", "algorithm", "chatbot", "openai", "anthropic", "ai ethics", "ai research", "generative ai", "supervised learning", "unsupervised learning", "reinforcement learning", "tensorflow", "pytorch", "scikit-learn"]):
-        return "Artificial Intelligence (AI) & Machine Learning (ML)"
-    
-    # Cloud Computing & DevOps
-    if any(word in text for word in ["cloud", "aws", "amazon web services", "azure", "microsoft azure", "gcp", "google cloud", "google cloud platform", "devops", "infrastructure", "ci/cd", "continuous integration", "continuous deployment", "kubernetes", "docker", "container", "containerization", "serverless", "lambda", "microservices", "cloud security", "multi-cloud", "automation tools", "infrastructure as code", "iac", "terraform", "ansible", "jenkins", "gitlab ci", "cloud provider", "cloud computing", "cloud migration"]):
-        return "Cloud Computing & DevOps"
-    
-    # Software Development & Web Technologies
-    if any(word in text for word in ["web", "javascript", "react", "vue", "angular", "node.js", "python", "java", "spring", "django", "flask", "ruby", "rails", "php", "laravel", "programming language", "framework", "library", "programming", "coding", "github", "api", "rest api", "graphql", "frontend", "backend", "full-stack", "agile", "scrum", "development methodology", "web development", "mobile development", "software engineering", "code", "developer tools", "vs code", "ide", "git", "version control"]):
-        return "Software Development & Web Technologies"
-    
-    # Cybersecurity & Privacy
-    if any(word in text for word in ["security", "cyber", "cybersecurity", "breach", "data breach", "privacy", "threat", "hack", "hacker", "vulnerability", "encryption", "malware", "phishing", "ransomware", "zero-day", "firewall", "vpn", "password", "authentication", "authorization", "gdpr", "privacy regulation", "data protection", "security tool", "penetration testing", "incident response", "cyber attack", "security policy", "compliance", "pci dss", "iso 27001"]):
-        return "Cybersecurity & Privacy"
-    
-    # Data Science & Analytics
-    if any(word in text for word in ["data", "analytics", "big data", "data science", "database", "sql", "nosql", "visualization", "data visualization", "business intelligence", "bi", "statistics", "metrics", "insight", "data warehouse", "data warehousing", "data governance", "etl", "data pipeline", "pandas", "numpy", "tableau", "power bi", "apache spark", "hadoop", "data mining", "predictive analytics", "data analysis", "statistical analysis", "data processing"]):
-        return "Data Science & Analytics"
-    
-    # Emerging Technologies
-    if any(word in text for word in ["quantum", "quantum computing", "quantum computer", "vr", "ar", "virtual reality", "augmented reality", "mixed reality", "blockchain", "web3", "metaverse", "iot", "internet of things", "5g", "6g", "edge computing", "robotics", "robot", "biotechnology", "biotech", "nanotechnology", "3d printing", "additive manufacturing", "autonomous", "self-driving", "drone", "uav", "wearable", "smart city", "digital twin"]):
-        return "Emerging Technologies"
-    
-    # Big Tech & Industry Trends
-    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta", "facebook", "tesla", "nvidia", "netflix", "adobe", "salesforce", "oracle", "ibm", "intel", "acquisition", "merger", "ipo", "earnings", "revenue", "stock", "valuation", "funding", "investment", "venture capital", "startup", "unicorn", "industry trend", "market share", "competition", "partnership", "strategic alliance", "layoffs", "hiring", "iphone", "android", "smartphone", "tablet", "laptop", "desktop", "processor", "cpu", "gpu", "chip", "semiconductor", "hardware", "gadget", "device", "samsung", "xiaomi", "oneplus", "apple watch", "smart home", "smart device", "consumer electronics", "gaming console", "headphones", "earbuds", "camera", "display", "monitor", "tv", "smart tv", "wearable device", "fitness tracker"]):
-        return "Big Tech & Industry Trends"
-    
-    # Fintech & Crypto
-    if any(word in text for word in ["fintech", "financial technology", "crypto", "cryptocurrency", "bitcoin", "ethereum", "defi", "decentralized finance", "nft", "non-fungible token", "payment", "digital payment", "wallet", "digital wallet", "trading", "finance", "banking", "mobile payment", "blockchain finance", "stablecoin", "yield farming", "liquidity mining", "smart contract", "dao", "central bank digital currency", "cbdc", "paypal", "stripe", "square", "coinbase"]):
-        return "Fintech & Crypto"
-    
-    # Tech Policy & Regulation
-    if any(word in text for word in ["policy", "regulation", "antitrust", "law", "legal", "ban", "government", "congress", "senate", "gdpr", "compliance", "regulatory", "legislation", "court", "lawsuit", "fine", "penalty", "data governance", "internet regulation", "net neutrality", "privacy law", "digital rights", "content moderation", "platform regulation", "tech policy", "digital act", "competition law", "monopoly"]):
-        return "Tech Policy & Regulation"
-    
-    # Tech Culture & Work
-    if any(word in text for word in ["culture", "work", "workplace", "layoff", "layoffs", "remote", "remote work", "work from home", "wfh", "productivity", "diversity", "inclusion", "hiring", "talent", "startup", "funding", "career", "workplace culture", "employee", "team", "management", "leadership", "work-life balance", "burnout", "resignation", "job market", "tech jobs", "salary", "compensation", "benefits", "company culture"]):
-        return "Tech Culture & Work"
-    
-    # Open Source
-    if any(word in text for word in ["open source", "opensource", "github", "gitlab", "linux", "ubuntu", "debian", "apache", "mozilla", "firefox", "gnu", "mit license", "gpl", "contributor", "community", "fork", "pull request", "commit", "repository", "repo", "open-source project", "free software", "copyleft", "creative commons", "kernel", "operating system", "open source software", "oss", "foss", "free and open source"]):
-        return "Open Source"
-    
-    # Default fallback to Other
-    return "Other"
+    text = f"{title} {summary}"
+    result = zero_shot_classifier(text, TOPIC_LABELS)
+    # Return the highest scoring topic
+    return result['labels'][0] if result['labels'] else "Other"
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:

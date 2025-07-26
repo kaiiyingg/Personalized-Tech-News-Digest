@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-def create_lambda_package(source_file, package_name, dependencies=None):
+def create_lambda_package(source_file, package_name, dependencies=None, include_src_modules=None):
     """
     Creates a Lambda deployment package with dependencies.
     
@@ -24,6 +24,7 @@ def create_lambda_package(source_file, package_name, dependencies=None):
         source_file (str): Path to the Lambda function source file
         package_name (str): Name of the output zip file
         dependencies (list): List of Python packages to include
+        include_src_modules (list): List of src module paths to include
     """
     print(f"\n🚀 Building Lambda package: {package_name}")
     
@@ -37,6 +38,29 @@ def create_lambda_package(source_file, package_name, dependencies=None):
         # Copy the Lambda function source
         shutil.copy2(source_file, build_dir / Path(source_file).name)
         print(f"✅ Copied source file: {source_file}")
+        
+        # Copy src modules if specified
+        if include_src_modules:
+            src_dir = build_dir / "src"
+            src_dir.mkdir(exist_ok=True)
+            
+            # Create __init__.py files
+            (src_dir / "__init__.py").touch()
+            
+            for module_path in include_src_modules:
+                if Path(module_path).exists():
+                    if Path(module_path).is_dir():
+                        # Copy entire directory
+                        dest_dir = src_dir / Path(module_path).name
+                        shutil.copytree(module_path, dest_dir)
+                        print(f"✅ Copied module directory: {module_path}")
+                    else:
+                        # Copy single file
+                        module_dir = src_dir / Path(module_path).parent.name
+                        module_dir.mkdir(exist_ok=True)
+                        (module_dir / "__init__.py").touch()
+                        shutil.copy2(module_path, module_dir / Path(module_path).name)
+                        print(f"✅ Copied module file: {module_path}")
         
         # Install dependencies if specified
         if dependencies:
@@ -91,12 +115,14 @@ def main():
         {
             'source': 'src/lambdas/ingestion_orchestrator.py',
             'package': 'orchestrator.zip',
-            'dependencies': ['psycopg2-binary', 'boto3']
+            'dependencies': ['psycopg2-binary==2.9.5', 'boto3'],
+            'include_src_modules': []
         },
         {
             'source': 'src/lambdas/content_processor.py', 
             'package': 'processor.zip',
-            'dependencies': ['psycopg2-binary', 'boto3', 'feedparser', 'requests']
+            'dependencies': ['psycopg2-binary==2.9.5', 'boto3', 'feedparser', 'requests'],
+            'include_src_modules': ['src/services', 'src/database']
         }
     ]
     
@@ -110,7 +136,8 @@ def main():
         result = create_lambda_package(
             config['source'],
             config['package'],
-            config['dependencies']
+            config['dependencies'],
+            config.get('include_src_modules', [])
         )
         
         if result:

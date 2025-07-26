@@ -3,12 +3,13 @@ import psycopg2
 from dotenv import load_dotenv # type: ignore
 
 load_dotenv()  # Load environment variables from .env file
-# Database connection details from .env
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT', 5432)
+
+# Supabase/PostgreSQL connection details from .env
+PG_DATABASE = os.getenv('PG_DATABASE')
+PG_USER = os.getenv('PG_USER')
+PG_PASSWORD = os.getenv('PG_PASSWORD')
+PG_HOST = os.getenv('PG_HOST')
+PG_PORT = os.getenv('PG_PORT', 5432)
 
 """
 This module handles database connections and table creation for the TechPulse application.
@@ -19,11 +20,11 @@ Run "python src/database/connection.py" to create tables based on SQL scripts in
 def get_db_connection():
     """Establishes and returns a database connection."""
     conn = psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
+        dbname=PG_DATABASE,
+        user=PG_USER,
+        password=PG_PASSWORD,
+        host=PG_HOST,
+        port=PG_PORT
     )
     return conn
 

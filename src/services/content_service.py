@@ -34,12 +34,8 @@ def assign_topic(title: str, summary: str) -> str:
     if any(word in text for word in ["quantum", "quantum computing", "quantum computer", "vr", "ar", "virtual reality", "augmented reality", "mixed reality", "blockchain", "web3", "metaverse", "iot", "internet of things", "5g", "6g", "edge computing", "robotics", "robot", "biotechnology", "biotech", "nanotechnology", "3d printing", "additive manufacturing", "autonomous", "self-driving", "drone", "uav", "wearable", "smart city", "digital twin"]):
         return "Emerging Technologies"
     
-    # Hardware & Consumer Tech
-    if any(word in text for word in ["iphone", "android", "smartphone", "tablet", "laptop", "desktop", "processor", "cpu", "gpu", "chip", "semiconductor", "hardware", "gadget", "device", "samsung", "xiaomi", "oneplus", "apple watch", "smart home", "smart device", "consumer electronics", "gaming console", "headphones", "earbuds", "camera", "display", "monitor", "tv", "smart tv", "wearable device", "fitness tracker"]):
-        return "Hardware & Consumer Tech"
-    
     # Big Tech & Industry Trends
-    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta", "facebook", "tesla", "nvidia", "netflix", "adobe", "salesforce", "oracle", "ibm", "intel", "acquisition", "merger", "ipo", "earnings", "revenue", "stock", "valuation", "funding", "investment", "venture capital", "startup", "unicorn", "industry trend", "market share", "competition", "partnership", "strategic alliance", "layoffs", "hiring"]):
+    if any(word in text for word in ["apple", "google", "microsoft", "amazon", "meta", "facebook", "tesla", "nvidia", "netflix", "adobe", "salesforce", "oracle", "ibm", "intel", "acquisition", "merger", "ipo", "earnings", "revenue", "stock", "valuation", "funding", "investment", "venture capital", "startup", "unicorn", "industry trend", "market share", "competition", "partnership", "strategic alliance", "layoffs", "hiring", "iphone", "android", "smartphone", "tablet", "laptop", "desktop", "processor", "cpu", "gpu", "chip", "semiconductor", "hardware", "gadget", "device", "samsung", "xiaomi", "oneplus", "apple watch", "smart home", "smart device", "consumer electronics", "gaming console", "headphones", "earbuds", "camera", "display", "monitor", "tv", "smart tv", "wearable device", "fitness tracker"]):
         return "Big Tech & Industry Trends"
     
     # Fintech & Crypto
@@ -285,7 +281,6 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         "Software Development & Web Technologies",
         "Data Science & Analytics",
         "Emerging Technologies",
-        "Hardware & Consumer Tech",
         "Big Tech & Industry Trends",
         "Fintech & Crypto",
         "Tech Policy & Regulation",

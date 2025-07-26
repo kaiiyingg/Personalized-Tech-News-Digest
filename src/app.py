@@ -1,13 +1,26 @@
 import random
 import pyotp 
 import os
+import sys
 from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from src.services.user_service import create_user, check_password, find_user_by_email, update_user_password
-from src.services.source_service import get_sources_by_user
-from src.services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
-from src.services.content_service import get_articles_by_topics
+
+# Add the src directory to Python path to find modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    # Try relative imports first (when running from src directory)
+    from services.user_service import create_user, check_password, find_user_by_email, update_user_password
+    from services.source_service import get_sources_by_user
+    from services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
+    from services.content_service import get_articles_by_topics
+except ImportError:
+    # Fallback to absolute imports (when running from root directory)
+    from src.services.user_service import create_user, check_password, find_user_by_email, update_user_password
+    from src.services.source_service import get_sources_by_user
+    from src.services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
+    from src.services.content_service import get_articles_by_topics
 
 # ------------------- APP CONFIG -------------------
 app = Flask(__name__)
@@ -170,7 +183,10 @@ def login():
         username = request.form['username']
         password = request.form['password']
         code = request.form.get('code')
-        from src.services.user_service import find_user_by_username
+        try:
+            from services.user_service import find_user_by_username
+        except ImportError:
+            from src.services.user_service import find_user_by_username
         user = find_user_by_username(username)
         if user and check_password(user, password):
             if code:
@@ -180,7 +196,7 @@ def login():
                     return render_template('login.html')
             session['user_id'] = user.id
             session['username'] = user.username
-            flash('Login successful!', 'success')
+            flash('Login successful.', 'success')
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'danger')
@@ -273,20 +289,16 @@ def unlike_content_api(content_id):
 @login_required_api
 def fast():
     user_id = session['user_id']
-    skipped = session.get('skipped_articles', set())
     # Get all articles for today (including read)
     all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
     # Filter out instruction items and count
     actual_articles = [a for a in all_articles if a.get('id')]
     total_articles = len(actual_articles)
     articles_read = sum(1 for a in actual_articles if a.get('is_read', False))
-    # Get unread articles for flashcard view (already filtered for articles with ID)
+    # Get unread articles for flashcard view (automatically prioritized)
     unread_articles = [a for a in actual_articles if not a.get('is_read', False)]
-    # Prioritize skipped articles at the top - using safer get() method
-    skipped_articles = [a for a in unread_articles if a.get('id') in skipped]
-    unskipped_articles = [a for a in unread_articles if a.get('id') not in skipped]
-    ordered_articles = skipped_articles + unskipped_articles
-    article = ordered_articles[0] if ordered_articles else None
+    # Unread articles are automatically shown first
+    article = unread_articles[0] if unread_articles else None
     return render_template(
         'fast.html',
         article=article,
@@ -310,23 +322,6 @@ def favorites():
     current_year = datetime.now().year
     return render_template('favorites.html', articles=liked_articles, username=username, current_year=current_year)
 
-
-# --- Skip Article (Flashcard View) ---
-# This route allows a user to skip an article in the fast (flashcard) view.
-# Skipped articles are tracked in the session for the current day and prioritized at the top of the flashcard list.
-# Skipping does NOT mark the article as read while unskipped articles will be marked as read.
-@app.route('/skip_article/<int:article_id>', methods=['POST'])
-def skip_article(article_id):
-    if 'user_id' not in session:
-        flash('You must be logged in to perform this action.', 'danger')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    # Track skip in session for the day (not persisted in DB)
-    skipped = session.get('skipped_articles', set())
-    skipped.add(article_id)
-    session['skipped_articles'] = skipped
-    flash('Article skipped.', 'info')
-    return redirect(url_for('fast'))
 
 # --- Unlike Article (Remove from Favorites) ---
 # This route allows a user to unlike an article, removing it from their favorites.

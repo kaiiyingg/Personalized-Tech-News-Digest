@@ -5,38 +5,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TechPulse{% endblock %}</title>
-    <link rel="icon" href="{{ url_for('static', filename='imgs/TechPulseLogo.jpg') }}" type="image/jpeg">
-    <link href="https://fonts.googleapis.com/css?family=Merriweather:300,400,700|Open+Sans:300,400,600" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="/static/imgs/TechPulseLogo.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
     <nav class="navbar sticky-navbar">
-        <div class="navbar-brand">TechPulse: Your personalised tech news digest</div>
+        <div class="navbar-brand">
+            <span class="brand-text">TechPulse</span>
+            <span class="brand-icon">💜</span>
+        </div>
         <ul class="navbar-links">
-            <li><a href="{{ url_for('index') }}">Discover</a></li>
-            <li><a href="{{ url_for('fast') }}">Fast</a></li> <!-- Flashcard swipe view for quick likes -->
-            <li><a href="{{ url_for('favorites') }}">Favorites</a></li> <!-- Favorites section for liked content -->
+            <li><a href="{{ url_for('index') }}" class="nav-link">
+                <span>Discover</span>
+            </a></li>
+            <li><a href="{{ url_for('fast') }}" class="nav-link">
+                <span>Fast</span>
+            </a></li>
+            <li><a href="{{ url_for('favorites') }}" class="nav-link">
+                <span>Favorites</span>
+            </a></li>
             <li class="dropdown">
-                <a href="#" class="dropdown-toggle">Topics <span class="dropdown-arrow">▾</span></a>
+                <a href="#" class="dropdown-toggle nav-link">
+                    <span>Topics</span>
+                    <span class="dropdown-arrow">▾</span>
+                </a>
                 <ul class="dropdown-menu">
                     <li><a href="#recommended-for-you" onclick="scrollToTopic('recommended-for-you')">🌟 Recommended For You</a></li>
-                    <li><a href="#ai-ml" onclick="scrollToTopic('ai-ml')">AI & ML</a></li>
-                    <li><a href="#cybersecurity" onclick="scrollToTopic('cybersecurity')">Cybersecurity & Privacy</a></li>
-                    <li><a href="#cloud-devops" onclick="scrollToTopic('cloud-devops')">Cloud Computing & DevOps</a></li>
-                    <li><a href="#web-dev" onclick="scrollToTopic('web-dev')">Software Development & Web</a></li>
-                    <li><a href="#data-science" onclick="scrollToTopic('data-science')">Data Science & Analytics</a></li>
-                    <li><a href="#emerging-tech" onclick="scrollToTopic('emerging-tech')">Emerging Technologies</a></li>
-                    <li><a href="#hardware" onclick="scrollToTopic('hardware')">Hardware & Consumer Tech</a></li>
-                    <li><a href="#big-tech" onclick="scrollToTopic('big-tech')">Big Tech & Industry Trends</a></li>
-                    <li><a href="#fintech" onclick="scrollToTopic('fintech')">Fintech & Crypto</a></li>
-                    <li><a href="#tech-policy" onclick="scrollToTopic('tech-policy')">Tech Policy & Regulation</a></li>
-                    <li><a href="#tech-culture" onclick="scrollToTopic('tech-culture')">Tech Culture & Work</a></li>
-                    <li><a href="#open-source" onclick="scrollToTopic('open-source')">Open Source</a></li>
-                    <li><a href="#other" onclick="scrollToTopic('other')">Other</a></li>
+                    <li><a href="#ai-ml" onclick="scrollToTopic('ai-ml')">🤖 AI & ML</a></li>
+                    <li><a href="#cybersecurity" onclick="scrollToTopic('cybersecurity')">🔒 Cybersecurity & Privacy</a></li>
+                    <li><a href="#cloud-devops" onclick="scrollToTopic('cloud-devops')">☁️ Cloud Computing & DevOps</a></li>
+                    <li><a href="#web-dev" onclick="scrollToTopic('web-dev')">💻 Software Development & Web</a></li>
+                    <li><a href="#data-science" onclick="scrollToTopic('data-science')">📊 Data Science & Analytics</a></li>
+                    <li><a href="#emerging-tech" onclick="scrollToTopic('emerging-tech')">🚀 Emerging Technologies</a></li>
+                    <li><a href="#big-tech" onclick="scrollToTopic('big-tech')">🏢 Big Tech & Industry Trends</a></li>
+                    <li><a href="#fintech" onclick="scrollToTopic('fintech')">💰 Fintech & Crypto</a></li>
+                    <li><a href="#tech-policy" onclick="scrollToTopic('tech-policy')">⚖️ Tech Policy & Regulation</a></li>
+                    <li><a href="#tech-culture" onclick="scrollToTopic('tech-culture')">🎯 Tech Culture & Work</a></li>
+                    <li><a href="#open-source" onclick="scrollToTopic('open-source')">🔓 Open Source</a></li>
+                    <li><a href="#other" onclick="scrollToTopic('other')">📰 Other</a></li>
                 </ul>
             </li>
-            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            <li><a href="{{ url_for('logout') }}" class="nav-link logout-btn">
+                <span>Logout</span>
+            </a></li>
         </ul>
     </nav>
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -58,6 +72,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/heart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/topic_navigation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navbar_glow.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/flash_messages.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

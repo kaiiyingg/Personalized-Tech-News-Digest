@@ -1,51 +1,57 @@
 {% extends 'base.html' %}
 {% block title %}Fast View{% endblock %}
 {% block content %}
-<div class="fast-view-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 2rem;">
+<div class="horizontal-flashcard-wrapper">
     {% if article %}
-        <div class="button-row" style="flex-shrink:0;">
-            <button class="button" id="prev-article-btn" title="Previous">
-                <i class="ph-skip-back"></i>
-            </button>
-        </div>
-        <div class="flashcard {% if article['is_read'] %}article-read{% endif %}" data-article-id="{{ article['id'] }}" style="flex:1; max-width:460px;">
-            <div class="flashcard-image">
+        <button class="flashcard-nav-btn flashcard-nav-left" id="prev-article-btn" title="Previous">
+            <i class="ph ph-caret-left"></i>
+        </button>
+        
+        <div class="horizontal-flashcard" data-article-id="{{ article['id'] }}">
+            <div class="horizontal-flashcard-image">
                 {% if article['image_url'] %}
                     <img src="{{ article['image_url'] }}" alt="Article image">
                 {% else %}
-                    <div class="placeholder-image">📰</div>
+                    <div class="horizontal-placeholder-image">
+                        <i class="ph ph-newspaper"></i>
+                    </div>
                 {% endif %}
             </div>
-            <div class="flashcard-content">
-                <h2>{{ article['title'] }}</h2>
-                <div class="meta">
-                    <div>Source: {{ article['source_name'] }}</div>
-                    <div>{{ article['published_at'] or 'No date' }}</div>
-                    <div>Topic: {{ article['topic'] }}</div>
+            
+            <div class="horizontal-flashcard-content">
+                <div class="horizontal-flashcard-header">
+                    <h2 class="horizontal-flashcard-title">{{ article['title'] }}</h2>
+                    <div class="horizontal-flashcard-meta">
+                        <span class="source">{{ article['source_name'] }}</span>
+                        <span class="date">{{ article['published_at'] or 'No date' }}</span>
+                        <span class="topic">{{ article['topic'] }}</span>
+                    </div>
                 </div>
-                <p>{{ article['summary'] }}</p>
-                <a href="{{ article['article_url'] }}" target="_blank" class="read-more-button">Read More</a>
-            </div>
-            <div class="flashcard-actions">
-                <div class="action-buttons-right">
-                    <button 
-                        type="button" 
-                        id="heart-{{ article['id'] }}" 
-                        class="btn-like-flash heart-button{% if article['is_liked'] %} active{% endif %}" 
-                        data-article-id="{{ article['id'] }}"
-                        title="{% if article['is_liked'] %}Unlike{% else %}Like{% endif %}">
-                    </button>
-                    <form method="POST" action="{{ url_for('skip_article', article_id=article['id']) }}" style="display:inline;">
-                        <button type="submit" class="btn-skip" title="Skip">Skip</button>
-                    </form>
+                
+                <p class="horizontal-flashcard-summary">{{ article['summary'] }}</p>
+                
+                <div class="horizontal-flashcard-actions">
+                    <a href="{{ article['article_url'] }}" target="_blank" class="horizontal-read-more-btn">
+                        Read Full Article <i class="ph ph-arrow-up-right"></i>
+                    </a>
+                    
+                    <div class="horizontal-action-buttons">
+                        <button 
+                            type="button" 
+                            id="heart-{{ article['id'] }}" 
+                            class="heart-button{% if article['is_liked'] %} active{% endif %}" 
+                            data-article-id="{{ article['id'] }}"
+                            title="{% if article['is_liked'] %}Unlike{% else %}Like{% endif %}">
+                            <div class="heart-animation"></div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="button-row" style="flex-shrink:0;">
-            <button class="button" id="next-article-btn" title="Next">
-                <i class="ph-skip-forward"></i>
-            </button>
-        </div>
+        
+        <button class="flashcard-nav-btn flashcard-nav-right" id="next-article-btn" title="Next">
+            <i class="ph ph-caret-right"></i>
+        </button>
     {% else %}
         <div class="no-more-flashcards">
             {% if articles_read < total_articles %}

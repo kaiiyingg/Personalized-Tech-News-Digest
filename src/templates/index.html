@@ -3,10 +3,12 @@
 {% block content %}
 <main class="main-content">
   <div class="digest-stream">
-    <h2 style="text-align:center; font-size:2.6em; font-family:'Orbitron','Montserrat','Segoe UI',monospace,sans-serif; font-weight:900; color:#00bfff; margin-bottom:2.5rem;">
-      Good to See You, {{ username }}! Your Pulse is Live
+    <div style="text-align: center; margin-bottom: 2.5rem; margin-top: 3rem;">
+      <h2 style="font-size:3.4em; font-family:'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight:900; color: #ffffff; letter-spacing:-0.02em; text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); margin: 0 0 1rem 0;">
+        Good to See You, {{ username }}! Your Pulse is Live
+      </h2>
       <div class='pulse'></div>
-    </h2>
+    </div>
 
     <!-- Topics Section -->
     {% set topic_order = [
@@ -17,7 +19,6 @@
         "Software Development & Web Technologies",
         "Data Science & Analytics",
         "Emerging Technologies",
-        "Hardware & Consumer Tech",
         "Big Tech & Industry Trends",
         "Fintech & Crypto",
         "Tech Policy & Regulation",
@@ -37,7 +38,6 @@
           "Software Development & Web Technologies": "web-dev",
           "Data Science & Analytics": "data-science",
           "Emerging Technologies": "emerging-tech",
-          "Hardware & Consumer Tech": "hardware",
           "Big Tech & Industry Trends": "big-tech",
           "Fintech & Crypto": "fintech",
           "Tech Policy & Regulation": "tech-policy",
@@ -48,11 +48,7 @@
         <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
           <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
-              {% if topic == "Recommended For You" %}
-                <span style="color: #00bfff;">🌟</span> {{ topic }}
-              {% else %}
-                {{ topic }}
-              {% endif %}
+              {{ topic }}
             </h3>
             <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem; flex-shrink: 0;">
               {% if articles %}
@@ -91,7 +87,7 @@
                     </div>
                     
                     <div class="article-meta" style="margin-bottom: 0.8rem;">
-                      <span style="color: #00bfff; font-size: 0.85rem; font-weight: 600;">{{ article['source_name'] }}</span>
+                      <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">{{ article['source_name'] }}</span>
                       <span style="color: #b3b3b3; font-size: 0.8rem; margin-left: 0.5rem;">{{ article['published_at'][:10] if article['published_at'] else 'No date' }}</span>
                     </div>
                     
@@ -120,7 +116,7 @@
                 {% endfor %}
               </div>
             {% else %}
-              <div class="empty-topic-state" style="text-align: center; padding: 2rem; color: #888; background: #2a2e36; border-radius: 1rem; border: 2px dashed #444;">
+              <div class="empty-topic-state" style="text-align: center; padding: 2rem; color: #888; background: #21262d; border-radius: 1rem; border: 2px dashed #444;">
                 <p style="margin: 0; font-size: 1rem;">No articles available in this topic yet</p>
                 <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #666;">Check back later for fresh content!</p>
               </div>

@@ -106,7 +106,7 @@ def mark_read(article_id):
         return redirect(url_for('login'))
     user_id = session['user_id']
     mark_content_as_read(user_id, article_id, is_read=True)
-    flash('Marked as read.', 'success')
+    flash('Article marked as read', 'success')
     return redirect(url_for('index'))
 
 @app.route('/like_article/<int:article_id>', methods=['POST'])
@@ -116,7 +116,7 @@ def like_article(article_id):
         return redirect(url_for('login'))
     user_id = session['user_id']
     update_content_liked(user_id, article_id, is_liked=True)
-    flash('Article liked & saved.', 'success')
+    flash('Article saved to favorites', 'success')
     return redirect(url_for('index'))
 
 @app.route('/read_article/<int:article_id>')
@@ -140,7 +140,7 @@ def read_article(article_id):
     if article_url:
         return redirect(article_url)
     else:
-        flash('Article not found.', 'danger')
+        flash('Article not found', 'danger')
         return redirect(url_for('index'))
 
 
@@ -192,14 +192,14 @@ def login():
             if code:
                 totp = pyotp.TOTP(user.totp_secret)
                 if not totp.verify(code):
-                    flash('Invalid authenticator code.', 'danger')
+                    flash('Authentication code is invalid', 'danger')
                     return render_template('login.html')
             session['user_id'] = user.id
             session['username'] = user.username
-            flash('Login successful.', 'success')
+            flash('Welcome back!', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password', 'danger')
+            flash('Invalid credentials', 'danger')
             return render_template('login.html')
     return render_template('login.html')
 
@@ -207,7 +207,7 @@ def login():
 def logout():
     session.pop('user_id', None)
     session.pop('username', None)
-    flash('You have been logged out.', 'info')
+    flash('Successfully logged out', 'info')
     return redirect(url_for('index'))
 
 @app.route('/api/sources', methods=['GET'])
@@ -259,7 +259,7 @@ def like_content_api(content_id):
         success = update_content_liked(user_id, content_id, is_liked=True)
         if success:
             print(f"Successfully liked content {content_id} for user {user_id}")
-            return jsonify({'message': 'Content liked & saved.'}), 200
+            return jsonify({'message': 'Article saved to favorites'}), 200
         else:
             print(f"Failed to like content {content_id} for user {user_id}")
             return jsonify({'error': 'Failed to like content.'}), 400
@@ -276,7 +276,7 @@ def unlike_content_api(content_id):
         success = update_content_liked(user_id, content_id, is_liked=False)
         if success:
             print(f"Successfully unliked content {content_id} for user {user_id}")
-            return jsonify({'message': 'Content unliked & removed from favorites.'}), 200
+            return jsonify({'message': 'Article removed from favorites'}), 200
         else:
             print(f"Failed to unlike content {content_id} for user {user_id}")
             return jsonify({'error': 'Failed to unlike content.'}), 400
@@ -330,11 +330,11 @@ def favorites():
 @app.route('/unlike_article/<int:article_id>', methods=['POST'])
 def unlike_article(article_id):
     if 'user_id' not in session:
-        flash('You must be logged in to perform this action.', 'danger')
+        flash('You must be logged in to perform this action', 'danger')
         return redirect(url_for('login'))
     user_id = session['user_id']
     update_content_liked(user_id, article_id, is_liked=False)
-    flash('Article unliked & removed from favorites.', 'info')
+    flash('Article removed from favorites', 'info')
     return redirect(url_for('index'))
 
 # ------------------- MAIN -------------------

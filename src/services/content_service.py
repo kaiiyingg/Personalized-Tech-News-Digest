@@ -346,3 +346,144 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
             topics_dict[topic] = topics_dict[topic][:limit_per_topic]
     
     return topics_dict
+
+def cleanup_old_articles():
+    """
+    Smart cleanup that removes old articles only if fresh content is available.
+    
+    Rules:
+    1. Only removes articles older than 24 hours if we have articles from today
+    2. If no fresh articles today, keeps yesterday's articles to prevent empty site
+    3. Always preserves user-liked articles regardless of age
+    4. Ensures minimum content threshold is maintained
+    
+    Returns:
+        dict: Cleanup results with statistics
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if we have fresh articles from today
+        cur.execute("""
+            SELECT COUNT(*) FROM content 
+            WHERE DATE(published_at) = CURRENT_DATE
+            AND id NOT IN (
+                SELECT DISTINCT content_id 
+                FROM user_content_interactions 
+                WHERE is_liked = true
+            )
+        """)
+        result_fresh = cur.fetchone()
+        fresh_articles_today = result_fresh[0] if result_fresh else 0
+        
+        # Check total available articles (excluding liked)
+        cur.execute("""
+            SELECT COUNT(*) FROM content 
+            WHERE id NOT IN (
+                SELECT DISTINCT content_id 
+                FROM user_content_interactions 
+                WHERE is_liked = true
+            )
+        """)
+        result_total = cur.fetchone()
+        total_unloved_articles = result_total[0] if result_total else 0
+        
+        # Check articles from yesterday
+        cur.execute("""
+            SELECT COUNT(*) FROM content 
+            WHERE DATE(published_at) = CURRENT_DATE - INTERVAL '1 day'
+            AND id NOT IN (
+                SELECT DISTINCT content_id 
+                FROM user_content_interactions 
+                WHERE is_liked = true
+            )
+        """)
+        result_yesterday = cur.fetchone()
+        yesterday_articles = result_yesterday[0] if result_yesterday else 0
+        
+        # Minimum content threshold to maintain
+        MIN_ARTICLES = 10
+        
+        result = {
+            'fresh_today': fresh_articles_today,
+            'yesterday_count': yesterday_articles,
+            'total_available': total_unloved_articles,
+            'deleted_count': 0,
+            'action_taken': 'none',
+            'reason': ''
+        }
+        
+        # Decision logic for cleanup
+        if fresh_articles_today >= MIN_ARTICLES:
+            # We have enough fresh content, safe to clean old articles
+            cur.execute("""
+                DELETE FROM content 
+                WHERE published_at < NOW() - INTERVAL '24 hours'
+                AND id NOT IN (
+                    SELECT DISTINCT content_id 
+                    FROM user_content_interactions 
+                    WHERE is_liked = true
+                )
+            """)
+            deleted_count = cur.rowcount
+            conn.commit()
+            
+            result.update({
+                'deleted_count': deleted_count,
+                'action_taken': 'cleanup_performed',
+                'reason': f'Fresh content available ({fresh_articles_today} new articles)'
+            })
+            
+        elif fresh_articles_today > 0 and total_unloved_articles > 20:
+            # Some fresh content, but clean conservatively
+            cur.execute("""
+                DELETE FROM content 
+                WHERE published_at < NOW() - INTERVAL '48 hours'
+                AND id NOT IN (
+                    SELECT DISTINCT content_id 
+                    FROM user_content_interactions 
+                    WHERE is_liked = true
+                )
+            """)
+            deleted_count = cur.rowcount
+            conn.commit()
+            
+            result.update({
+                'deleted_count': deleted_count,
+                'action_taken': 'conservative_cleanup',
+                'reason': f'Limited fresh content ({fresh_articles_today} new), extended retention to 48h'
+            })
+            
+        else:
+            # No fresh content or insufficient articles, skip cleanup
+            result.update({
+                'action_taken': 'cleanup_skipped',
+                'reason': f'Insufficient fresh content ({fresh_articles_today} new articles). Preserving existing content to prevent empty site.'
+            })
+        
+        # Log the decision
+        print(f"=== Smart Cleanup Results ===")
+        print(f"Fresh articles today: {result['fresh_today']}")
+        print(f"Yesterday's articles: {result['yesterday_count']}")
+        print(f"Total available: {result['total_available']}")
+        print(f"Action: {result['action_taken']}")
+        print(f"Reason: {result['reason']}")
+        print(f"Articles removed: {result['deleted_count']}")
+        print("=" * 30)
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"Error during smart cleanup: {e}"
+        print(error_msg)
+        if conn:
+            conn.rollback()
+        return {
+            'error': error_msg,
+            'action_taken': 'error',
+            'deleted_count': 0
+        }
+    finally:
+        close_db_connection(conn)

@@ -1253,31 +1253,55 @@ button[type="submit"]:hover {
     background-color: #0099cc;
 }
 
+/* ===================== */
+/* Flash Messages - Unified Design */
+/* ===================== */
+
+/* Main pages - below navbar, left side */
 .flashes {
     list-style: none;
     padding: 0;
     margin: 0;
     position: fixed;
     top: 70px; /* Below navbar */
-    left: 10px; /* Very left corner */
+    left: 10px; /* Left side */
     z-index: 1000;
-    width: auto; /* Auto-size to content */
+    width: auto;
     max-width: 400px;
     min-width: 200px;
 }
 
+/* Login/Register pages - centered between header and form */
+.cube-header + .flashes {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    margin: 1rem auto !important;
+    width: 400px !important;
+    max-width: 90% !important;
+}
+
 .flashes li {
-    padding: 12px 16px;
+    padding: 8px 12px;
     margin-bottom: 8px;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 0.9em;
     font-weight: 600;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.4);
+    background: transparent;
+    box-shadow: none;
+    border: none;
     animation: slideInFromLeft 0.4s ease-out;
     transition: opacity 0.3s ease, transform 0.3s ease;
-    border-left: 3px solid;
-    white-space: nowrap; /* Keep text on one line */
-    width: fit-content; /* Size to content */
+    white-space: nowrap;
+    width: fit-content;
+    text-align: center;
+}
+
+/* Login/Register page message styling */
+.cube-header + .flashes li {
+    text-align: center;
+    white-space: normal;
+    width: 100%;
 }
 
 @keyframes slideInFromLeft {
@@ -1296,25 +1320,28 @@ button[type="submit"]:hover {
     transform: translateX(-100%);
 }
 
+/* Success messages - Green text only */
 .flashes li.success {
-    background: linear-gradient(135deg, #bbf7d0, #86efac);
-    color: #000000;
-    border-left-color: #10b981;
-    border: 1px solid #10b981;
+    background: transparent;
+    color: #16a34a;
+    border: none;
+    box-shadow: none;
 }
 
+/* Error messages - Red text only */
 .flashes li.danger {
-    background: linear-gradient(135deg, #fecaca, #fca5a5);
-    color: #000000;
-    border-left-color: #ef4444;
-    border: 1px solid #ef4444;
+    background: transparent;
+    color: #dc2626;
+    border: none;
+    box-shadow: none;
 }
 
+/* Info messages - Blue text only (if needed) */
 .flashes li.info {
-    background: linear-gradient(135deg, #bfdbfe, #93c5fd);
-    color: #000000;
-    border-left-color: #3b82f6;
-    border: 1px solid #3b82f6;
+    background: transparent;
+    color: #2563eb;
+    border: none;
+    box-shadow: none;
 }
 
 /* Mobile responsiveness for flash messages */
@@ -1325,11 +1352,16 @@ button[type="submit"]:hover {
         top: 60px;
     }
     
+    .cube-header + .flashes {
+        max-width: calc(100vw - 30px) !important;
+        width: auto !important;
+    }
+    
     .flashes li {
         padding: 10px 14px;
         font-size: 0.85em;
         margin-bottom: 6px;
-        white-space: normal; /* Allow wrapping on mobile */
+        white-space: normal;
         max-width: calc(100vw - 50px);
     }
 }
@@ -1339,6 +1371,10 @@ button[type="submit"]:hover {
         max-width: calc(100vw - 20px);
         left: 5px;
         top: 55px;
+    }
+    
+    .cube-header + .flashes {
+        max-width: calc(100vw - 20px) !important;
     }
     
     .flashes li {
@@ -1406,38 +1442,6 @@ button[type="submit"] {
 
 button[type="submit"]:hover {
     background-color: #0056b3;
-}
-
-.flashes {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 15px 0;
-    text-align: left;
-}
-
-.flashes li {
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
-
-.flashes li.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.flashes li.danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.flashes li.info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
 }
 
 p {

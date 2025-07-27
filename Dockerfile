@@ -22,13 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # The second '.' means copy to the current working directory inside the container (/app).
 COPY . .
 
-# Set environment variables for Flask.
+
+# Set environment variables for Flask and Python path
 # FLASK_APP tells Flask where your main application instance is.
 # FLASK_RUN_HOST=0.0.0.0 makes the Flask development server accessible from outside the container.
 ENV FLASK_APP=src/app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-#Explicitly set port, though Flask's default is 5000
-ENV FLASK_RUN_PORT=5000 
+# Explicitly set port, though Flask's default is 5000
+ENV FLASK_RUN_PORT=5000
 
 # Expose the port your Flask application will run on.
 # This informs Docker that the container listens on this port.
@@ -41,4 +42,6 @@ EXPOSE 5000
 # Note: In a production setup, database migrations are usually run as a separate
 # step (e.g., in a CI/CD pipeline or a dedicated init container) before the app starts.
 # For this project, running it on container start is acceptable for simplicity.
+
+# For the main app container:
 CMD python src/database/connection.py && flask run

@@ -1,8 +1,8 @@
 from typing import Optional
-from src.models.user import User
+from models.user import User
 from flask_bcrypt import Bcrypt 
-from src.database.connection import get_db_connection, close_db_connection
-from src.models.user import User 
+from database.connection import get_db_connection, close_db_connection
+from models.user import User 
 from psycopg2 import errors as pg_errors 
 import pyotp
 

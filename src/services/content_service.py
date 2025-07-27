@@ -1,5 +1,5 @@
-from src.database.connection import get_db_connection, close_db_connection
-from src.models.content import Content
+from database.connection import get_db_connection, close_db_connection
+from models.content import Content
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
@@ -45,7 +45,7 @@ def assign_topic(title: str, summary: str) -> str:
         return "Other"
 
 def create_content_item(source_id: int, title: str, summary: str,
-                        article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:
+                        article_url: str, published_at: Optional[datetime], topic: Optional[str] = None, image_url: Optional[str] = None) -> Optional[Content]:
     """
     Creates a new content item in the database. Used by the ingestion pipeline.
 
@@ -67,19 +67,19 @@ def create_content_item(source_id: int, title: str, summary: str,
         topic_val = topic if topic else assign_topic(title, summary)
         cur.execute(
             """
-            INSERT INTO content (source_id, title, summary, article_url, published_at, topic)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, topic;
+            INSERT INTO content (source_id, title, summary, article_url, published_at, topic, image_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, topic, image_url;
             """,
-            (source_id, title, summary, article_url, published_at, topic_val)
+            (source_id, title, summary, article_url, published_at, topic_val, image_url)
         )
         row = cur.fetchone()
         if row is None:
             if conn: conn.rollback()
             return None
-        content_id, topic_db = row
+        content_id, topic_db, image_url_db = row
         conn.commit()
-        return Content(content_id, source_id, title, summary, article_url, published_at, topic_db)
+        return Content(content_id, source_id, title, summary, article_url, published_at, topic_db, image_url_db)
     except pg_errors.UniqueViolation as e:
         print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()
@@ -118,7 +118,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         query = """
             SELECT
                 c.id, c.source_id, c.title, c.summary, c.article_url,
-                c.published_at, c.topic,
+                c.published_at, c.topic, c.image_url,
                 uci.is_read, uci.is_liked, uci.interaction_at,
                 s.source_name AS source_name, s.feed_url AS source_feed_url
             FROM
@@ -142,7 +142,6 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         cur.execute(query, tuple(params))
 
         for row in cur.fetchall():
-            # Map row data to a dictionary for easier consumption by Flask/frontend
             digest_items.append({
                 'id': row[0],
                 'source_id': row[1],
@@ -151,12 +150,13 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 'article_url': row[4],
                 'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
                 'topic': row[6],
-                'is_read': row[7] if row[7] is not None else False, # Default to False if no interaction record
-                'is_liked': row[8] if row[8] is not None else False, # Default to False
-                'is_saved': row[8] if row[8] is not None else False, # is_liked means saved
-                'interaction_at': row[9].isoformat() if row[9] and hasattr(row[9], 'isoformat') else str(row[9]) if row[9] else None,
-                'source_name': row[10],
-                'source_feed_url': row[11]
+                'image_url': row[7],
+                'is_read': row[8] if row[8] is not None else False,
+                'is_liked': row[9] if row[9] is not None else False,
+                'is_saved': row[9] if row[9] is not None else False,
+                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
+                'source_name': row[11],
+                'source_feed_url': row[12]
             })
         # Add an aesthetic instruction for the user (for frontend display)
         digest_items.insert(0, {
@@ -496,7 +496,7 @@ def get_general_digest(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]
         query = """
             SELECT
                 c.id, c.source_id, c.title, c.summary, c.article_url,
-                c.published_at, c.topic,
+                c.published_at, c.topic, c.image_url,
                 s.source_name AS source_name, s.feed_url AS source_feed_url
             FROM
                 content c
@@ -515,8 +515,9 @@ def get_general_digest(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]
                 'article_url': row[4],
                 'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
                 'topic': row[6],
-                'source_name': row[7],
-                'source_feed_url': row[8]
+                'image_url': row[7],
+                'source_name': row[8],
+                'source_feed_url': row[9]
             })
         # Add an instruction for the user (for frontend display)
         digest_items.insert(0, {

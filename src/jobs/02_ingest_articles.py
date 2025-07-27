@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 from src.database.connection import get_db_connection, close_db_connection
 from src.services.content_service import create_content_item
+from bs4 import BeautifulSoup
 
 # ADD YOUR RSS SOURCES HERE
 RSS_SOURCES = [
@@ -52,13 +53,20 @@ def fetch_and_ingest():
     conn = get_db_connection()
     cur = conn.cursor()
     new_articles = 0
+    # Build a mapping from feed_url to source_id using the DB
+    from services.source_service import get_all_sources
+    sources_in_db = get_all_sources()
+    url_to_id = {s.feed_url: s.id for s in sources_in_db}
+
     for source in RSS_SOURCES:
         feed_url = source["url"]
-        source_id = RSS_SOURCES.index(source) + 1  # Or use a better mapping if available
+        source_id = url_to_id.get(feed_url)
+        if not source_id:
+            print(f"Source not found in DB for {feed_url}, skipping.")
+            continue
         print(f"Fetching: {feed_url}")
         feed = feedparser.parse(feed_url)
         for entry in feed.entries:
-            # Ensure title, summary, and article_url are always strings
             article_url = str(entry.get("link", ""))
             title = str(entry.get("title", "No Title"))
             summary = str(entry.get("summary", ""))
@@ -67,10 +75,34 @@ def fetch_and_ingest():
                 published_at = datetime.fromtimestamp(time.mktime(published_at))
             else:
                 published_at = datetime.now()
+            # Extract image_url from entry
+            image_url = None
+            # Try media_content (list of dicts)
+            if hasattr(entry, "media_content") and entry.media_content:
+                first_media = entry.media_content[0]
+                if isinstance(first_media, dict):
+                    image_url = first_media.get("url")
+                elif hasattr(first_media, "get"):
+                    image_url = first_media.get("url")
+            # Try image (dict)
+            elif hasattr(entry, "image") and isinstance(entry.image, dict):
+                image_url = entry.image.get("href")
+            # Try summary HTML
+            elif summary:
+                soup = BeautifulSoup(summary, "html.parser")
+                img_tag = soup.find("img")
+                from bs4.element import Tag
+                if img_tag and isinstance(img_tag, Tag) and img_tag.has_attr("src"):
+                    image_url = img_tag["src"]
+            # Ensure image_url is a string
+            if isinstance(image_url, list):
+                image_url = image_url[0] if image_url else None
+            if image_url is not None and not isinstance(image_url, str):
+                image_url = str(image_url)
             cur.execute("SELECT id FROM content WHERE article_url = %s", (article_url,))
             if cur.fetchone():
-                continue  # Skip if already exists
-            content = create_content_item(source_id, title, summary, article_url, published_at)
+                continue
+            content = create_content_item(source_id, title, summary, article_url, published_at, image_url=image_url)
             if content:
                 new_articles += 1
     conn.commit()

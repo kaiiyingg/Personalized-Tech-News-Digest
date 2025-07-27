@@ -13,7 +13,8 @@ class Content:
                  summary: str,
                  article_url: str,
                  published_at: Optional[datetime],
-                 topic: Optional[str] = None):
+                 topic: Optional[str] = None,
+                 image_url: Optional[str] = None):
         """
         Initializes a new Content object.
         
@@ -32,9 +33,10 @@ class Content:
         self.article_url = article_url
         self.published_at = published_at
         self.topic = topic
+        self.image_url = image_url
 
     def __repr__(self) -> str:
         """
         Provides a string representation of the Content object for debugging.
         """
-        return f"<Content(id={self.id}, title='{self.title[:30]}...', source_id={self.source_id}, topic={self.topic})>"
+        return f"<Content(id={self.id}, title='{self.title[:30]}...', source_id={self.source_id}, topic={self.topic}, image_url={self.image_url})>"

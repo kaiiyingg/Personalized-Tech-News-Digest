@@ -1,5 +1,5 @@
-from src.database.connection import get_db_connection, close_db_connection
-from src.models.source import Source
+from database.connection import get_db_connection, close_db_connection
+from models.source import Source
 from typing import List, Optional
 from psycopg2 import errors as pg_errors
 
@@ -17,6 +17,15 @@ def create_source(name: str, feed_url: str) -> Optional[Source]:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
+            "SELECT id, last_fetched_at, created_at, updated_at FROM sources WHERE feed_url = %s;",
+            (feed_url,)
+        )
+        existing = cur.fetchone()
+        if existing:
+            # Source already exists, return existing Source
+            source_id, last_fetched_at, created_at, updated_at = existing
+            return Source(source_id, name, feed_url, last_fetched_at, created_at, updated_at)
+        cur.execute(
             "INSERT INTO sources (source_name, feed_url) VALUES (%s, %s) RETURNING id, last_fetched_at, created_at, updated_at;",
             (name, feed_url)
         )
@@ -26,7 +35,7 @@ def create_source(name: str, feed_url: str) -> Optional[Source]:
             return None
         source_id, last_fetched_at, created_at, updated_at = row
         conn.commit()
-        return Source(source_id, None, name, feed_url, last_fetched_at, created_at, updated_at)
+        return Source(source_id, name, feed_url, last_fetched_at, created_at, updated_at)
     except Exception as e:
         print(f"An error occurred during source creation: {e}")
         if conn: conn.rollback()
@@ -49,7 +58,7 @@ def get_all_sources() -> List[Source]:
             "SELECT id, source_name, feed_url, last_fetched_at, created_at, updated_at FROM sources ORDER BY source_name;"
         )
         for row in cur.fetchall():
-            sources.append(Source(row[0], None, row[1], row[2], row[3], row[4], row[5]))
+            sources.append(Source(row[0], row[1], row[2], row[3], row[4], row[5]))
     except Exception as e:
         print(f"An error occurred while fetching sources: {e}")
     finally:
@@ -74,7 +83,7 @@ def get_source_by_id(source_id: int) -> Optional[Source]:
         )
         row = cur.fetchone()
         if row:
-            return Source(row[0], None, row[1], row[2], row[3], row[4], row[5])
+            return Source(row[0], row[1], row[2], row[3], row[4], row[5])
         return None
     except Exception as e:
         print(f"An error occurred while fetching source {source_id}: {e}")

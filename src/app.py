@@ -207,7 +207,6 @@ def get_sources():
     for s in sources:
         sources_data.append({
             'id': s.id,
-            'user_id': s.user_id,
             'name': s.name,
             'feed_url': s.feed_url,
             'last_fetched_at': s.last_fetched_at.isoformat() if s.last_fetched_at else None,

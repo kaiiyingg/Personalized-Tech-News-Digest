@@ -31,5 +31,19 @@ services:
     volumes:
       - .:/app # This mounts your local code into the container for live reloading
 
+  scheduler:
+    build: .
+    command: python jobs/scheduler.py
+    environment:
+      DB_NAME: TechPulse_db
+      DB_USER: localuser
+      DB_PASSWORD: localpassword
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
 volumes:
   postgres_data:

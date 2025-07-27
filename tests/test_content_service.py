@@ -1,5 +1,5 @@
-# Type PYTHONPATH=./ pytest tests/ in terminal to run tests
-import pytest # type: ignore
+# For WSL: Go to python env (.venv) + type PYTHONPATH=./ pytest tests/ in terminal to run tests
+import pytest 
 from src.services.content_service import assign_topic, create_content_item, cleanup_old_articles
 from datetime import datetime
 

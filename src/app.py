@@ -6,21 +6,13 @@ from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
-# Add the src directory to Python path to find modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-try:
-    # Try relative imports first (when running from src directory)
-    from services.user_service import create_user, check_password, find_user_by_email, update_user_password
-    from services.source_service import get_sources_by_user
-    from services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
-    from services.content_service import get_articles_by_topics
-except ImportError:
-    # Fallback to absolute imports (when running from root directory)
-    from src.services.user_service import create_user, check_password, find_user_by_email, update_user_password
-    from src.services.source_service import get_sources_by_user
-    from src.services.content_service import get_personalized_digest, mark_content_as_read, update_content_liked
-    from src.services.content_service import get_articles_by_topics
+'''
+Do not import the relevant methods only, import the class directly and if want the relevant methods, use class.method()
+as if add/remove method from class, need to update import area also which is not maintainable
+'''
+import src.services.user_service as user_service
+import src.services.source_service as source_service
+import src.services.content_service as content_service
 
 # ------------------- APP CONFIG -------------------
 app = Flask(__name__)
@@ -49,8 +41,8 @@ def index():
     user_id = session['user_id']
     
     # Get articles grouped by topics
-    topics_articles = get_articles_by_topics(user_id, limit_per_topic=8)
-    
+    topics_articles = content_service.get_articles_by_topics(user_id, limit_per_topic=8)
+
     username = session.get('username')
     current_year = datetime.now().year
     
@@ -68,7 +60,7 @@ def discover():
 def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
-        user = find_user_by_email(email)
+        user = user_service.find_user_by_email(email)
         if not user:
             flash('No account found with that email.', 'danger')
             return render_template('forgot_password.html')
@@ -84,7 +76,7 @@ def reset_password():
         email = request.form['email']
         code = request.form['code']
         new_password = request.form['new_password']
-        user = find_user_by_email(email)
+        user = user_service.find_user_by_email(email)
         if not user:
             flash('No account found for password reset.', 'danger')
             return render_template('reset_password.html')
@@ -93,7 +85,7 @@ def reset_password():
             flash('Invalid code. Please try again.', 'danger')
             return render_template('reset_password.html')
         # Update password
-        update_user_password(user.id, new_password)
+        user_service.update_user_password(user.id, new_password)
         flash('Password reset successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html')
@@ -105,7 +97,7 @@ def mark_read(article_id):
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
     user_id = session['user_id']
-    mark_content_as_read(user_id, article_id, is_read=True)
+    content_service.mark_content_as_read(user_id, article_id, is_read=True)
     flash('Article marked as read', 'success')
     return redirect(url_for('index'))
 
@@ -115,7 +107,7 @@ def like_article(article_id):
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
     user_id = session['user_id']
-    update_content_liked(user_id, article_id, is_liked=True)
+    content_service.update_content_liked(user_id, article_id, is_liked=True)
     flash('Article saved to favorites', 'success')
     return redirect(url_for('index'))
 
@@ -127,10 +119,10 @@ def read_article(article_id):
     
     user_id = session['user_id']
     # Mark article as read
-    mark_content_as_read(user_id, article_id, is_read=True)
-    
+    content_service.mark_content_as_read(user_id, article_id, is_read=True)
+
     # Get the article URL to redirect to
-    articles = get_personalized_digest(user_id, limit=1000)  # Get all articles
+    articles = content_service.get_personalized_digest(user_id, limit=1000)  # Get all articles
     article_url = None
     for article in articles:
         if article.get('id') == article_id:
@@ -151,7 +143,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         email = request.form['email']
-        user = create_user(username, password, email)
+        user = user_service.create_user(username, password, email)
         if user:
             flash('Registration successful! Please set up your authenticator app.', 'success')
             # Show QR code for TOTP setup
@@ -169,7 +161,7 @@ def setup_totp():
     if not email:
         flash('No email found for TOTP setup.', 'danger')
         return redirect(url_for('register'))
-    user = find_user_by_email(email)
+    user = user_service.find_user_by_email(email)
     if not user:
         flash('No account found for TOTP setup.', 'danger')
         return redirect(url_for('register') )
@@ -183,12 +175,8 @@ def login():
         username = request.form['username']
         password = request.form['password']
         code = request.form.get('code')
-        try:
-            from services.user_service import find_user_by_username
-        except ImportError:
-            from src.services.user_service import find_user_by_username
-        user = find_user_by_username(username)
-        if user and check_password(user, password):
+        user = user_service.find_user_by_username(username)
+        if user and user_service.check_password(user, password):
             if code:
                 totp = pyotp.TOTP(user.totp_secret)
                 if not totp.verify(code):
@@ -214,7 +202,7 @@ def logout():
 @login_required_api
 def get_sources():
     user_id = session['user_id']
-    sources = get_sources_by_user(user_id)
+    sources = source_service.get_all_sources()
     sources_data = []
     for s in sources:
         sources_data.append({
@@ -232,10 +220,10 @@ def get_sources():
 @app.route('/api/digest', methods=['GET'])
 @login_required_api
 def get_digest():
-    user_id = session['user_id']
     limit = int(request.args.get('limit', 20))
     offset = int(request.args.get('offset', 0))
-    articles = get_personalized_digest(user_id, limit=limit, offset=offset)
+    # Fetch general articles for all users (Only fast section shows personalised articles based on user's interested topics.)
+    articles = content_service.get_general_digest(limit=limit, offset=offset)
     return jsonify({'articles': articles}), 200
 
 @app.route('/api/content/<int:content_id>/read', methods=['POST'])
@@ -244,7 +232,7 @@ def mark_content_read_api(content_id):
     user_id = session['user_id']
     data = request.json or {}
     is_read = data.get('is_read', True)
-    success = mark_content_as_read(user_id, content_id, is_read=bool(is_read))
+    success = content_service.mark_content_as_read(user_id, content_id, is_read=bool(is_read))
     if success:
         return jsonify({'message': 'Content marked as read.'}), 200
     else:
@@ -256,7 +244,7 @@ def like_content_api(content_id):
     try:
         user_id = session['user_id']
         print(f"Like API called - User ID: {user_id}, Content ID: {content_id}")
-        success = update_content_liked(user_id, content_id, is_liked=True)
+        success = content_service.update_content_liked(user_id, content_id, is_liked=True)
         if success:
             print(f"Successfully liked content {content_id} for user {user_id}")
             return jsonify({'message': 'Article saved to favorites'}), 200
@@ -273,7 +261,7 @@ def unlike_content_api(content_id):
     try:
         user_id = session['user_id']
         print(f"Unlike API called - User ID: {user_id}, Content ID: {content_id}")
-        success = update_content_liked(user_id, content_id, is_liked=False)
+        success = content_service.update_content_liked(user_id, content_id, is_liked=False)
         if success:
             print(f"Successfully unliked content {content_id} for user {user_id}")
             return jsonify({'message': 'Article removed from favorites'}), 200
@@ -290,7 +278,7 @@ def unlike_content_api(content_id):
 def fast():
     user_id = session['user_id']
     # Get all articles for today (including read)
-    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
+    all_articles = content_service.get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
     # Filter out instruction items and count
     actual_articles = [a for a in all_articles if a.get('id')]
     total_articles = len(actual_articles)
@@ -316,7 +304,7 @@ def favorites():
         return redirect(url_for('login'))
     user_id = session['user_id']
     # Get articles (including read ones) and filter for liked articles only
-    articles = get_personalized_digest(user_id, limit=100, include_read=True)
+    articles = content_service.get_personalized_digest(user_id, limit=100, include_read=True)
     liked_articles = [a for a in articles if a.get('is_liked')]
     username = session.get('username')
     current_year = datetime.now().year
@@ -333,7 +321,7 @@ def unlike_article(article_id):
         flash('You must be logged in to perform this action', 'danger')
         return redirect(url_for('login'))
     user_id = session['user_id']
-    update_content_liked(user_id, article_id, is_liked=False)
+    content_service.update_content_liked(user_id, article_id, is_liked=False)
     flash('Article removed from favorites', 'info')
     return redirect(url_for('index'))
 

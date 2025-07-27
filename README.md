@@ -1,218 +1,103 @@
-# Personalized-Tech-News-Digest
 
-**TechPulse: Your personalised tech news digest**
+# TechPulse: Personalized Tech News Digest
 
-[![Build Status](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml/badge.svg)](https://github.com/kaiiyingg/Personalized-Tech-News-Digest/actions/workflows/main.yml)
+TechPulse is a modern, AI-powered web app that delivers a personalized tech news feed to users. It solves the real-world problem of information overload by automatically curating, classifying, and updating tech articles from top sources—so users always stay ahead in the industry.
 
-## Table of Contents
+## What Sets TechPulse Apart
+- **Solves Real Problems:** TechPulse cuts through information overload, delivering only the most relevant tech news and saving users hours every week.
+- **Modern, Proven Technologies:** Built with Python, Flask, PostgreSQL, Docker, and HuggingFace Transformers for smart, AI-driven topic classification. Automation powered by schedule and psycopg2 for reliable data access.
+- **Built to Grow:** End-to-end automation, secure authentication, favorites, and personalized recommendations—engineered for scale, real deployment, and easy expansion with new features.
 
-* [Overview](#overview)
-* [Features](#features)
-* [Tech Stack](#tech-stack)
-* [Architecture](#architecture)
-* [Diagram](#diagram)
-* [Demo Video](#demo-video)
-* [DevOps & Best Practices](#devops--best-practices)
-* [Local Setup & Development](#local-setup--development)
-* [Deployment to AWS](#deployment-to-aws)
-* [Future Enhancements](#future-enhancements)
-* [License](#license)
-* [Contact](#contact)
+## Key Features
+- **Automated Ingestion:** Articles are fetched and updated hourly from curated RSS sources and no manual work is required.
+- **AI Topic Classification:** Uses HuggingFace zero-shot classification to assign topics to articles, making the feed truly personalized.
+- **User Personalization:** Users get a digest tailored to their interests, can save favorites, and interact with content.
+- **Minimal Maintenance:** Source syncing and article ingestion are fully automated via a Python scheduler (see `jobs/scheduler.py`).
+- **Clean UI:** Responsive web interface for easy reading and interaction.
 
----
+## Technical Highlights
+- **Python 3.x & Flask:** Fast, maintainable backend and REST API.
+- **PostgreSQL:** Reliable, scalable relational database.
+- **HuggingFace Transformers:** AI-powered topic assignment for every article.
+- **schedule:** Python job scheduler for hands-off automation.
+- **Docker & Docker Compose:** Consistent local and cloud deployment.
+- **Modular Codebase:** Organized into `src/` (app/services/models), `jobs/` (automation scripts), and `tests/` (unit tests).
 
-## Overview
+## Architecture Overview
+1. **Automated Jobs:**
+   - `jobs/01_sync_sources.py`: Syncs RSS sources to the database daily.
+   - `jobs/02_ingest_articles.py`: Ingests new articles hourly.
+   - `jobs/scheduler.py`: Runs both jobs automatically—just start the scheduler and everything updates itself.
+2. **Web App:**
+   - Flask backend serves personalized digests, handles user authentication, and manages favorites.
+   - Frontend templates for a clean, modern UI.
+3. **AI Automation:**
+   - Each article is classified by topic using HuggingFace zero-shot classification.
 
-In today's fast-paced tech landscape, information overload is a significant challenge for learners and professionals alike. The **TechPulse: Your personalised tech news digest** is a cloud-native web application designed to combat this by providing a centralized, customizable, and intelligent feed of the latest tech news and learning resources tailored specifically to your interests.
+## Setup & Usage
 
-This project empowers users to define their preferred content sources – such as RSS feeds from leading tech blogs, news sites, and even specific subreddits. Behind the scenes, an asynchronous, event-driven pipeline leverages **AWS Lambda** and **SQS** to ingest and process new content, ensuring a continuous flow of information without overwhelming the user. The core Flask API, containerized with **Docker** and deployed via **AWS Elastic Beanstalk**, serves the personalized digest, which is dynamically filtered based on user-defined interests stored securely in **AWS RDS (PostgreSQL)**.
+1. **Clone & Install:**
+   ```bash
+   git clone https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git
+   cd Personalized-Tech-News-Digest
+   python -m venv .venv
+   .venv\Scripts\activate  # Windows
+   pip install -r requirements.txt
+   ```
+2. **Configure Environment:**
+   - Copy `.env.example` to `.env` and fill in your DB credentials.
+3. **Run Locally:**
+   - Start the Flask app: `python src/app.py`
+   - Start the scheduler: `python jobs/scheduler.py`
+   - Or use Docker Compose for both: `docker-compose up --build`
+4. **Access:**
+   - Go to `http://localhost:5000` in your browser.
 
-Built with **DevOps best practices** at its core, the entire AWS infrastructure is defined and managed using **AWS CloudFormation (Infrastructure as Code)** for reproducibility and consistency. A robust **CI/CD pipeline** orchestrated by **GitHub Actions** automates code quality checks (linting, automated testing) and streamlines deployment, guaranteeing rapid and reliable updates.
+## Docker & Local Development
 
----
+This project uses Docker and Docker Compose for easy local development and testing. The main services are:
 
-## Features
+- **db**: PostgreSQL database
+- **app**: Flask web application
+- **scheduler**: Runs automated jobs (from `jobs/scheduler.py`) for syncing sources and ingesting articles
 
-* **Personalized Content Feed:** View the latest tech news and articles filtered by your custom interests (e.g., Serverless, AI/ML, DevOps, Python).
-* **Customizable Sources:** Easily add, edit, and manage RSS feed URLs from your favorite tech websites and blogs.
-* **User Authentication:** Secure login and registration system to manage individual user profiles and preferences.
-* **Intelligent Ingestion:** An automated, serverless backend continuously pulls, parses, and processes new content from defined sources.
-* **"Favorites:** Tools to save articles that you like.
-* **Interest Management:** Define and refine your specific tech interest keywords for precise content filtering.
-* **Responsive Web UI:** A clean and intuitive web interface accessible from any browser on your laptop.
+You can start all services together with:
 
----
+docker-compose build
+docker-compose up
 
-## Tech Stack
+This will build the images, start the database, run the Flask app, and launch the scheduler for automated ingestion/classification. Your code is mounted into the containers for live reloading during development.
 
-**Backend:**
-* **Python 3.x:** Primary programming language.
-* **Flask:** Lightweight web framework for the RESTful API and serving the frontend.
+## Deployment
+This project uses Render for cloud deployment, with full Docker support for easy scaling and CI/CD.
+You can deploy the web app, scheduler, and database as separate services on Render using your existing Docker setup.
 
-**Frontend:**
-* **HTML5, CSS3, JavaScript:** For the user interface.
+## Real-World Technical Challenges Solved
+- **AI-powered automation:** No manual tagging—topics are assigned by ML.
+- **Multi-step workflow:** Source syncing, ingestion, classification, and user personalization all run automatically.
+- **Scalable architecture:** Modular, maintainable, and ready for production.
 
-**Database:**
-* **PostgreSQL:** Relational database for storing user data, source definitions, content metadata, and user interactions.
-* **AWS RDS:** Managed PostgreSQL service in the cloud.
-
-**Containerization:**
-* **Docker:** For packaging the Flask application and its dependencies into isolated containers.
-* **Docker Compose:** For orchestrating multi-container local development environments.
-
-**Cloud Platform:**
-* **Amazon Web Services (AWS):**
-    * **AWS EC2 (via Elastic Beanstalk):** Virtual servers for the main application.
-    * **AWS Elastic Beanstalk:** Platform as a Service (PaaS) for easy deployment and scaling of the Flask app.
-    * **AWS Lambda:** Serverless compute for asynchronous content ingestion and processing.
-    * **AWS SQS (Simple Queue Service):** Message queuing for decoupling ingestion steps and ensuring reliability.
-    * **AWS S3 (Simple Storage Service):** Potentially for storing raw ingested content or static assets.
-    * **AWS IAM (Identity and Access Management):** Securely manages access to AWS resources.
-    * **AWS CloudWatch Events:** For scheduling recurring tasks (e.g., triggering content ingestion Lambdas).
-
-**Infrastructure as Code (IaC):**
-* **AWS CloudFormation:** To define, provision, and manage all AWS resources in a declarative YAML/JSON template.
-
-**CI/CD & DevOps Tools:**
-* **Git:** Version control system.
-* **GitHub:** Remote repository hosting and integration with CI/CD.
-* **GitHub Actions:** CI/CD platform for automating build, test, and deployment workflows.
-* **Pylint:** Python linter for code quality and consistency checks.
-* **Black:** Uncompromising Python code formatter.
-* **Pytest:** Python testing framework for unit and integration tests.
-* **Makefile:** For automating common development tasks (install, lint, test, format, build).
-
----
-
-## Architecture
-
-The system's architecture is divided into two main flows:
-
-1.  **User Interaction Flow:**
-    * Users access the web application through any devices.
-    * The Flask application (hosted on AWS Elastic Beanstalk) handles user authentication and serves the personalized digest.
-    * It interacts with AWS RDS (PostgreSQL) to retrieve user-specific data, sources, interests, and content.
-
-2.  **Background Content Ingestion Flow:**
-    * An **AWS CloudWatch Event** periodically triggers an **AWS Lambda function** (the Ingestion Orchestrator).
-    * This Orchestrator Lambda reads user-defined sources from **AWS RDS** and sends messages to an **AWS SQS queue**.
-    * Another **AWS Lambda function** (the Content Processor) is triggered by messages in the SQS queue.
-    * The Content Processor fetches content from external sources (RSS feeds, etc.), parses it, filters it, and stores the processed metadata in **AWS RDS**.
-
-This decoupled architecture ensures scalability, reliability, and cost-efficiency.
-
-## Diagram:
-* [to be added]
-
----
-
-## Demo Video:
-* [to be added]
-
----
-
----
 
 ## DevOps & Best Practices
-
-This project rigorously applies the following DevOps principles:
-
-* **Continuous Integration (CI):** Automated linting and testing (unit/integration) on every code commit via GitHub Actions to ensure code quality and catch issues early.
-* **Continuous Delivery (CD):** Automated building, testing, and deployment of the application to AWS Elastic Beanstalk (and updates to CloudFormation stacks) through the GitHub Actions pipeline.
-* **Infrastructure as Code (IaC):** All AWS infrastructure is defined in version-controlled AWS CloudFormation templates, ensuring environments are reproducible and eliminating "snowflake servers."
-* **Containerization:** Using Docker to package the application, providing consistent environments from local development to cloud deployment.
-* **Modularity:** The Flask application code is logically separated into distinct modules (e.g., `src/database`, `src/models`, `src/services`) for maintainability and clear responsibilities.
-* **Automated Testing:** Comprehensive unit tests with Pytest and linting with Pylint are integrated into the development workflow and CI pipeline.
-* **Dependency Management:** Strict use of `requirements.txt` for Python dependencies and a `Dockerfile` for container dependencies ensures reproducible builds.
-* **Automated Tasks:** A `Makefile` streamlines common development and deployment commands, enforcing consistency.
-* **Idempotence:** CloudFormation ensures that deploying the same infrastructure template multiple times results in the same desired state, making deployments robust.
-
----
-
-## Local Setup & Development
-
-To get the **TechPulse: Your personalised tech news digest** running on your local machine:
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git](https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git)
-    cd Personalized-Tech-News-Digest
-    ```
-2.  **Create and activate a Python virtual environment:**
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate.ps1
-    ```
-3.  **Install Python dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  **Set up local environment variables:**
-    * Create a `.env` file in the project root (it's ignored by Git for security reasons).
-    * Copy the content from `.env.example` and fill in your local database credentials.
-    ```
-    # .env example
-    DB_NAME=TechPulse_db
-    DB_USER=localuser
-    DB_PASSWORD=localpassword
-    DB_HOST=localhost
-    DB_PORT=5432
-    FLASK_APP=src/app.py
-    ```
-5.  **Run with Docker Compose (Recommended for local database):**
-    * Ensure Docker Desktop is running.
-    * This will spin up a local PostgreSQL database and your Flask application in containers.
-    ```bash
-    docker-compose up --build
-    ```
-    * The `docker-compose` command will also automatically create the necessary database tables (defined in `src/database/schema.sql` via `src/database/connection.py`).
-6.  **Access the application:**
-    * Open your web browser and navigate to `http://localhost:5000`.
-
-*(Detailed instructions for individual Flask app run without Docker Compose, running tests, linting etc. can be added here or linked to a `CONTRIBUTING.md`)*
-
----
-
-## Deployment to AWS
-
-The entire application infrastructure and application code are deployed to AWS using **AWS CloudFormation** and automated via **GitHub Actions**.
-
-1.  **AWS Account Setup:** Ensure you have an AWS account configured with appropriate IAM user/role credentials locally (e.g., via AWS CLI `aws configure`) and in your GitHub Actions secrets.
-2.  **CloudFormation Deployment:**
-    * The `infra/` directory contains the CloudFormation templates.
-    * **Manual Deployment (First Time / Debugging):** You can manually deploy the stacks via the AWS CloudFormation console or AWS CLI:
-        ```bash
-        # Example for deploying network stack
-        aws cloudformation deploy --template-file infra/network.yaml --stack-name learning-stream-network --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
-        ```
-    * **Automated Deployment (Recommended):** The GitHub Actions workflow (`.github/workflows/main.yml`) is configured to automatically deploy/update your CloudFormation stacks and application code upon pushes to the `main` branch, after successful tests and linting.
-3.  **Application Deployment:** Your Flask application will be deployed to **AWS Elastic Beanstalk** as part of the CloudFormation stack, with its Docker image pushed to **AWS ECR**.
-4.  **Access Deployed Application:** Once deployed, you will find the Elastic Beanstalk environment URL in the AWS Console.
-
-*(Provide more specific AWS CLI commands for deploying each stack, if preferred over just mentioning automation.)*
-
----
+- **CI/CD:** Automated testing, linting, and deployment with GitHub Actions.
+- **Containerization:** Docker and Docker Compose for consistent environments and easy scaling.
+- **Modular Design:** Clear separation of concerns (services, models, jobs, tests) for maintainability.
+- **Automated Jobs:** Python scheduler for hands-off ingestion and syncing.
+- **Strict Dependency Management:** requirements.txt and Dockerfile ensure reproducible builds.
 
 ## Future Enhancements
+- **Advanced Content Filtering:** Smarter filtering based on user engagement, freshness, and personalized weighting.
+- **Light Mode:** UI toggle for light/dark mode to improve user experience.
+- **Rich Content Sources:** Ingest from YouTube, Twitter, and academic databases.
+- **Email/Notification Digests:** Personalized digests via email (AWS SES) or notifications (AWS SNS).
+- **Project Idea Recommendations:** AI-powered suggestions for personal tech projects and curated learning resources, inspiring users to turn passive learning into active creation.
 
-* **Advanced Content Filtering:** Implement more sophisticated content filtering based on user engagement, freshness decay, or personalized weighting.
-* **Light Mode:** Include toggle button to allow user to switch between light and dark mode for better user experience.
-* **Rich Content Sources:** Expand ingestion to include YouTube channels (via API), specific Twitter lists, or academic paper databases.
-* **Email / Notification Digests:** Allow users to receive their personalized digest via email (AWS SES) or other notification channels (AWS SNS).
-* **Personal Project Idea Recommendation feature** Additional feature which offers tailored project ideas and curated learning resources base on user's interest. The goal is to inspire users and provide clear guidance to starting a personal project which turns passive learning into active creation.
-
----
+## Contact
+- Email: chongkaiying578@gmail.com
+- LinkedIn: [linkedin.com/in/kai-ying-907bb6178](https://linkedin.com/in/kai-ying-907bb6178)
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Contact
-
-- 📧 Email: [chongkaiying578@gmail.com](mailto:chongkaiying578@gmail.com)  
-- 📱 Phone: +65 8917 2864  
-- 💼 LinkedIn: [linkedin.com/in/kai-ying-907bb6178](https://linkedin.com/in/kai-ying-907bb6178)
 
 ---

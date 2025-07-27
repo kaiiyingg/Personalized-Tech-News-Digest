@@ -8,9 +8,9 @@ from transformers import pipeline #type: ignore
 # Define topic labels for zero-shot classification
 TOPIC_LABELS = [
     "Artificial Intelligence (AI) & Machine Learning (ML)",
+    "Cybersecurity & Privacy",
     "Cloud Computing & DevOps",
     "Software Development & Web Technologies",
-    "Cybersecurity & Privacy",
     "Data Science & Analytics",
     "Emerging Technologies",
     "Big Tech & Industry Trends",
@@ -29,9 +29,20 @@ def assign_topic(title: str, summary: str) -> str:
     Assigns a topic to content using zero-shot classification (HuggingFace).
     """
     text = f"{title} {summary}"
-    result = zero_shot_classifier(text, TOPIC_LABELS)
-    # Return the highest scoring topic
-    return result['labels'][0] if result['labels'] else "Other"
+    try:
+        result = zero_shot_classifier(text, TOPIC_LABELS)
+        # HuggingFace pipeline may return a dict or a list of dicts
+        labels = []
+        if isinstance(result, dict):
+            labels = result.get('labels', [])
+        elif isinstance(result, list) and result and isinstance(result[0], dict):
+            labels = result[0].get('labels', [])
+        if labels and isinstance(labels[0], str):
+            return labels[0]
+        else:
+            return "Other"
+    except Exception:
+        return "Other"
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None) -> Optional[Content]:
@@ -463,3 +474,56 @@ def cleanup_old_articles():
         }
     finally:
         close_db_connection(conn)
+
+def get_general_digest(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
+    """
+    Retrieves a general digest of content items for all users (not personalized).
+    Returns the most recent articles from all sources, without user-specific filtering.
+
+    Args:
+        limit (int): Maximum number of articles to return.
+        offset (int): Offset for pagination.
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries, each representing an article
+                               with its content details.
+    """
+    conn = None
+    digest_items = []
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.topic,
+                s.source_name AS source_name, s.feed_url AS source_feed_url
+            FROM
+                content c
+            JOIN
+                sources s ON c.source_id = s.id
+            ORDER BY c.published_at DESC
+            LIMIT %s OFFSET %s;
+        """
+        cur.execute(query, (limit, offset))
+        for row in cur.fetchall():
+            digest_items.append({
+                'id': row[0],
+                'source_id': row[1],
+                'title': row[2],
+                'summary': row[3],
+                'article_url': row[4],
+                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'topic': row[6],
+                'source_name': row[7],
+                'source_feed_url': row[8]
+            })
+        # Add an instruction for the user (for frontend display)
+        digest_items.insert(0, {
+            'instruction': "<div style='background: linear-gradient(90deg, #232526 0%, #414345 100%); color: #fff; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); text-align: center;'>\u2B50 This is the global tech digest. Like articles to save them to your favorites. \u2B50</div>"
+        })
+    except Exception as e:
+        print(f"An error occurred while fetching general digest: {e}")
+    finally:
+        close_db_connection(conn)
+    return digest_items

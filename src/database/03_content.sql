@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS content (
     summary TEXT NOT NULL, -- summary of the content
     article_url VARCHAR(255) UNIQUE NOT NULL, -- URL of the content
     published_at TIMESTAMP DEFAULT NULL, -- Timestamp of when the content was published, can be NULL if not available
-    topic VARCHAR(100) -- e.g., 'AI & Machine Learning', 'Startups & Funding', etc.
+    topic VARCHAR(100), -- e.g., 'AI & Machine Learning', 'Startups & Funding', etc.
+    image_url TEXT -- URL of the image associated with the content, can be NULL if not available
 );

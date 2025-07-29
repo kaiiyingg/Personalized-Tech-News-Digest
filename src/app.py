@@ -276,15 +276,13 @@ def unlike_content_api(content_id):
 @login_required_api
 def fast():
     user_id = session['user_id']
-    # Get all articles for today (including read)
-    all_articles = content_service.get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
-    # Filter out instruction items and count
-    actual_articles = [a for a in all_articles if a.get('id')]
-    total_articles = len(actual_articles)
-    articles_read = sum(1 for a in actual_articles if a.get('is_read', False))
-    # Get unread articles for flashcard view (automatically prioritized)
-    unread_articles = [a for a in actual_articles if not a.get('is_read', False)]
-    # Unread articles are automatically shown first
+    # Get user's selected topics
+    user_topics = user_service.get_user_topics(user_id)
+    # Get articles matching user's topics
+    articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=100)
+    total_articles = len(articles)
+    articles_read = sum(1 for a in articles if a.get('is_read', False))
+    unread_articles = [a for a in articles if not a.get('is_read', False)]
     article = unread_articles[0] if unread_articles else None
     return render_template(
         'fast.html',
@@ -295,6 +293,22 @@ def fast():
         total_articles=total_articles
     )
 
+@app.route('/manage_interests', methods=['GET', 'POST'])
+def manage_interests():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    # List of all available topics (from content_service)
+    all_topics = content_service.TOPIC_LABELS
+    if request.method == 'POST':
+        selected_topics = request.form.getlist('topics')
+        # Update user_topics in DB
+        user_service.set_user_topics(user_id, selected_topics)
+        flash('Your interests have been updated.', 'success')
+        return redirect(url_for('manage_interests'))
+    # Get user's current topics
+    user_topics = user_service.get_user_topics(user_id)
+    return render_template('manage_interests.html', all_topics=all_topics, user_topics=user_topics, username=session.get('username'), current_year=datetime.now().year)
 
 # --- Favorites (Liked Content) ---
 @app.route('/favorites', methods=['GET'])

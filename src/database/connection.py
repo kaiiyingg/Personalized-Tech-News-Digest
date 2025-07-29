@@ -15,6 +15,14 @@ PG_PORT = os.getenv('PG_PORT', 5432)
 This module handles database connections and table creation for the TechPulse application.
 It loads database credentials from environment variables and uses psycopg2 to interact with PostgreSQL.
 Run "python src/database/connection.py" to create tables based on SQL scripts in the same directory.
+
+All .sql files in this directory will be executed, including:
+    - 01_users.sql
+    - 02_sources.sql
+    - 03_content.sql
+    - 04_user_content_interactions.sql
+    - 05_user_topics.sql (for user personalization)
+Make sure your user_topics table definition is present as 05_user_topics.sql or similar.
 """
 
 def get_db_connection():

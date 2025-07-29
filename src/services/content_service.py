@@ -1,5 +1,5 @@
-from database.connection import get_db_connection, close_db_connection
-from models.content import Content
+from src.database.connection import get_db_connection, close_db_connection
+from src.models.content import Content
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
@@ -94,8 +94,9 @@ def create_content_item(source_id: int, title: str, summary: str,
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                              include_read: bool = False) -> List[Dict[str, Any]]:
     """
-    Retrieves a personalized digest of content items for a user.
-    Includes user-specific interaction status (read, saved, liked, disliked).
+    Retrieves a general digest of content items for a user, based on all sources the user is subscribed to,
+    and returns the latest articles from all sources the user follows, regardless of topic. This is used for the
+    discover page.
 
     Args:
         user_id (int): The ID of the logged-in user.
@@ -105,7 +106,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
 
     Returns:
         List[Dict[str, Any]]: A list of dictionaries, each representing an article
-                               with its content details and user interaction status.
+            with its content details and user interaction status.
     """
     conn = None
     digest_items = []
@@ -127,15 +128,15 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                 sources s ON c.source_id = s.id
             LEFT JOIN
                 user_content_interactions uci ON c.id = uci.content_id AND uci.user_id = %s
-            WHERE
-                s.user_id = %s -- Only show content from sources this user subscribed to
         """
-        params: List[Any] = [user_id, user_id] # Parameters for the WHERE clause
+        params: List[Any] = [user_id] # Only user_id for user_content_interactions
 
         # Add filters
+        where_clauses = []
         if not include_read:
-            query += " AND (uci.is_read IS NULL OR uci.is_read = FALSE)" # Filter out read articles
-
+            where_clauses.append("(uci.is_read IS NULL OR uci.is_read = FALSE)")
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
         query += " ORDER BY c.published_at DESC LIMIT %s OFFSET %s;"
         params.extend([limit, offset])
 
@@ -167,6 +168,67 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
     finally:
         close_db_connection(conn)
     return digest_items
+
+def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) -> list:
+    """
+    Used for the personalized 'Fast' page, where only articles whose topic matches
+    the user's current interests (as selected on the manage_interests page) are returned.
+
+    Args:
+        user_id (int): The ID of the logged-in user (used for user interactions, not for filtering sources).
+        topics (list): List of topic strings the user is interested in (from user_topics table).
+        limit (int): Maximum number of articles to return.
+
+    Returns:
+        list: List of article dicts, each representing an article matching one of the user's topics.
+    """
+    if not topics:
+        return []
+    conn = None
+    articles = []
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.topic, c.image_url,
+                uci.is_read, uci.is_liked, uci.interaction_at,
+                s.source_name AS source_name, s.feed_url AS source_feed_url
+            FROM
+                content c
+            JOIN
+                sources s ON c.source_id = s.id
+            LEFT JOIN
+                user_content_interactions uci ON c.id = uci.content_id AND uci.user_id = %s
+            WHERE
+                c.topic = ANY(%s)
+            ORDER BY c.published_at DESC
+            LIMIT %s;
+        """
+        cur.execute(query, (user_id, topics, limit))
+        for row in cur.fetchall():
+            articles.append({
+                'id': row[0],
+                'source_id': row[1],
+                'title': row[2],
+                'summary': row[3],
+                'article_url': row[4],
+                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'topic': row[6],
+                'image_url': row[7],
+                'is_read': row[8] if row[8] is not None else False,
+                'is_liked': row[9] if row[9] is not None else False,
+                'is_saved': row[9] if row[9] is not None else False,
+                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
+                'source_name': row[11],
+                'source_feed_url': row[12]
+            })
+    except Exception as e:
+        print(f"Error fetching articles by user topics: {e}")
+    finally:
+        close_db_connection(conn)
+    return articles
 
 def _upsert_user_content_interaction(user_id: int, content_item_id: int,
                                      is_read: Optional[bool] = None,
@@ -291,11 +353,10 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
             FROM content c
             JOIN sources s ON c.source_id = s.id
             JOIN user_content_interactions uci ON c.id = uci.content_id
-            WHERE s.user_id = %s AND uci.user_id = %s AND uci.is_liked = TRUE
+            WHERE uci.user_id = %s AND uci.is_liked = TRUE
             GROUP BY c.topic
             ORDER BY like_count DESC
-        """, (user_id, user_id))
-        
+        """, (user_id,))
         liked_topics = [row[0] for row in cur.fetchall()]
         
     except Exception as e:

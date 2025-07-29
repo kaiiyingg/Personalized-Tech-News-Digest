@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS user_topics (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    topic TEXT NOT NULL
+);

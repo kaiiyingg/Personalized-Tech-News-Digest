@@ -1,9 +1,8 @@
 from typing import Optional
-from models.user import User
-from flask_bcrypt import Bcrypt 
-from database.connection import get_db_connection, close_db_connection
-from models.user import User 
-from psycopg2 import errors as pg_errors 
+from src.models.user import User
+from flask_bcrypt import Bcrypt
+from src.database.connection import get_db_connection, close_db_connection
+from psycopg2 import errors as pg_errors
 import pyotp
 
 bcrypt = Bcrypt()
@@ -115,5 +114,40 @@ def update_user_password(user_id: int, new_password: str) -> bool:
         if conn:
             conn.rollback()
         return False
+    finally:
+        close_db_connection(conn)
+
+# --- User Topics Management ---
+def get_user_topics(user_id: int) -> list:
+    """Return a list of topics selected by the user."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT topic FROM user_topics WHERE user_id = %s;", (user_id,))
+        rows = cur.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"Error fetching user topics: {e}")
+        return []
+    finally:
+        close_db_connection(conn)
+
+def set_user_topics(user_id: int, topics: list):
+    """Replace the user's topics with the provided list."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Remove old topics
+        cur.execute("DELETE FROM user_topics WHERE user_id = %s;", (user_id,))
+        # Insert new topics
+        for topic in topics:
+            cur.execute("INSERT INTO user_topics (user_id, topic) VALUES (%s, %s);", (user_id, topic))
+        conn.commit()
+    except Exception as e:
+        print(f"Error setting user topics: {e}")
+        if conn:
+            conn.rollback()
     finally:
         close_db_connection(conn)

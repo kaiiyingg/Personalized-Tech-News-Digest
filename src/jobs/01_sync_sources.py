@@ -4,7 +4,7 @@ Sync RSS sources to the database.
 Efficient, automated, and minimal output.
 """
 
-from services.source_service import create_source, delete_source, get_all_sources
+from src.services.source_service import create_source, delete_source, get_all_sources
 
 # List of RSS sources to sync
 RSS_SOURCES = [
@@ -37,10 +37,8 @@ RSS_SOURCES = [
     {"name": "EFF Deeplinks", "url": "https://www.eff.org/rss/updates.xml"},
 ]
 
-## No USER_ID needed; sources are global
-
 def sync_sources():
-    # Get current sources from DB
+    # Get current sources from database
     current_sources = get_all_sources()
     current_urls = {s.feed_url: s for s in current_sources}
     target_urls = {s['url']: s for s in RSS_SOURCES}

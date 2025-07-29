@@ -189,6 +189,7 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) ->
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        # Only fetch articles from the last 24 hours (today)
         query = """
             SELECT
                 c.id, c.source_id, c.title, c.summary, c.article_url,
@@ -203,10 +204,11 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) ->
                 user_content_interactions uci ON c.id = uci.content_id AND uci.user_id = %s
             WHERE
                 c.topic = ANY(%s)
+                AND c.published_at >= (NOW() - INTERVAL '24 hours')
             ORDER BY c.published_at DESC
             LIMIT %s;
         """
-        cur.execute(query, (user_id, topics, limit))
+        cur.execute(query, (user_id, topics, 10))
         for row in cur.fetchall():
             articles.append({
                 'id': row[0],

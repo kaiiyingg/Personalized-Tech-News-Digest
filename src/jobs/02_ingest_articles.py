@@ -56,6 +56,7 @@ def fetch_and_ingest():
         cur = conn.cursor()
         new_articles = 0
         sources_in_db = get_all_sources()
+        print(f"[Ingestion] Found {len(sources_in_db)} sources in DB.")
         url_to_id = {s.feed_url: s.id for s in sources_in_db}
         if not sources_in_db:
             print("[Ingestion] No sources found in DB. Did sync_sources run?")
@@ -68,9 +69,12 @@ def fetch_and_ingest():
             print(f"[Ingestion] Fetching: {feed_url}")
             try:
                 feed = feedparser.parse(feed_url)
+                print(f"[Ingestion] {feed_url} returned {len(feed.entries)} entries.")
             except Exception as e:
                 print(f"[Ingestion] Error parsing feed {feed_url}: {e}")
                 continue
+            if not feed.entries:
+                print(f"[Ingestion] No entries found in feed: {feed_url}")
             for entry in feed.entries:
                 try:
                     article_url = str(entry.get("link", ""))
@@ -84,7 +88,6 @@ def fetch_and_ingest():
 
                     # --- Enhanced image extraction logic ---
                     image_url = None
-                    # 1. media_content (standard for many feeds)
                     from bs4.element import Tag
                     def is_valid_img_url(url):
                         return isinstance(url, str) and url.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
@@ -125,7 +128,6 @@ def fetch_and_ingest():
                             if isinstance(img, Tag) and img.has_attr("src"):
                                 src = img.get("src")
                                 if src and isinstance(src, str) and is_valid_img_url(src):
-                                    # Filter out icons, logos, tracking pixels
                                     if not any(x in src.lower() for x in ["logo", "icon", "sprite", "spacer", "blank", "pixel", "1x1", "tracking"]):
                                         candidates.append(img)
                         if candidates:
@@ -182,13 +184,18 @@ def fetch_and_ingest():
                     if image_url is not None and not isinstance(image_url, str):
                         image_url = str(image_url)
 
+                    print(f"[Ingestion] Checking for duplicate: {article_url}")
                     cur.execute("SELECT id FROM content WHERE article_url = %s", (article_url,))
                     if cur.fetchone():
+                        print(f"[Ingestion] Duplicate found, skipping: {article_url}")
                         continue
+                    print(f"[Ingestion] Inserting article: {title} ({article_url})")
                     content = create_content_item(source_id, title, summary, article_url, published_at, image_url=image_url)
                     if content:
                         print(f"[Ingestion] Added article: {title} ({article_url})")
                         new_articles += 1
+                    else:
+                        print(f"[Ingestion] Failed to add article: {title} ({article_url})")
                 except Exception as e:
                     print(f"[Ingestion] Error processing entry in {feed_url}: {e}")
         conn.commit()

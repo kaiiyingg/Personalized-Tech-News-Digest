@@ -53,6 +53,11 @@ function showNoMoreArticles() {
   document.getElementById('show-more-btn').style.display = 'none';
   document.getElementById('no-more-articles').style.display = 'block';
   document.getElementById('no-more-articles').innerHTML = `<h3>No more articles to swipe!</h3><p>Check back later for new content.</p>`;
+  // Hide arrows when no articles
+  const leftBtn = document.getElementById('fast-arrow-left');
+  const rightBtn = document.getElementById('fast-arrow-right');
+  if (leftBtn) leftBtn.style.display = 'none';
+  if (rightBtn) rightBtn.style.display = 'none';
 }
 
 function fetchArticlesBatch() {
@@ -65,6 +70,11 @@ function fetchArticlesBatch() {
         showFlashcard(currentIdx);
         document.getElementById('show-more-btn').style.display = articles.length > 1 ? 'block' : 'none';
         document.getElementById('no-more-articles').style.display = 'none';
+        // Show arrows when there are articles
+        const leftBtn = document.getElementById('fast-arrow-left');
+        const rightBtn = document.getElementById('fast-arrow-right');
+        if (leftBtn) leftBtn.style.display = 'inline-block';
+        if (rightBtn) rightBtn.style.display = 'inline-block';
       } else {
         showNoMoreArticles();
       }

@@ -36,6 +36,7 @@ def login_required_api(f):
 # --- Home/Discover route: latest summaries, daily digest ---
 @app.route('/', methods=['GET'])
 def index():
+    print("[index] Called. session:", dict(session))
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
@@ -54,10 +55,12 @@ def index():
 # --- Legacy route for backward compatibility ---
 @app.route('/index', methods=['GET'])
 def discover():
+    print("[discover] Called.")
     return redirect(url_for('index'))
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
+    print("[forgot_password] Called. session:", dict(session))
     if request.method == 'POST':
         email = request.form['email']
         user = user_service.find_user_by_email(email)
@@ -72,6 +75,7 @@ def forgot_password():
 # --- Profile Page ---
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
+    print("[profile] Called. session:", dict(session))
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
@@ -94,48 +98,66 @@ def profile():
 # --- Change Email ---
 @app.route('/change_email', methods=['GET', 'POST'])
 def change_email():
+    print("[change_email] Called. session:", dict(session))
     if 'user_id' not in session:
+        print("[change_email] No user_id in session. Redirecting to login.")
         return redirect(url_for('login'))
     user_id = session['user_id']
     user = user_service.find_user_by_id(user_id)
+    print(f"[change_email] user_id: {user_id}, user: {user}")
     if not user:
+        print("[change_email] User not found. Redirecting to login.")
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
     if request.method == 'POST':
         new_email = request.form.get('new_email', '').strip()
+        print(f"[change_email] POST new_email: {new_email}")
         if not new_email:
+            print("[change_email] No new_email provided.")
             flash('Please enter a new email.', 'danger')
             return render_template('change_email.html')
         if new_email == user.email:
+            print("[change_email] New email is same as current email.")
             flash('New email is the same as current email.', 'danger')
             return render_template('change_email.html')
-        if user_service.update_user_email(user_id, new_email):
+        updated = user_service.update_user_email(user_id, new_email)
+        print(f"[change_email] update_user_email result: {updated}")
+        if updated:
             session['setup_email'] = new_email
+            print("[change_email] Email updated. Redirecting to setup_totp.")
             flash('Email updated. Please set up TOTP for your new email.', 'success')
             return redirect(url_for('setup_totp'))
         else:
+            print("[change_email] Failed to update email.")
             flash('Failed to update email. Try a different one.', 'danger')
     return render_template('change_email.html')
 
 # --- Reset Password API ---
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
+    print("[reset_password] Called. session:", dict(session))
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         code = request.form.get('code', '').strip()
         new_password = request.form.get('new_password', '').strip()
+        print(f"[reset_password] POST email: {email}, code: {code}, new_password: {'*' * len(new_password)}")
         if not email or not code or not new_password:
+            print("[reset_password] Missing fields.")
             flash('All fields are required.', 'danger')
             return render_template('reset_password.html')
         user = user_service.find_user_by_email(email)
+        print(f"[reset_password] user: {user}")
         if not user:
+            print("[reset_password] No user found for email.")
             flash('No account found for password reset.', 'danger')
             return render_template('reset_password.html')
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(code):
+            print("[reset_password] Invalid TOTP code.")
             flash('Invalid code. Please try again.', 'danger')
             return render_template('reset_password.html')
         user_service.update_user_password(user.id, new_password)
+        print("[reset_password] Password updated. Redirecting to login.")
         flash('Password reset successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html')
@@ -143,31 +165,43 @@ def reset_password():
 # --- Reset Username Page ---
 @app.route('/reset_username', methods=['GET', 'POST'])
 def reset_username():
+    print("[reset_username] Called. session:", dict(session))
     if 'user_id' not in session:
+        print("[reset_username] No user_id in session. Redirecting to login.")
         flash('You must be logged in to change your username.', 'danger')
         return redirect(url_for('login'))
     user_id = session['user_id']
     user = user_service.find_user_by_id(user_id)
+    print(f"[reset_username] user_id: {user_id}, user: {user}")
     if not user:
+        print("[reset_username] User not found. Redirecting to login.")
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
     if request.method == 'POST':
         new_username = request.form.get('new_username', '').strip()
         password = request.form.get('password', '').strip()
+        print(f"[reset_username] POST new_username: {new_username}, password: {'*' * len(password)}")
         if not user_service.check_password(user, password):
+            print("[reset_username] Incorrect password.")
             flash('Incorrect password.', 'danger')
             return render_template('reset_username.html')
         if not new_username or new_username == user.username:
+            print("[reset_username] Invalid or same username.")
             flash('Please enter a new username.', 'danger')
             return render_template('reset_username.html')
         if user_service.find_user_by_username(new_username):
+            print("[reset_username] Username already taken.")
             flash('Username already taken.', 'danger')
             return render_template('reset_username.html')
-        if user_service.update_user_username(user_id, new_username):
+        updated = user_service.update_user_username(user_id, new_username)
+        print(f"[reset_username] update_user_username result: {updated}")
+        if updated:
             session['username'] = new_username
+            print("[reset_username] Username updated. Redirecting to profile.")
             flash('Username updated successfully.', 'success')
             return redirect(url_for('profile'))
         else:
+            print("[reset_username] Failed to update username.")
             flash('Failed to update username. Try again.', 'danger')
             return render_template('reset_username.html')
     return render_template('reset_username.html')
@@ -175,6 +209,7 @@ def reset_username():
 # --- Article Interaction Routes for Dashboard Forms ---
 @app.route('/mark_read/<int:article_id>', methods=['POST'])
 def mark_read(article_id):
+    print(f"[mark_read] Called. session: {{}} article_id: {{}}".format(dict(session), article_id))
     if 'user_id' not in session:
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
@@ -185,6 +220,7 @@ def mark_read(article_id):
 
 @app.route('/like_article/<int:article_id>', methods=['POST'])
 def like_article(article_id):
+    print(f"[like_article] Called. session: {{}} article_id: {{}}".format(dict(session), article_id))
     if 'user_id' not in session:
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
@@ -195,6 +231,7 @@ def like_article(article_id):
 
 @app.route('/read_article/<int:article_id>')
 def read_article(article_id):
+    print(f"[read_article] Called. session: {{}} article_id: {{}}".format(dict(session), article_id))
     if 'user_id' not in session:
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
@@ -221,6 +258,7 @@ def read_article(article_id):
 # --- Auth & User Management ---
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    print("[register] Called. session:", dict(session))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -239,6 +277,7 @@ def register():
 # --- TOTP Setup Page ---
 @app.route('/setup_totp', methods=['GET'])
 def setup_totp():
+    print("[setup_totp] Called. session:", dict(session))
     email = session.get('setup_email')
     if not email:
         flash('No email found for TOTP setup.', 'danger')
@@ -253,6 +292,7 @@ def setup_totp():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("[login] Called. session:", dict(session))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -277,6 +317,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    print("[logout] Called. session:", dict(session))
     session.pop('user_id', None)
     session.pop('username', None)
     flash('Successfully logged out', 'info')
@@ -285,6 +326,7 @@ def logout():
 @app.route('/api/sources', methods=['GET'])
 @login_required_api
 def get_sources():
+    print("[get_sources] Called. session:", dict(session))
     user_id = session['user_id']
     sources = source_service.get_all_sources()
     sources_data = []
@@ -303,6 +345,7 @@ def get_sources():
 @app.route('/api/digest', methods=['GET'])
 @login_required_api
 def get_digest():
+    print("[get_digest] Called. session:", dict(session))
     limit = int(request.args.get('limit', 20))
     offset = int(request.args.get('offset', 0))
     # Fetch general articles for all users (Only fast section shows personalised articles based on user's interested topics.)
@@ -312,6 +355,7 @@ def get_digest():
 @app.route('/api/content/<int:content_id>/read', methods=['POST'])
 @login_required_api
 def mark_content_read_api(content_id):
+    print(f"[mark_content_read_api] Called. session: {{}} content_id: {{}}".format(dict(session), content_id))
     user_id = session['user_id']
     data = request.json or {}
     is_read = data.get('is_read', True)
@@ -324,6 +368,7 @@ def mark_content_read_api(content_id):
 @app.route('/api/content/<int:content_id>/like', methods=['POST'])
 @login_required_api
 def like_content_api(content_id):
+    print(f"[like_content_api] Called. session: {{}} content_id: {{}}".format(dict(session), content_id))
     try:
         user_id = session['user_id']
         print(f"Like API called - User ID: {user_id}, Content ID: {content_id}")
@@ -341,6 +386,7 @@ def like_content_api(content_id):
 @app.route('/api/content/<int:content_id>/unlike', methods=['POST'])
 @login_required_api
 def unlike_content_api(content_id):
+    print(f"[unlike_content_api] Called. session: {{}} content_id: {{}}".format(dict(session), content_id))
     try:
         user_id = session['user_id']
         print(f"Unlike API called - User ID: {user_id}, Content ID: {content_id}")
@@ -359,6 +405,7 @@ def unlike_content_api(content_id):
 @app.route('/fast', methods=['GET'])
 @login_required_api
 def fast():
+    print("[fast] Called. session:", dict(session))
     user_id = session['user_id']
     # Get user's selected topics
     user_topics = user_service.get_user_topics(user_id)
@@ -379,6 +426,7 @@ def fast():
 # --- Fast View API for batching where articles are loaded in batches of 10 ---
 @app.route('/api/fast_articles', methods=['GET'])
 def api_fast_articles():
+    print("[api_fast_articles] Called. session:", dict(session))
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     user_id = session['user_id']
@@ -390,6 +438,7 @@ def api_fast_articles():
 
 @app.route('/manage_interests', methods=['GET', 'POST'])
 def manage_interests():
+    print("[manage_interests] Called. session:", dict(session))
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
@@ -408,6 +457,7 @@ def manage_interests():
 # --- Favorites (Liked Content) ---
 @app.route('/favorites', methods=['GET'])
 def favorites():
+    print("[favorites] Called. session:", dict(session))
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
@@ -425,6 +475,7 @@ def favorites():
 # After unliking, the article will no longer appear in the favorites page.
 @app.route('/unlike_article/<int:article_id>', methods=['POST'])
 def unlike_article(article_id):
+    print(f"[unlike_article] Called. session: {{}} article_id: {{}}".format(dict(session), article_id))
     if 'user_id' not in session:
         flash('You must be logged in to perform this action', 'danger')
         return redirect(url_for('login'))

@@ -69,13 +69,64 @@ def forgot_password():
         return redirect(url_for('reset_password'))
     return render_template('forgot_password.html')
 
-# --- Reset Password Page ---
+# --- Profile Page ---
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    username = session.get('username') or ''
+    user = user_service.find_user_by_username(username)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        new_username = request.form.get('username') or ''
+        if new_username and new_username != user.username:
+            if user_service.update_user_username(user_id, new_username):
+                session['username'] = new_username
+                flash('Username updated successfully.', 'success')
+                return redirect(url_for('profile'))
+            else:
+                flash('Failed to update username. Try a different one.', 'danger')
+    return render_template('profile.html', current_user=user, username=session.get('username'), current_year=datetime.now().year)
+
+# --- Change Email ---
+@app.route('/change_email', methods=['GET', 'POST'])
+def change_email():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    user = user_service.find_user_by_id(user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        new_email = request.form.get('new_email', '').strip()
+        if not new_email:
+            flash('Please enter a new email.', 'danger')
+            return render_template('change_email.html')
+        if new_email == user.email:
+            flash('New email is the same as current email.', 'danger')
+            return render_template('change_email.html')
+        if user_service.update_user_email(user_id, new_email):
+            session['setup_email'] = new_email
+            flash('Email updated. Please set up TOTP for your new email.', 'success')
+            return redirect(url_for('setup_totp'))
+        else:
+            flash('Failed to update email. Try a different one.', 'danger')
+    return render_template('change_email.html')
+
+# --- Reset Password API ---
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'POST':
-        email = request.form['email']
-        code = request.form['code']
-        new_password = request.form['new_password']
+        email = request.form.get('email', '').strip()
+        code = request.form.get('code', '').strip()
+        new_password = request.form.get('new_password', '').strip()
+        if not email or not code or not new_password:
+            flash('All fields are required.', 'danger')
+            return render_template('reset_password.html')
         user = user_service.find_user_by_email(email)
         if not user:
             flash('No account found for password reset.', 'danger')
@@ -84,11 +135,42 @@ def reset_password():
         if not totp.verify(code):
             flash('Invalid code. Please try again.', 'danger')
             return render_template('reset_password.html')
-        # Update password
         user_service.update_user_password(user.id, new_password)
         flash('Password reset successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html')
+
+# --- Reset Username Page ---
+@app.route('/reset_username', methods=['GET', 'POST'])
+def reset_username():
+    if 'user_id' not in session:
+        flash('You must be logged in to change your username.', 'danger')
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    user = user_service.find_user_by_id(user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        new_username = request.form.get('new_username', '').strip()
+        password = request.form.get('password', '').strip()
+        if not user_service.check_password(user, password):
+            flash('Incorrect password.', 'danger')
+            return render_template('reset_username.html')
+        if not new_username or new_username == user.username:
+            flash('Please enter a new username.', 'danger')
+            return render_template('reset_username.html')
+        if user_service.find_user_by_username(new_username):
+            flash('Username already taken.', 'danger')
+            return render_template('reset_username.html')
+        if user_service.update_user_username(user_id, new_username):
+            session['username'] = new_username
+            flash('Username updated successfully.', 'success')
+            return redirect(url_for('profile'))
+        else:
+            flash('Failed to update username. Try again.', 'danger')
+            return render_template('reset_username.html')
+    return render_template('reset_username.html')
 
 # --- Article Interaction Routes for Dashboard Forms ---
 @app.route('/mark_read/<int:article_id>', methods=['POST'])
@@ -176,19 +258,21 @@ def login():
         password = request.form['password']
         code = request.form.get('code')
         user = user_service.find_user_by_username(username)
-        if user and user_service.check_password(user, password):
-            if code:
-                totp = pyotp.TOTP(user.totp_secret)
-                if not totp.verify(code):
-                    flash('Authentication code is invalid', 'danger')
-                    return render_template('login.html')
-            session['user_id'] = user.id
-            session['username'] = user.username
-            flash('Welcome back!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid credentials', 'danger')
+        if not user:
+            flash('Username not found.', 'danger')
             return render_template('login.html')
+        if not user_service.check_password(user, password):
+            flash('Incorrect password.', 'danger')
+            return render_template('login.html')
+        if code:
+            totp = pyotp.TOTP(user.totp_secret)
+            if not totp.verify(code):
+                flash('Authentication code is invalid', 'danger')
+                return render_template('login.html')
+        session['user_id'] = user.id
+        session['username'] = user.username
+        flash('Welcome back!', 'success')
+        return redirect(url_for('index'))
     return render_template('login.html')
 
 @app.route('/logout')
@@ -292,6 +376,17 @@ def fast():
         articles_read=articles_read,
         total_articles=total_articles
     )
+# --- Fast View API for batching where articles are loaded in batches of 10 ---
+@app.route('/api/fast_articles', methods=['GET'])
+def api_fast_articles():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    user_id = session['user_id']
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 10))
+    user_topics = user_service.get_user_topics(user_id)
+    articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=limit, offset=offset)
+    return jsonify({'articles': articles}), 200
 
 @app.route('/manage_interests', methods=['GET', 'POST'])
 def manage_interests():

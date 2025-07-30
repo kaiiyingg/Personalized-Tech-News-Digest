@@ -169,7 +169,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         close_db_connection(conn)
     return digest_items
 
-def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) -> list:
+def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100, offset: int = 0) -> list:
     """
     Used for the personalized 'Fast' page, where only articles whose topic matches
     the user's current interests (as selected on the manage_interests page) are returned.
@@ -206,10 +206,13 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) ->
                 c.topic = ANY(%s)
                 AND c.published_at >= (NOW() - INTERVAL '24 hours')
             ORDER BY c.published_at DESC
-            LIMIT %s;
+            LIMIT %s OFFSET %s;
         """
-        cur.execute(query, (user_id, topics, 10))
+        cur.execute(query, (user_id, topics, limit, offset))
         for row in cur.fetchall():
+            topic_display = row[6]
+            if topic_display == "Artificial Intelligence (AI) & Machine Learning (ML)":
+                topic_display = "AI & ML"
             articles.append({
                 'id': row[0],
                 'source_id': row[1],
@@ -217,7 +220,7 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100) ->
                 'summary': row[3],
                 'article_url': row[4],
                 'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                'topic': row[6],
+                'topic': topic_display,
                 'image_url': row[7],
                 'is_read': row[8] if row[8] is not None else False,
                 'is_liked': row[9] if row[9] is not None else False,
@@ -258,35 +261,34 @@ def _upsert_user_content_interaction(user_id: int, content_item_id: int,
         if not update_fields:  # No fields to update
             return False
             
-        # Always update interaction_at
+        # Always update interaction_at to current time
         update_fields.append("interaction_at")
-        update_values.append(None)  # Will use NOW() in query
-        
+        update_values.append(datetime.now())
+
         # Build INSERT columns and values
         insert_columns = ["user_id", "content_id"] + update_fields
-        insert_placeholders = ["%s", "%s"] + ["%s" if field != "interaction_at" else "NOW()" for field in update_fields]
-        
+        insert_placeholders = ["%s"] * len(insert_columns)
+
         # Build UPDATE SET clause
         update_set_clauses = []
         for field in update_fields:
             if field == "interaction_at":
-                update_set_clauses.append("interaction_at = NOW()")
+                update_set_clauses.append("interaction_at = EXCLUDED.interaction_at")
             else:
                 update_set_clauses.append(f"{field} = EXCLUDED.{field}")
-        
+
         query = f"""
             INSERT INTO user_content_interactions ({', '.join(insert_columns)})
             VALUES ({', '.join(insert_placeholders)})
             ON CONFLICT (user_id, content_id) DO UPDATE SET
                 {', '.join(update_set_clauses)}
         """
-        
-        # Parameters for the query (excluding interaction_at since it uses NOW())
-        params = [user_id, content_item_id] + [v for v in update_values if v is not None]
-        
+
+        params = [user_id, content_item_id] + update_values
+
         print(f"Executing query: {query}")
         print(f"With params: {params}")
-        
+
         cur.execute(query, params)
         conn.commit()
         return True
@@ -319,15 +321,21 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     """
     # Get all articles for the user (including read ones to show with dimmed effect)
     all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
-    
-    # Filter out instruction items
     articles = [a for a in all_articles if a.get('id')]
-    
-    # Define topic order 
+
+    # Get user's selected topics from user_topics table
+    from .user_service import get_user_topics
+    user_topics = get_user_topics(user_id)
+
+    # Get unread articles for Fast View (matching user topics, unread only)
+    fast_view_articles = [a for a in articles if a.get('topic') in user_topics and not a.get('is_read', False)]
+    fast_view_ids = set(a['id'] for a in fast_view_articles)
+
+    # Define topic order
     topic_order = [
         "Recommended For You",
         "Artificial Intelligence (AI) & Machine Learning (ML)",
-        "Cybersecurity & Privacy", 
+        "Cybersecurity & Privacy",
         "Cloud Computing & DevOps",
         "Software Development & Web Technologies",
         "Data Science & Analytics",
@@ -339,62 +347,31 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         "Open Source",
         "Other"
     ]
-    
-    # Initialize topics dictionary with empty lists for all topics
     topics_dict = {topic: [] for topic in topic_order}
-    
-    # Get user's liked topics for recommendations
-    conn = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Get topics the user has liked before
-        cur.execute("""
-            SELECT c.topic, COUNT(*) as like_count
-            FROM content c
-            JOIN sources s ON c.source_id = s.id
-            JOIN user_content_interactions uci ON c.id = uci.content_id
-            WHERE uci.user_id = %s AND uci.is_liked = TRUE
-            GROUP BY c.topic
-            ORDER BY like_count DESC
-        """, (user_id,))
-        liked_topics = [row[0] for row in cur.fetchall()]
-        
-    except Exception as e:
-        print(f"Error getting liked topics: {e}")
-        liked_topics = []
-    finally:
-        if conn:
-            close_db_connection(conn)
-    
-    # Create "Recommended For You" section
-    recommended_articles = []
-    
-    # Add recent articles from user's favorite topics
-    for topic in liked_topics[:3]:  # Top 3 liked topics
-        topic_articles = [a for a in articles if a.get('topic') == topic]
-        recommended_articles.extend(topic_articles[:3])  # 3 articles per favorite topic
-    
-    # Fill remaining with most recent articles if needed
-    if len(recommended_articles) < limit_per_topic:
-        recent_articles = [a for a in articles if a not in recommended_articles]
-        recommended_articles.extend(recent_articles[:limit_per_topic - len(recommended_articles)])
-    
+
+    # Recommended For You: articles matching user topics & not in Fast View (not unread in fast)
+    recommended_articles = [
+        a for a in articles
+        if a.get('topic') in user_topics and a.get('id') not in fast_view_ids
+    ]
     topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]
-    
-    # Group remaining articles by their assigned topics
+
+    # Group remaining articles by their assigned topics (excluding those in fast view and recommended)
+    recommended_ids = set(a['id'] for a in topics_dict["Recommended For You"])
     for article in articles:
         topic = article.get('topic', 'Other')
-        # Allow articles to appear in both recommendations and their original topics
-        if topic and topic in topic_order:
+        if (
+            topic and topic in topic_order
+            and article['id'] not in fast_view_ids
+            and article['id'] not in recommended_ids
+        ):
             topics_dict[topic].append(article)
-    
+
     # Limit articles per topic and return all topics (even empty ones)
     for topic in topic_order:
         if len(topics_dict[topic]) > limit_per_topic:
             topics_dict[topic] = topics_dict[topic][:limit_per_topic]
-    
+
     return topics_dict
 
 def cleanup_old_articles():

@@ -1,5 +1,65 @@
 from typing import Optional
 from src.models.user import User
+# Find user by user_id
+def find_user_by_id(user_id: int) -> Optional[User]:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, username, email, password_hash, totp_secret, created_at, updated_at FROM users WHERE id = %s;",
+            (user_id,)
+        )
+        user_data = cur.fetchone()
+        if user_data:
+            return User(*user_data)
+        return None
+    except Exception as e:
+        print(f"An error occurred while finding user by id: {e}")
+        return None
+    finally:
+        close_db_connection(conn)
+# Update username by user id
+def update_user_username(user_id: int, new_username: str) -> bool:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET username = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;",
+            (new_username, user_id)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"An error occurred while updating username: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        close_db_connection(conn)
+
+# Update email by user id
+def update_user_email(user_id: int, new_email: str) -> bool:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET email = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;",
+            (new_email, user_id)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"An error occurred while updating email: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        close_db_connection(conn)
+from typing import Optional
+from src.models.user import User
 from flask_bcrypt import Bcrypt
 from src.database.connection import get_db_connection, close_db_connection
 from psycopg2 import errors as pg_errors

@@ -16,6 +16,7 @@ from src.database.connection import get_db_connection, close_db_connection
 from src.services.content_service import create_content_item
 from src.services.source_service import get_all_sources
 from bs4 import BeautifulSoup
+from src.services.url_validator import is_url_reachable
 
 # ADD YOUR RSS SOURCES HERE
 RSS_SOURCES = [
@@ -188,6 +189,10 @@ def fetch_and_ingest():
                     cur.execute("SELECT id FROM content WHERE article_url = %s", (article_url,))
                     if cur.fetchone():
                         print(f"[Ingestion] Duplicate found, skipping: {article_url}")
+                        continue
+                    # Validate URL before saving
+                    if not is_url_reachable(article_url):
+                        print(f"[Ingestion] URL not reachable, skipping: {article_url}")
                         continue
                     print(f"[Ingestion] Inserting article: {title} ({article_url})")
                     content = create_content_item(source_id, title, summary, article_url, published_at, image_url=image_url)

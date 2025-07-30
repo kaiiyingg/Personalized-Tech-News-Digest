@@ -1,3 +1,268 @@
+/* Change Email Minimal Black Theme */
+.change-email-wrapper {
+  max-width: 400px;
+  margin: 3.5rem auto 0 auto;
+  padding: 2.5rem 2rem 2rem 2rem;
+  background: #0d1117;
+  border-radius: 1.2rem;
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+.change-email-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 2.2rem;
+  color: #fff;
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+.change-email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.change-email-label {
+  font-size: 1rem;
+  color: #b8bcc3;
+  margin-bottom: 0.2rem;
+  font-weight: 500;
+}
+.change-email-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  background: #181a1b;
+  color: #fff;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  box-sizing: border-box;
+  transition: outline 0.2s;
+}
+.change-email-input:focus {
+  outline: 2px solid #8B5CF6;
+  background: #23272f;
+}
+.change-email-btn {
+  background: linear-gradient(90deg, #7C3AED 0%, #8B5CF6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.9rem;
+  padding: 0.7rem 1.7rem;
+  font-size: 1.08em;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  box-shadow: 0 2px 12px rgba(139,92,246,0.10);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  outline: none;
+}
+.change-email-btn:hover, .change-email-btn:focus {
+  background: linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(139,92,246,0.18);
+  transform: translateY(-2px) scale(1.03);
+}
+.change-email-footer {
+  margin-top: 1.5rem;
+  text-align: right;
+}
+.change-email-link {
+  color: #fff;
+  text-decoration: underline;
+  font-size: 1em;
+  transition: color 0.2s;
+}
+.change-email-link:hover {
+  color: #8B5CF6;
+}
+/* Profile Page Simple Layout */
+.profile-page-wrapper {
+  max-width: 480px;
+  margin: 2.5rem auto 0 auto;
+  padding: 2.5rem 2rem 2rem 2rem;
+  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+  border-radius: 1.2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+  color: #fff;
+}
+.profile-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  color: #fff;
+  text-align: left;
+}
+.profile-form-simple {
+  margin-bottom: 1.5rem;
+}
+.profile-label {
+  font-size: 1rem;
+  color: #b8bcc3;
+  margin-right: 1rem;
+  font-weight: 500;
+}
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  flex-wrap: wrap;
+}
+.profile-input {
+  flex: 1 1 180px;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  background: #23272f;
+  color: #fff;
+  font-size: 1.1rem;
+  margin-right: 0.5rem;
+  box-sizing: border-box;
+  transition: outline 0.2s;
+}
+.profile-input:focus {
+  outline: 2px solid #8B5CF6;
+  background: #23272f;
+}
+.profile-btn {
+  background: linear-gradient(90deg, #7C3AED 0%, #8B5CF6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.9rem;
+  padding: 0.6rem 1.4rem;
+  font-size: 1em;
+  font-weight: 600;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 0;
+  box-shadow: 0 2px 12px rgba(139,92,246,0.10);
+  outline: none;
+}
+.profile-btn:hover, .profile-btn:focus {
+  background: linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(139,92,246,0.18);
+  transform: translateY(-2px) scale(1.03);
+}
+.profile-btn-secondary {
+  background: #181a1b;
+  color: #8B5CF6;
+  border: 1.5px solid #8B5CF6;
+  font-weight: 500;
+  padding: 0.6rem 1.1rem;
+  margin-left: 0;
+  border-radius: 0.9rem;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s;
+  box-shadow: 0 1px 6px rgba(139,92,246,0.08);
+  outline: none;
+}
+.profile-btn-secondary:hover, .profile-btn-secondary:focus {
+  background: #23272f;
+  color: #fff;
+  border-color: #8B5CF6;
+  box-shadow: 0 2px 10px rgba(139,92,246,0.13);
+  transform: translateY(-1px) scale(1.02);
+}
+.profile-email {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-right: 0.5rem;
+}
+.profile-email-row {
+  margin-bottom: 1.5rem;
+}
+.profile-actions-row {
+  gap: 1rem;
+}
+/* Profile Card and Change Email Page Styles */
+.profile-card {
+  max-width: 520px;
+  margin: 2.5rem auto;
+  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2.5rem 2.2rem 2rem 2.2rem;
+  color: #fff;
+}
+.email-card {
+  /* For specificity if needed */
+}
+.profile-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-bottom: 2.2rem;
+}
+.email-icon {
+  font-size: 2.2rem;
+  color: #8B5CF6;
+}
+.profile-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+.profile-card-desc {
+  font-size: 1rem;
+  color: #b8bcc3;
+}
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.form-group {
+  width: 100%;
+}
+.form-label {
+  font-size: 1rem;
+  color: #b8bcc3;
+  margin-bottom: 0.2rem;
+  display: block;
+}
+.form-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  background: #23272f;
+  color: #fff;
+  font-size: 1.1rem;
+  margin-top: 0.2rem;
+  box-sizing: border-box;
+  transition: outline 0.2s;
+}
+.form-input:focus {
+  outline: 2px solid #8B5CF6;
+  background: #23272f;
+}
+.form-submit {
+  background: #8B5CF6;
+  color: #fff;
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1.08em;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.form-submit:hover {
+  background: #7C3AED;
+}
+.profile-card-footer {
+  margin-top: 1.5rem;
+  text-align: right;
+}
+.profile-link {
+  color: #8B5CF6;
+  text-decoration: underline;
+  font-size: 1em;
+}
 /*
   Super Button: Modern animated button for forms (used on My Interests page)
   Accessible visually-hidden class for screen readers
@@ -1726,12 +1991,17 @@ a:hover {
   margin-bottom: 1.5rem;
 }
 
+
 .horizontal-flashcard-title {
   color: #fff;
   font-size: 1.75rem;
   font-weight: 600;
   line-height: 1.3;
   margin-bottom: 1rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
 }
 
 .horizontal-flashcard-meta {

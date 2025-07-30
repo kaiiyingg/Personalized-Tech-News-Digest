@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div style="width: 100vw; min-height: 90vh; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+  <h1 style="font-size: 3.2rem; font-weight: 900; margin-bottom: 2.5rem; letter-spacing: 0.01em; text-align: center;">Profile</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes" style="font-size: 1.3rem;">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+  <div style="width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.5rem; align-items: center;">
+    <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
+      <div>Username: <span style="color: #8B5CF6;">{{ current_user.username }}</span></div>
+      <a href="{{ url_for('reset_username') }}" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em; margin-top: 0.2em;">Change Username</a>
+    </div>
+    <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
+      <div>Email: <span style="color: #8B5CF6;">{{ current_user.email }}</span></div>
+      <a href="{{ url_for('change_email') }}" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em; margin-top: 0.2em;">Change Email</a>
+    </div>
+    <div style="display: flex; justify-content: center; width: 100%;">
+      <a href="{{ url_for('reset_password') }}" class="btn block-cube block-cube-hover" style="font-size: 1.4rem; padding: 1em 3em; font-weight: 900; background: #8B5CF6; color: #fff;">Reset Password</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

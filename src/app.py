@@ -235,21 +235,15 @@ def read_article(article_id):
     if 'user_id' not in session:
         flash('You must be logged in to perform this action.', 'danger')
         return redirect(url_for('login'))
-    
+
     user_id = session['user_id']
     # Mark article as read
     content_service.mark_content_as_read(user_id, article_id, is_read=True)
 
-    # Get the article URL to redirect to
-    articles = content_service.get_personalized_digest(user_id, limit=1000)  # Get all articles
-    article_url = None
-    for article in articles:
-        if article.get('id') == article_id:
-            article_url = article.get('article_url')
-            break
-    
-    if article_url:
-        return redirect(article_url)
+    # Use robust lookup: fetch article directly by ID
+    article = content_service.get_article_by_id(article_id)
+    if article and article.get('article_url'):
+        return redirect(article['article_url'])
     else:
         flash('Article not found', 'danger')
         return redirect(url_for('index'))

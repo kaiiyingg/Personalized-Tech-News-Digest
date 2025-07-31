@@ -1,8 +1,11 @@
 from src.database.connection import get_db_connection, close_db_connection
 from src.models.content import Content
+from .user_service import get_user_topics
 from typing import List, Optional, Dict, Any
 from psycopg2 import errors as pg_errors
 from datetime import datetime
+from typing import Union
+
 from transformers import pipeline #type: ignore
 
 # Define topic labels for zero-shot classification
@@ -23,6 +26,49 @@ TOPIC_LABELS = [
 
 # Load zero-shot classifier once (global)
 zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+# --- Get article by ID (regardless of user/read status) ---
+def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Fetch a single article by its ID from the content table, including source info.
+    Returns None if not found.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.topic, c.image_url,
+                s.source_name AS source_name, s.feed_url AS source_feed_url
+            FROM
+                content c
+            JOIN
+                sources s ON c.source_id = s.id
+            WHERE c.id = %s
+        """
+        cur.execute(query, (article_id,))
+        row = cur.fetchone()
+        if row:
+            return {
+                'id': row[0],
+                'source_id': row[1],
+                'title': row[2],
+                'summary': row[3],
+                'article_url': row[4],
+                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'topic': row[6],
+                'image_url': row[7],
+                'source_name': row[8],
+                'source_feed_url': row[9]
+            }
+        return None
+    except Exception as e:
+        print(f"Error fetching article by id {article_id}: {e}")
+        return None
+    finally:
+        close_db_connection(conn)
 
 def assign_topic(title: str, summary: str) -> str:
     """
@@ -143,22 +189,24 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         cur.execute(query, tuple(params))
 
         for row in cur.fetchall():
-            digest_items.append({
-                'id': row[0],
-                'source_id': row[1],
-                'title': row[2],
-                'summary': row[3],
-                'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                'topic': row[6],
-                'image_url': row[7],
-                'is_read': row[8] if row[8] is not None else False,
-                'is_liked': row[9] if row[9] is not None else False,
-                'is_saved': row[9] if row[9] is not None else False,
-                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
-                'source_name': row[11],
-                'source_feed_url': row[12]
-            })
+            # Double-check article still exists (paranoia, but ensures no ghost cards)
+            if row[0] is not None:
+                digest_items.append({
+                    'id': row[0],
+                    'source_id': row[1],
+                    'title': row[2],
+                    'summary': row[3],
+                    'article_url': row[4],
+                    'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                    'topic': row[6],
+                    'image_url': row[7],
+                    'is_read': row[8] if row[8] is not None else False,
+                    'is_liked': row[9] if row[9] is not None else False,
+                    'is_saved': row[9] if row[9] is not None else False,
+                    'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
+                    'source_name': row[11],
+                    'source_feed_url': row[12]
+                })
         # Add an aesthetic instruction for the user (for frontend display)
         digest_items.insert(0, {
             'instruction': "<div style='background: linear-gradient(90deg, #232526 0%, #414345 100%); color: #fff; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); text-align: center;'>\u2B50 Like the articles you enjoy! The more you like, the smarter your recommendations become. Your personalized tech digest will adapt to your interests. \u2B50</div>"
@@ -310,33 +358,29 @@ def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = Tr
     """Marks a content item as liked (and saved) for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
 
-
-from typing import Union
-
 def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:
     """
     Get articles grouped by topics for the main page display.
     Returns a dictionary with 'fast_view' as a list of articles and 'topics' as a dictionary of topic lists.
     """
-    # Get all articles for the user (including read ones to show with dimmed effect)
-    all_articles = get_personalized_digest(user_id, limit=200, offset=0, include_read=True)
-    articles = [a for a in all_articles if a.get('id')]
-
     # Get user's selected topics from user_topics table
-    from .user_service import get_user_topics
     user_topics = get_user_topics(user_id)
 
-    # Fast View: only unread articles from user topics
-    fast_view_articles = [a for a in articles if a.get('topic') in user_topics and not a.get('is_read', False)]
-    fast_view_ids = set(a['id'] for a in fast_view_articles)
+    # Fast View: unread articles from user topics (last 24h, unread only)
+    all_topic_articles = get_articles_by_user_topics(user_id, user_topics, limit=200, offset=0)
+    fast_view_articles = [a for a in all_topic_articles if not a.get('is_read', False)]
 
-    # Recommended For You: articles matching user topics, both read and unread, but exclude those in Fast View
-    recommended_articles = [
-        a for a in articles
-        if a.get('topic') in user_topics and a.get('id') not in fast_view_ids
-    ]
+    # For topic and recommended sections, use all articles (read and unread) from personalized digest
+    all_articles = get_personalized_digest(user_id, limit=200, offset=0, include_read=True)
+    articles = []
+    for a in all_articles:
+        if a.get('id') and get_article_by_id(a['id']) is not None:
+            articles.append(a)
 
-    # Group remaining articles by their assigned topics (excluding those in fast view and recommended)
+    # Recommended For You: articles matching user topics, both read and unread
+    recommended_articles = [a for a in articles if a.get('topic') in user_topics]
+
+    # Group articles by their assigned topics (including those in recommended)
     topic_order = [
         "Recommended For You",
         "Artificial Intelligence (AI) & Machine Learning (ML)",
@@ -355,14 +399,10 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     topics_dict = {topic: [] for topic in topic_order}
     topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]
 
-    recommended_ids = set(a['id'] for a in topics_dict["Recommended For You"])
+    # Place articles in their topic section as well (allowing overlap with recommended)
     for article in articles:
         topic = article.get('topic', 'Other')
-        if (
-            topic and topic in topic_order
-            and article['id'] not in fast_view_ids
-            and article['id'] not in recommended_ids
-        ):
+        if topic and topic in topic_order:
             topics_dict[topic].append(article)
 
     # Limit articles per topic and return all topics (even empty ones)
@@ -370,7 +410,7 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         if len(topics_dict[topic]) > limit_per_topic:
             topics_dict[topic] = topics_dict[topic][:limit_per_topic]
 
-    # Return both fast_view_articles and topics_dict for frontend mutual exclusion
+    # Return both fast_view_articles and topics_dict (no mutual exclusion)
     return {"fast_view": fast_view_articles, "topics": topics_dict}
 
 def cleanup_old_articles():

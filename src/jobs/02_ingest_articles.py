@@ -29,8 +29,14 @@ from bs4 import BeautifulSoup
 from src.services.url_validator import is_url_reachable
 # Summarization imports
 from transformers.pipelines import pipeline
-
+from transformers import AutoTokenizer
 summarizer = pipeline("summarization", model="t5-small")
+tokenizer = AutoTokenizer.from_pretrained("t5-small")
+
+# Helper to truncate input to 512 tokens for t5-small
+def truncate_text(text, tokenizer, max_tokens=512):
+    tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
+    return tokenizer.decode(tokens, skip_special_tokens=True)
 
 ## NOTE: RSS_SOURCES is not used for ingestion. The script fetches sources from your database.
 
@@ -86,12 +92,14 @@ def fetch_and_ingest():
                         if not article_text:
                             # Fallback to summary or title
                             article_text = str(entry.get("summary", "")) or title
+                        # Truncate input to 512 tokens for t5-small
+                        truncated_text = truncate_text(article_text, tokenizer)
                         # Generate summary using Hugging Face summarizer
                         try:
-                            summary = summarizer(article_text, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
+                            summary = summarizer(truncated_text, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
                         except Exception as e:
                             print(f"[Ingestion] Summarization failed for article '{title}': {e}")
-                            summary = article_text[:200]  # fallback: truncate
+                            summary = truncated_text[:200]  # fallback: truncate
                         published_at = entry.get("published_parsed")
                         if published_at and isinstance(published_at, time.struct_time):
                             published_at = datetime.fromtimestamp(time.mktime(published_at))

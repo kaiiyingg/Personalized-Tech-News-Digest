@@ -430,11 +430,18 @@ def api_fast_articles():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     user_id = session['user_id']
-    offset = int(request.args.get('offset', 0))
-    limit = int(request.args.get('limit', 10))
     user_topics = user_service.get_user_topics(user_id)
-    articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=limit, offset=offset)
-    return jsonify({'articles': articles}), 200
+    # If ?all=1, fetch all relevant articles (no batching)
+    if request.args.get('all') == '1':
+        articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=1000, offset=0)  # large limit
+        # Shuffle articles to mix topics
+        random.shuffle(articles)
+        return jsonify({'articles': articles}), 200
+    else:
+        offset = int(request.args.get('offset', 0))
+        limit = int(request.args.get('limit', 10))
+        articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=limit, offset=offset)
+        return jsonify({'articles': articles}), 200
 
 @app.route('/manage_interests', methods=['GET', 'POST'])
 def manage_interests():

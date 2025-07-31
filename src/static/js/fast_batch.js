@@ -1,10 +1,16 @@
 // Fast View batching and slider logic
 let articles = [];
 let currentIdx = 0;
-let offset = 0;
-const limit = 10;
 let totalArticles = parseInt(document.getElementById('total-articles').textContent) || 0;
 let articlesRead = parseInt(document.getElementById('articles-read').textContent) || 0;
+// Fisher-Yates shuffle to mix articles of different topics
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 function renderFlashcard(article) {
   if (!article) return '';
@@ -60,12 +66,12 @@ function showNoMoreArticles() {
   if (rightBtn) rightBtn.style.display = 'none';
 }
 
-function fetchArticlesBatch() {
-  fetch(`/api/fast_articles?offset=${offset}&limit=${limit}`)
+function fetchArticlesAll() {
+  fetch(`/api/fast_articles?all=1`)
     .then(res => res.json())
     .then(data => {
       if (data.articles && data.articles.length > 0) {
-        articles = data.articles;
+        articles = shuffleArray(data.articles);
         currentIdx = 0;
         showFlashcard(currentIdx);
         document.getElementById('show-more-btn').style.display = articles.length > 1 ? 'block' : 'none';
@@ -82,7 +88,7 @@ function fetchArticlesBatch() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  fetchArticlesBatch();
+  fetchArticlesAll();
 
   // Arrow navigation
   const leftBtn = document.getElementById('fast-arrow-left');
@@ -96,32 +102,39 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     rightBtn.addEventListener('click', function() {
       if (currentIdx < articles.length - 1) {
+        // Mark as read before moving to next
+        markArticleRead(articles[currentIdx].id);
         currentIdx++;
         showFlashcard(currentIdx);
         articlesRead++;
         updateStats();
       } else {
-        // End of batch, fetch next batch
-        offset += limit;
-        fetchArticlesBatch();
+        // Last article, mark as read
+        markArticleRead(articles[currentIdx].id);
         articlesRead++;
         updateStats();
+        showNoMoreArticles();
       }
+// Mark article as read via API
+function markArticleRead(articleId) {
+  fetch(`/api/mark_read/${articleId}`, { method: 'POST' });
+}
     });
   }
 
   document.getElementById('show-more-btn').addEventListener('click', function() {
     // Fallback: acts like right arrow
     if (currentIdx < articles.length - 1) {
+      markArticleRead(articles[currentIdx].id);
       currentIdx++;
       showFlashcard(currentIdx);
       articlesRead++;
       updateStats();
     } else {
-      offset += limit;
-      fetchArticlesBatch();
+      markArticleRead(articles[currentIdx].id);
       articlesRead++;
       updateStats();
+      showNoMoreArticles();
     }
   });
 });

@@ -171,16 +171,13 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
 
 def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100, offset: int = 0) -> list:
     """
-    Used for the personalized 'Fast' page, where only articles whose topic matches
-    the user's current interests (as selected on the manage_interests page) are returned.
+    Fetches articles matching the user's selected topics.
 
     Args:
         user_id (int): The ID of the logged-in user (used for user interactions, not for filtering sources).
         topics (list): List of topic strings the user is interested in (from user_topics table).
         limit (int): Maximum number of articles to return.
-
-    Returns:
-        list: List of article dicts, each representing an article matching one of the user's topics.
+        offset (int): Offset for pagination (used only if batching/pagination is needed).
     """
     if not topics:
         return []
@@ -314,24 +311,32 @@ def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = Tr
     return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
 
 
-def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, List[Dict[str, Any]]]:
+from typing import Union
+
+def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:
     """
     Get articles grouped by topics for the main page display.
-    Returns a dictionary with topic names as keys and lists of articles as values.
+    Returns a dictionary with 'fast_view' as a list of articles and 'topics' as a dictionary of topic lists.
     """
     # Get all articles for the user (including read ones to show with dimmed effect)
-    all_articles = get_personalized_digest(user_id, limit=100, offset=0, include_read=True)
+    all_articles = get_personalized_digest(user_id, limit=200, offset=0, include_read=True)
     articles = [a for a in all_articles if a.get('id')]
 
     # Get user's selected topics from user_topics table
     from .user_service import get_user_topics
     user_topics = get_user_topics(user_id)
 
-    # Get unread articles for Fast View (matching user topics, unread only)
+    # Fast View: only unread articles from user topics
     fast_view_articles = [a for a in articles if a.get('topic') in user_topics and not a.get('is_read', False)]
     fast_view_ids = set(a['id'] for a in fast_view_articles)
 
-    # Define topic order
+    # Recommended For You: articles matching user topics, both read and unread, but exclude those in Fast View
+    recommended_articles = [
+        a for a in articles
+        if a.get('topic') in user_topics and a.get('id') not in fast_view_ids
+    ]
+
+    # Group remaining articles by their assigned topics (excluding those in fast view and recommended)
     topic_order = [
         "Recommended For You",
         "Artificial Intelligence (AI) & Machine Learning (ML)",
@@ -348,15 +353,8 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         "Other"
     ]
     topics_dict = {topic: [] for topic in topic_order}
-
-    # Recommended For You: articles matching user topics & not in Fast View (not unread in fast)
-    recommended_articles = [
-        a for a in articles
-        if a.get('topic') in user_topics and a.get('id') not in fast_view_ids
-    ]
     topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]
 
-    # Group remaining articles by their assigned topics (excluding those in fast view and recommended)
     recommended_ids = set(a['id'] for a in topics_dict["Recommended For You"])
     for article in articles:
         topic = article.get('topic', 'Other')
@@ -372,7 +370,8 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         if len(topics_dict[topic]) > limit_per_topic:
             topics_dict[topic] = topics_dict[topic][:limit_per_topic]
 
-    return topics_dict
+    # Return both fast_view_articles and topics_dict for frontend mutual exclusion
+    return {"fast_view": fast_view_articles, "topics": topics_dict}
 
 def cleanup_old_articles():
     """

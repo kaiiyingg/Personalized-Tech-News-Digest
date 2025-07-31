@@ -2,9 +2,10 @@
 """
 TechPulse Scheduler:
 
-- Daily RSS source synchronization (midnight)
-- Hourly article ingestion from all sources
+- Hourly article ingestion from all sources in your database
 - Daily cleanup of old articles at 3:00 AM (favorites are always preserved)
+
+Note: RSS source synchronization is now manual. Run the sync_sources script yourself if you want to add/remove sources.
 """
 import schedule
 import time
@@ -14,20 +15,21 @@ from datetime import datetime
 
 JOBS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Paths to job scripts
-SYNC_SOURCES = os.path.join(JOBS_DIR, "01_sync_sources.py")
+# Path to ingestion job script
 INGEST_ARTICLES = os.path.join(JOBS_DIR, "02_ingest_articles.py")
 
 # Import cleanup function from services/content_service
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from services.content_service import cleanup_old_articles
 
-def run_sync_sources():
-    print(f"[{datetime.now()}] sync_sources job started.")
-    subprocess.run(["python", SYNC_SOURCES])
+
 
 def run_ingest_articles():
     print(f"[{datetime.now()}] ingest_articles job started.")
-    subprocess.run(["python", INGEST_ARTICLES])
+    subprocess.run([sys.executable, "-m", "src.jobs.02_ingest_articles"])
+
 
 def run_daily_cleanup():
     print(f"[{datetime.now()}] daily_cleanup job started.")
@@ -40,17 +42,12 @@ def run_daily_cleanup():
     except Exception as e:
         print(f"Cleanup job error: {e}")
 
-
 def start_scheduler():
     print("TechPulse Unified Scheduler Starting...")
-    print("Sync sources now and daily at 00:00")
     print("Ingest articles hourly")
     print("Cleanup old articles daily at 03:00 (preserving favorites)")
 
-    # Always sync sources on startup before any ingestion
-    run_sync_sources()
-
-    schedule.every().day.at("00:00").do(run_sync_sources)
+    # Automate ingestion and cleanup
     schedule.every().hour.do(run_ingest_articles)
     schedule.every().day.at("03:00").do(run_daily_cleanup)
 

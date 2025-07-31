@@ -1,12 +1,22 @@
 #!/usr/bin/env python3
 """
-Hourly Article Ingestion Script for TechPulse
+TechPulse Article Ingestion Script (Automated)
 
-- Fetches articles from all RSS sources
-- Inserts new articles into Supabase/PostgreSQL
-- Avoids duplicates
-- Can be scheduled to run every hour using Python's schedule library
+This script fetches and ingests new articles from all RSS sources in your database.
+It is designed to be run automatically via a scheduler to keep your tech news feed up to date.
+
+Key points:
+- This script does NOT manage the list of RSS sources. To add/remove sources, run the sync_sources script manually.
+- Ingestion will only use sources currently in your database.
+- Avoids duplicates, skips unreachable URLs, and only ingests tech-related articles.
+- Can be scheduled to run every hour (or as desired) using Python's schedule library or an external scheduler.
+
+Usage (manual run for testing):
+    python -m src.jobs.02_ingest_articles
+
+For automation, set up a scheduler to run this script as needed.
 """
+
 
 import feedparser
 import schedule
@@ -17,37 +27,12 @@ from src.services.content_service import create_content_item
 from src.services.source_service import get_all_sources
 from bs4 import BeautifulSoup
 from src.services.url_validator import is_url_reachable
+# Summarization imports
+from transformers.pipelines import pipeline
 
-# ADD YOUR RSS SOURCES HERE
-RSS_SOURCES = [
-    {"name": "TechCrunch", "url": "https://techcrunch.com/feed/"},
-    {"name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index"},
-    {"name": "Hacker News", "url": "https://hnrss.org/frontpage"},
-    {"name": "Wired", "url": "https://www.wired.com/feed/rss"},
-    {"name": "TechRadar", "url": "https://www.techradar.com/rss"},
-    {"name": "ZDNet", "url": "https://www.zdnet.com/news/rss.xml"},
-    {"name": "MIT Technology Review", "url": "https://www.technologyreview.com/feed/"},
-    {"name": "Engadget", "url": "https://www.engadget.com/rss.xml"},
-    {"name": "9to5Mac", "url": "https://9to5mac.com/feed/"},
-    {"name": "Android Police", "url": "https://www.androidpolice.com/feed/"},
-    {"name": "Mashable Tech", "url": "https://mashable.com/feeds/rss/all"},
-    {"name": "CNET", "url": "https://www.cnet.com/rss/news/"},
-    {"name": "IEEE Spectrum", "url": "https://spectrum.ieee.org/rss/fulltext"},
-    {"name": "NYT Technology", "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"},
-    {"name": "Gizmodo", "url": "https://gizmodo.com/feed"},
-    {"name": "CNA Tech News", "url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416"},
-    {"name": "AI News", "url": "https://www.artificialintelligence-news.com/feed/"},
-    {"name": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml"},
-    {"name": "KrebsOnSecurity", "url": "https://krebsonsecurity.com/feed/"},
-    {"name": "Dark Reading", "url": "https://www.darkreading.com/rss.xml"},
-    {"name": "GitHub Blog", "url": "https://github.blog/feed/"},
-    {"name": "Stack Overflow Blog", "url": "https://stackoverflow.blog/feed/"},
-    {"name": "Dev.to", "url": "https://dev.to/feed"},
-    {"name": "Opensource.com", "url": "https://opensource.com/feed"},
-    {"name": "KDnuggets", "url": "https://www.kdnuggets.com/feed"},
-    {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
-    {"name": "EFF Deeplinks", "url": "https://www.eff.org/rss/updates.xml"},
-]
+summarizer = pipeline("summarization", model="t5-small")
+
+## NOTE: RSS_SOURCES is not used for ingestion. The script fetches sources from your database.
 
 
 def fetch_and_ingest():
@@ -58,18 +43,14 @@ def fetch_and_ingest():
         new_articles = 0
         sources_in_db = get_all_sources()
         print(f"[Ingestion] Found {len(sources_in_db)} sources in DB.")
-        url_to_id = {s.feed_url: s.id for s in sources_in_db}
         if not sources_in_db:
             print("[Ingestion] No sources found in DB. Did sync_sources run?")
         # --- Round-robin ingestion: 1 article per source per round ---
         # Step 1: Parse all feeds and collect entries per source
         feeds = []  # List of dicts: { 'source_id': ..., 'entries': [...], 'feed_url': ... }
-        for source in RSS_SOURCES:
-            feed_url = source["url"]
-            source_id = url_to_id.get(feed_url)
-            if not source_id:
-                print(f"[Ingestion] Source not found in DB for {feed_url}, skipping.")
-                continue
+        for source in sources_in_db:
+            feed_url = source.feed_url
+            source_id = source.id
             print(f"[Ingestion] Fetching: {feed_url}")
             try:
                 feed = feedparser.parse(feed_url)
@@ -92,7 +73,25 @@ def fetch_and_ingest():
                     try:
                         article_url = str(entry.get("link", ""))
                         title = str(entry.get("title", "No Title"))
-                        summary = str(entry.get("summary", ""))
+                        # Use full content for summarization if available, else fallback to summary
+                        article_text = ""
+                        if hasattr(entry, "content") and entry.content:
+                            # Some feeds provide full content in entry.content
+                            for c in entry.content:
+                                html = c.get("value") if isinstance(c, dict) else None
+                                if html:
+                                    soup = BeautifulSoup(html, "html.parser")
+                                    article_text = soup.get_text(separator=" ", strip=True)
+                                    break
+                        if not article_text:
+                            # Fallback to summary or title
+                            article_text = str(entry.get("summary", "")) or title
+                        # Generate summary using Hugging Face summarizer
+                        try:
+                            summary = summarizer(article_text, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
+                        except Exception as e:
+                            print(f"[Ingestion] Summarization failed for article '{title}': {e}")
+                            summary = article_text[:200]  # fallback: truncate
                         published_at = entry.get("published_parsed")
                         if published_at and isinstance(published_at, time.struct_time):
                             published_at = datetime.fromtimestamp(time.mktime(published_at))
@@ -197,6 +196,12 @@ def fetch_and_ingest():
                         if image_url is not None and not isinstance(image_url, str):
                             image_url = str(image_url)
 
+                        # Assign topic and filter out non-tech articles
+                        from src.services.content_service import assign_topic
+                        topic = assign_topic(title, summary)
+                        if topic == "Other":
+                            print(f"[Ingestion] Skipping non-tech article: {title}")
+                            continue
                         print(f"[Ingestion] Checking for duplicate: {article_url}")
                         cur.execute("SELECT id FROM content WHERE article_url = %s", (article_url,))
                         if cur.fetchone():
@@ -207,7 +212,7 @@ def fetch_and_ingest():
                             print(f"[Ingestion] URL not reachable, skipping: {article_url}")
                             continue
                         print(f"[Ingestion] Inserting article: {title} ({article_url})")
-                        content = create_content_item(source_id, title, summary, article_url, published_at, image_url=image_url)
+                        content = create_content_item(source_id, title, summary, article_url, published_at, topic=topic, image_url=image_url)
                         if content:
                             print(f"[Ingestion] Added article: {title} ({article_url})")
                             new_articles += 1
@@ -230,7 +235,7 @@ def fetch_and_ingest():
         print(f"[Ingestion] Fatal error: {e}")
 
 # Schedule to run every hour
-schedule.every(1).minutes.do(fetch_and_ingest)  # For debugging, run every minute. Change back to hour if it works.
+schedule.every(60).minutes.do(fetch_and_ingest)  
 
 if __name__ == "__main__":
     print("Starting scheduler for article ingestion...")

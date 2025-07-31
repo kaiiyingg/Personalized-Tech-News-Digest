@@ -5,17 +5,15 @@
   <div id="fast-view-stats" style="margin-bottom:1.5em;text-align:center;">
     <h3>You've read <span id="articles-read">{{ articles_read }}</span> out of <span id="total-articles">{{ total_articles }}</span> articles today.</h3>
   </div>
-  <div id="flashcard-slider" style="width:100%;max-width:600px;display:flex;flex-direction:column;align-items:center;">
+  <div id="flashcard-slider" style="width:100%;max-width:900px;display:flex;flex-direction:row;align-items:center;justify-content:center;">
     <!-- Flashcards will be injected here by JS -->
   </div>
-  <div id="fast-view-arrows" style="display:flex;justify-content:center;align-items:center;margin-top:1.5em;gap:2.5em;">
-    <button id="fast-arrow-left" class="flashcard-nav-btn flashcard-nav-left" aria-label="Previous" style="font-size:2.2rem;background:none;border:none;cursor:pointer;">&#x25C0;</button>
-    <button id="fast-arrow-right" class="flashcard-nav-btn flashcard-nav-right" aria-label="Next" style="font-size:2.2rem;background:none;border:none;cursor:pointer;">&#x25B6;</button>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <div id="fast-view-arrows" style="display:flex;justify-content:center;align-items:center;margin-top:2em;gap:3em;">
+    <div id="fast-arrow-left" class="arrow" aria-label="Previous"></div>
+    <div id="fast-arrow-right" class="arrow" aria-label="Next"></div>
   </div>
-  <div id="fast-view-controls" style="margin-top:2em;">
-    <button id="show-more-btn" class="btn block-cube block-cube-hover" style="display:none;">Show More</button>
-    <div id="no-more-articles" style="display:none;text-align:center;margin-top:1em;"></div>
-  </div>
+  <div id="no-more-articles" style="display:none;text-align:center;margin-top:1em;"></div>
 </div>
 <script src="{{ url_for('static', filename='js/fast_batch.js') }}"></script>
 {% endblock %}

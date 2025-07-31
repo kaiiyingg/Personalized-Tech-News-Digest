@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Sync RSS sources to the database.
-Efficient, automated, and minimal output.
+X automated using schedular.py so if want to add/remove sources, run this script manually.
+Command 'python -m src.jobs.01_sync_sources' for update.
 """
 
 from src.services.source_service import create_source, delete_source, get_all_sources

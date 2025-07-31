@@ -32,7 +32,7 @@
         {% set articles = topics_articles.get(topic, []) %}
         {% set topic_id = {
           "Recommended For You": "recommended-for-you",
-          "Artificial Intelligence (AI) & Machine Learning (ML)": "ai-ml",
+          "AI & ML": "ai-ml",
           "Cybersecurity & Privacy": "cybersecurity",
           "Cloud Computing & DevOps": "cloud-devops",
           "Software Development & Web Technologies": "web-dev",
@@ -44,11 +44,11 @@
           "Tech Culture & Work": "tech-culture",
           "Open Source": "open-source",
           "Other": "other"
-        }[topic] %}
+        }[topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' and 'AI & ML' or topic] %}
         <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
           <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
-              {{ topic }}
+              {{ 'AI & ML' if topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' else topic }}
             </h3>
             <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem; flex-shrink: 0;">
               {% if articles %}

@@ -20,8 +20,6 @@
         "Data Science & Analytics",
         "Emerging Technologies",
         "Big Tech & Industry Trends",
-        "Fintech & Crypto",
-        "Tech Policy & Regulation",
         "Tech Culture & Work",
         "Open Source",
         "Other"
@@ -30,120 +28,102 @@
 {% if topics_articles %}
   {% for topic in topic_order %}
     {% set articles = topics_articles['topics'].get(topic, []) %}
-        {% set topic_id = {
-          "Recommended For You": "recommended-for-you",
-          "AI & ML": "ai-ml",
-          "Cybersecurity & Privacy": "cybersecurity",
-          "Cloud Computing & DevOps": "cloud-devops",
-          "Software Development & Web Technologies": "web-dev",
-          "Data Science & Analytics": "data-science",
-          "Emerging Technologies": "emerging-tech",
-          "Big Tech & Industry Trends": "big-tech",
-          "Fintech & Crypto": "fintech",
-          "Tech Policy & Regulation": "tech-policy",
-          "Tech Culture & Work": "tech-culture",
-          "Open Source": "open-source",
-          "Other": "other"
-        }[topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' and 'AI & ML' or topic] %}
-        <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
-          <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-            <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
-              {{ 'AI & ML' if topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' else topic }}
-            </h3>
-            <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem; flex-shrink: 0;">
-              {% if articles %}
-                {{ articles|length }} articles
-              {% else %}
-                0 articles
-              {% endif %}
-            </span>
-          </div>
-          
-          <div class="topic-articles-container" style="position: relative;">
-            {% if articles %}
-              <div class="topic-articles" style="display: flex; gap: 1.5rem; overflow-x: auto; padding: 0.5rem 0 1rem; scroll-behavior: smooth; scrollbar-width: thin;">
-                {% for article in articles %}
-                  <div class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 480px;">
-                    {% set topic_emoji = {
-                      'Artificial Intelligence (AI) & Machine Learning (ML)': '🤖',
-                      'Cybersecurity & Privacy': '🛡️',
-                      'Cloud Computing & DevOps': '☁️',
-                      'Software Development & Web Technologies': '💻',
-                      'Data Science & Analytics': '📊',
-                      'Emerging Technologies': '🚀',
-                      'Big Tech & Industry Trends': '🏢',
-                      'Fintech & Crypto': '💸',
-                      'Tech Policy & Regulation': '⚖️',
-                      'Tech Culture & Work': '🎧',
-                      'Open Source': '🌐',
-                      'Other': '📰',
-                      'Recommended For You': '✨'
-                    } %}
-                    {% set topic_gradient_class = {
-                      'Artificial Intelligence (AI) & Machine Learning (ML)': 'ai-ml-gradient',
-                      'Cybersecurity & Privacy': 'cyber-gradient',
-                      'Cloud Computing & DevOps': 'cloud-gradient',
-                      'Software Development & Web Technologies': 'webdev-gradient',
-                      'Data Science & Analytics': 'data-gradient',
-                      'Emerging Technologies': 'emerging-gradient',
-                      'Big Tech & Industry Trends': 'bigtech-gradient',
-                      'Fintech & Crypto': 'fintech-gradient',
-                      'Tech Policy & Regulation': 'policy-gradient',
-                      'Tech Culture & Work': 'culture-gradient',
-                      'Open Source': 'oss-gradient',
-                      'Other': 'other-gradient',
-                      'Recommended For You': 'ai-ml-gradient'
-                    } %}
-                    <div class="article-image {{ topic_gradient_class.get(article.topic, 'other-gradient') }}" style="width: 100%; height: 160px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                      {% if article.get('image_url') %}
-                        <img src="{{ article.image_url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.8rem;">
-                      {% else %}
-                        <span class="article-emoji-placeholder">
-                          {{ topic_emoji.get(article.topic, '📰') }}
-                        </span>
-                      {% endif %}
-                    </div>
-                    
-                    <div class="article-title-full">
-                      {{ article['title'] }}
-                    </div>
-                    <div class="article-topic" style="margin-bottom: 0.8rem;">
-                      <span class="topic-badge">
-                        {% if article.get('topic') %}
-                          {{ article['topic'] }}
-                        {% else %}
-                          Tech News
-                        {% endif %}
-                      </span>
-                    </div>
-                    <div class="article-meta" style="margin-bottom: 0.8rem;">
-                      <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">{{ article['source_name'] }}</span>
-                      <span style="color: #b3b3b3; font-size: 0.8rem; margin-left: 0.5rem;">{{ article['published_at'][:10] if article['published_at'] else 'No date' }}</span>
-                    </div>
-                    
-                    <div class="article-actions" style="display: flex; align-items: center; justify-content: flex-start; gap: 0.75rem; margin-top: auto; padding-top: 1rem;">
-                      <a href="{{ url_for('read_article', article_id=article['id']) }}" target="_blank" class="read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
-                        Read More
-                      </a>
-                      <button 
-                        type="button" 
-                        id="heart-{{ article['id'] }}" 
-                        class="btn-like-flash heart-button{% if article['is_liked'] %} active{% endif %}" 
-                        data-article-id="{{ article['id'] }}"
-                        title="{% if article['is_liked'] %}Unlike{% else %}Like{% endif %}">
-                      </button>
-                    </div>
-                  </div>
-                {% endfor %}
+    {% if articles and articles|length > 0 %}
+      {% set topic_id = {
+        "Recommended For You": "recommended-for-you",
+        "AI & ML": "ai-ml",
+        "Cybersecurity & Privacy": "cybersecurity",
+        "Cloud Computing & DevOps": "cloud-devops",
+        "Software Development & Web Technologies": "web-dev",
+        "Data Science & Analytics": "data-science",
+        "Emerging Technologies": "emerging-tech",
+        "Big Tech & Industry Trends": "big-tech",
+        "Tech Culture & Work": "tech-culture",
+        "Open Source": "open-source",
+        "Other": "other"
+      }[topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' and 'AI & ML' or topic] %}
+      <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
+        <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+          <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
+            {{ 'AI & ML' if topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' else topic }}
+          </h3>
+          <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem; flex-shrink: 0;">
+            {{ articles|length }} articles
+          </span>
+        </div>
+        <div class="topic-articles-container" style="position: relative;">
+          <div class="topic-articles" style="display: flex; gap: 1.5rem; overflow-x: auto; padding: 0.5rem 0 1rem; scroll-behavior: smooth; scrollbar-width: thin;">
+            {% for article in articles %}
+              <div class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 480px;">
+                {% set topic_emoji = {
+                  'Artificial Intelligence (AI) & Machine Learning (ML)': '🤖',
+                  'Cybersecurity & Privacy': '🛡️',
+                  'Cloud Computing & DevOps': '☁️',
+                  'Software Development & Web Technologies': '💻',
+                  'Data Science & Analytics': '📊',
+                  'Emerging Technologies': '🚀',
+                  'Big Tech & Industry Trends': '🏢',
+                  'Tech Culture & Work': '🎧',
+                  'Open Source': '🌐',
+                  'Other': '📰',
+                  'Recommended For You': '✨'
+                } %}
+                {% set topic_gradient_class = {
+                  'Artificial Intelligence (AI) & Machine Learning (ML)': 'ai-ml-gradient',
+                  'Cybersecurity & Privacy': 'cyber-gradient',
+                  'Cloud Computing & DevOps': 'cloud-gradient',
+                  'Software Development & Web Technologies': 'webdev-gradient',
+                  'Data Science & Analytics': 'data-gradient',
+                  'Emerging Technologies': 'emerging-gradient',
+                  'Big Tech & Industry Trends': 'bigtech-gradient',
+                  'Tech Culture & Work': 'culture-gradient',
+                  'Open Source': 'oss-gradient',
+                  'Other': 'other-gradient',
+                  'Recommended For You': 'ai-ml-gradient'
+                } %}
+                <div class="article-image {{ topic_gradient_class.get(article.topic, 'other-gradient') }}" style="width: 100%; height: 160px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                  {% if article.get('image_url') %}
+                    <img src="{{ article.image_url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.8rem;">
+                  {% else %}
+                    <span class="article-emoji-placeholder">
+                      {{ topic_emoji.get(article.topic, '📰') }}
+                    </span>
+                  {% endif %}
+                </div>
+                <div class="article-title-full">
+                  {{ article['title'] }}
+                </div>
+                <div class="article-topic" style="margin-bottom: 0.8rem;">
+                  <span class="topic-badge">
+                    {% if article.get('topic') %}
+                      {{ article['topic'] }}
+                    {% else %}
+                      Tech News
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="article-meta" style="margin-bottom: 0.8rem;">
+                  <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">{{ article['source_name'] }}</span>
+                  <span style="color: #b3b3b3; font-size: 0.8rem; margin-left: 0.5rem;">{{ article['published_at'][:10] if article['published_at'] else 'No date' }}</span>
+                </div>
+                <div class="article-actions" style="display: flex; align-items: center; justify-content: flex-start; gap: 0.75rem; margin-top: auto; padding-top: 1rem;">
+                  <a href="{{ url_for('read_article', article_id=article['id']) }}" target="_blank" class="read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
+                    Read More
+                  </a>
+                  <button 
+                    type="button" 
+                    id="heart-{{ article['id'] }}" 
+                    class="btn-like-flash heart-button{% if article['is_liked'] %} active{% endif %}" 
+                    data-article-id="{{ article['id'] }}"
+                    title="{% if article['is_liked'] %}Unlike{% else %}Like{% endif %}">
+                  </button>
+                </div>
               </div>
-            {% else %}
-              <div class="empty-topic-state" style="text-align: center; padding: 2rem; color: #888; background: #21262d; border-radius: 1rem; border: 2px dashed #444;">
-                <p style="margin: 0; font-size: 1rem;">No articles available in this topic yet</p>
-                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #666;">Check back later for fresh content!</p>
-              </div>
-            {% endif %}
+            {% endfor %}
           </div>
         </div>
+      </div>
+    {% endif %}
       {% endfor %}
     {% else %}
       <div class="empty-state" style="text-align: center; padding: 3rem; color: #b3b3b3;">

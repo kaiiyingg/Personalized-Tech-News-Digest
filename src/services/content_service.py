@@ -17,8 +17,6 @@ TOPIC_LABELS = [
     "Data Science & Analytics",
     "Emerging Technologies",
     "Big Tech & Industry Trends",
-    "Fintech & Crypto",
-    "Tech Policy & Regulation",
     "Tech Culture & Work",
     "Open Source",
     "Other"
@@ -390,8 +388,6 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         "Data Science & Analytics",
         "Emerging Technologies",
         "Big Tech & Industry Trends",
-        "Fintech & Crypto",
-        "Tech Policy & Regulation",
         "Tech Culture & Work",
         "Open Source",
         "Other"

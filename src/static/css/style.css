@@ -63,12 +63,6 @@
 .emerging-gradient {
   background: linear-gradient(135deg, #a21caf, #f472b6);
 }
-.bigtech-gradient {
-  background: linear-gradient(135deg, #64748b, #0ea5e9);
-}
-.fintech-gradient {
-  background: linear-gradient(135deg, #22c55e, #facc15);
-}
 .policy-gradient {
   background: linear-gradient(135deg, #1e293b, #6366f1);
 }

@@ -425,17 +425,27 @@ def api_fast_articles():
         return jsonify({'error': 'Unauthorized'}), 401
     user_id = session['user_id']
     user_topics = user_service.get_user_topics(user_id)
-    # If ?all=1, fetch all relevant articles (no batching)
+    # Get all articles matching user's topics
+    all_articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=1000, offset=0)
+    # Get recommended article IDs from discover (for exclusion)
+    from src.services.content_service import get_articles_by_topics
+    recommended_ids = set()
+    topics_articles = get_articles_by_topics(user_id, limit_per_topic=10)
+    for topic_dict in topics_articles:
+        if isinstance(topic_dict, dict) and topic_dict.get('topic') == 'Recommended For You':
+            for a in topic_dict.get('articles', []):
+                if isinstance(a, dict) and a.get('id'):
+                    recommended_ids.add(a['id'])
+    # Only include articles NOT in recommended
+    filtered_articles = [a for a in all_articles if a.get('id') not in recommended_ids]
     if request.args.get('all') == '1':
-        articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=1000, offset=0)  # large limit
-        # Shuffle articles to mix topics
-        random.shuffle(articles)
-        return jsonify({'articles': articles}), 200
+        random.shuffle(filtered_articles)
+        return jsonify({'articles': filtered_articles}), 200
     else:
         offset = int(request.args.get('offset', 0))
         limit = int(request.args.get('limit', 10))
-        articles = content_service.get_articles_by_user_topics(user_id, user_topics, limit=limit, offset=offset)
-        return jsonify({'articles': articles}), 200
+        batch = filtered_articles[offset:offset+limit]
+        return jsonify({'articles': batch}), 200
 
 @app.route('/manage_interests', methods=['GET', 'POST'])
 def manage_interests():

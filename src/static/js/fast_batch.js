@@ -24,12 +24,11 @@ function renderFlashcard(article) {
         <div class="fast-card-topic">
           <span class="fast-topic-badge">${article.topic || 'Tech News'}</span>
         </div>
-        <h2 class="fast-card-title">${article.title}</h2>
+        <h2 class="fast-card-title full-title">${article.title}</h2>
         <div class="fast-card-meta">
           <span class="fast-card-source">${article.source_name}</span>
           <span class="fast-card-date">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
         </div>
-        <div class="fast-card-summary">${article.summary}</div>
         <div class="fast-card-actions">
           <a href="${article.article_url}" target="_blank" class="fast-read-more-btn">
             Read Full Article <i class="ph ph-arrow-up-right"></i>
@@ -71,7 +70,7 @@ function fetchNextBatch() {
   fetch(`/api/fast_articles?offset=${offset}&limit=${batchSize}`)
     .then(res => res.json())
     .then(data => {
-      const batch = (data.fast_view || []);
+      const batch = (data.articles || []);
       if (batch.length > 0) {
         articles = articles.concat(batch);
         totalArticles = articles.length;

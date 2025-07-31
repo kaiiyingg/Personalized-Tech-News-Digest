@@ -1,3 +1,38 @@
+.arrow.right {
+  transform: rotate(180deg);
+}
+/* Discover Page: Make article title take up summary space, remove summary */
+.article-title-full {
+  font-size: 1.08rem;
+  font-family: 'Merriweather', serif;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+  min-height: 3.2em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+/* Topic badge: gracefully handle long topic names */
+.topic-badge {
+  background: #8B5CF6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
 /* Article Emoji Placeholder Styles by Topic */
 .article-emoji-placeholder {
   font-size: 3rem;

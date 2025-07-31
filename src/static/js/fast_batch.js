@@ -19,22 +19,22 @@ function shuffleArray(arr) {
 function renderFlashcard(article) {
   if (!article) return '';
   return `
-    <div class="fast-horizontal-card" data-article-id="${article.id}">
-      <div class="fast-card-content">
-        <div class="fast-card-topic">
-          <span class="fast-topic-badge">${article.topic || 'Tech News'}</span>
-        </div>
-        <h2 class="fast-card-title full-title">${article.title}</h2>
-        <div class="fast-card-meta">
-          <span class="fast-card-source">${article.source_name}</span>
-          <span class="fast-card-date">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
-        </div>
-        <div class="fast-card-actions">
-          <a href="${article.article_url}" target="_blank" class="fast-read-more-btn">
-            Read Full Article <i class="ph ph-arrow-up-right"></i>
-          </a>
-          <button type="button" id="heart-${article.id}" class="heart-button${article.is_liked ? ' active' : ''}" data-article-id="${article.id}" title="${article.is_liked ? 'Unlike' : 'Like'}"><div class="heart-animation"></div></button>
-        </div>
+    <div class="fast-horizontal-card" data-article-id="${article.id}" style="background: #23262f; border-radius: 1.1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 2.1rem 2.2rem 1.7rem 2.2rem; min-width: 340px; max-width: 540px; width: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+      <div class="fast-card-topic" style="margin-bottom: 0.4rem;">
+        <span class="fast-topic-badge" style="font-size: 0.98rem; font-weight: 600; background: #3b3f4a; color: #b3b3b3; border-radius: 0.5rem; padding: 0.18em 0.7em 0.18em 0.7em;">${article.topic || 'Tech News'}</span>
+      </div>
+      <div class="fast-card-meta" style="margin-bottom: 0.2rem; font-size: 0.92rem; color: #b3b3b3;">
+        <span class="fast-card-date">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
+        <span style="margin: 0 0.5em;">·</span>
+        <span class="fast-card-source">${article.source_name}</span>
+      </div>
+      <h2 class="fast-card-title full-title" style="font-size: 1.22rem; font-weight: 800; color: #fff; margin: 0 0 0.7rem 0; line-height: 1.22; max-height: 3.2em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${article.title}</h2>
+      <div class="fast-card-summary" style="font-size: 1.01rem; color: #e0e0e0; margin-bottom: 1.1rem; line-height: 1.5; max-height: 5.5em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">${article.summary || ''}</div>
+      <div class="fast-card-actions" style="margin-top: auto; display: flex; align-items: center; gap: 0.9rem;">
+        <a href="${article.article_url}" target="_blank" class="fast-read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1.1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.93rem; font-weight: 600; transition: background 0.2s;">
+          Read Full Article <i class="ph ph-arrow-up-right"></i>
+        </a>
+        <button type="button" id="heart-${article.id}" class="heart-button${article.is_liked ? ' active' : ''}" data-article-id="${article.id}" title="${article.is_liked ? 'Unlike' : 'Like'}"><div class="heart-animation"></div></button>
       </div>
     </div>
   `;

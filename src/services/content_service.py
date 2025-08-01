@@ -8,6 +8,16 @@ from typing import Union
 
 from transformers import pipeline #type: ignore
 
+# Import caching utility
+try:
+    from src.utils.cache import cache_result
+except ImportError:
+    # Fallback if cache module doesn't exist
+    def cache_result(expiry=300):
+        def decorator(func):
+            return func
+        return decorator
+
 # Define topic labels for zero-shot classification
 TOPIC_LABELS = [
     "Artificial Intelligence (AI) & Machine Learning (ML)",
@@ -22,8 +32,16 @@ TOPIC_LABELS = [
     "Other"
 ]
 
-# Load zero-shot classifier once (global)
-zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+# Load zero-shot classifier lazily (only when needed)
+zero_shot_classifier = None
+
+def get_classifier():
+    """Lazy load the classifier to avoid startup delays"""
+    global zero_shot_classifier
+    if zero_shot_classifier is None:
+        from transformers import pipeline
+        zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+    return zero_shot_classifier
 
 # --- Get article by ID (regardless of user/read status) ---
 def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
@@ -74,7 +92,8 @@ def assign_topic(title: str, summary: str) -> str:
     """
     text = f"{title} {summary}"
     try:
-        result = zero_shot_classifier(text, TOPIC_LABELS)
+        classifier = get_classifier()  # Lazy load the classifier
+        result = classifier(text, TOPIC_LABELS)
         # HuggingFace pipeline may return a dict or a list of dicts
         labels = []
         if isinstance(result, dict):
@@ -135,6 +154,7 @@ def create_content_item(source_id: int, title: str, summary: str,
     finally:
         close_db_connection(conn)
 
+@cache_result(expiry=300)  # Cache for 5 minutes
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                              include_read: bool = False) -> List[Dict[str, Any]]:
     """
@@ -356,6 +376,7 @@ def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = Tr
     """Marks a content item as liked (and saved) for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
 
+@cache_result(expiry=600)  # Cache for 10 minutes
 def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:
     """
     Get articles grouped by topics for the main page display.
@@ -364,16 +385,14 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     # Get user's selected topics from user_topics table
     user_topics = get_user_topics(user_id)
 
-    # Fast View: unread articles from user topics (last 24h, unread only)
-    all_topic_articles = get_articles_by_user_topics(user_id, user_topics, limit=200, offset=0)
+    # Fast View: unread articles from user topics (last 24h, unread only) - reduced limit
+    all_topic_articles = get_articles_by_user_topics(user_id, user_topics, limit=30, offset=0)
     fast_view_articles = [a for a in all_topic_articles if not a.get('is_read', False)]
 
-    # For topic and recommended sections, use all articles (read and unread) from personalized digest
-    all_articles = get_personalized_digest(user_id, limit=200, offset=0, include_read=True)
-    articles = []
-    for a in all_articles:
-        if a.get('id') and get_article_by_id(a['id']) is not None:
-            articles.append(a)
+    # For topic and recommended sections, use smaller limit - reduced from 200 to 80
+    all_articles = get_personalized_digest(user_id, limit=80, offset=0, include_read=True)
+    # Remove the expensive N+1 query verification - trust the data
+    articles = [a for a in all_articles if a.get('id')]
 
     # Recommended For You: articles matching user topics, both read and unread
     recommended_articles = [a for a in articles if a.get('topic') in user_topics]

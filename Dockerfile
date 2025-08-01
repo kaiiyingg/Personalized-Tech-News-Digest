@@ -4,6 +4,12 @@
 # Using Python 3.11-slim-bullseye for a lightweight and up-to-date base image.
 FROM python:3.11-slim-bullseye
 
+# Install system dependencies for psycopg2 (production version)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory inside the container.
 # All subsequent commands will run from this directory.
 WORKDIR /app
@@ -23,25 +29,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 
-# Set environment variables for Flask and Python path
-# FLASK_APP tells Flask where your main application instance is.
-# FLASK_RUN_HOST=0.0.0.0 makes the Flask development server accessible from outside the container.
+# Set environment variables for production
 ENV FLASK_APP=src/app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-# Explicitly set port, though Flask's default is 5000
-ENV FLASK_RUN_PORT=5000
+ENV FLASK_ENV=production
+ENV PYTHONPATH=/app
 
-# Expose the port your Flask application will run on.
-# This informs Docker that the container listens on this port.
-EXPOSE 5000
+# Expose the port your application will run on.
+EXPOSE 8000
 
 # Define the command to run when the container starts.
-# This will execute your database schema creation script first,
-# then start the Flask development server.
-# The '&&' ensures 'flask run' only executes if 'python src/database/connection.py' succeeds.
-# Note: In a production setup, database migrations are usually run as a separate
-# step (e.g., in a CI/CD pipeline or a dedicated init container) before the app starts.
-# For this project, running it on container start is acceptable for simplicity.
-
-# For the main app container:
-CMD python src/database/connection.py && flask run
+# Use gunicorn for production instead of Flask dev server
+CMD ["sh", "-c", "cd /app && gunicorn -w 2 -k gevent -b 0.0.0.0:8000 --timeout 600 --graceful-timeout 300 --preload src.app:app"]

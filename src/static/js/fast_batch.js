@@ -67,9 +67,24 @@ function showNoMoreArticles() {
 function fetchNextBatch() {
   if (loading) return;
   loading = true;
-  fetch(`/api/fast_articles?offset=${offset}&limit=${batchSize}`)
-    .then(res => res.json())
+  
+  // Show loading indicator
+  showLoadingSpinner();
+  
+  // Add timeout for slow requests
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  
+  fetch(`/api/fast_articles?offset=${offset}&limit=${batchSize}`, {
+    signal: controller.signal
+  })
+    .then(res => {
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
     .then(data => {
+      hideLoadingSpinner();
       const batch = (data.articles || []);
       if (batch.length > 0) {
         articles = articles.concat(batch);
@@ -81,7 +96,64 @@ function fetchNextBatch() {
       }
       loading = false;
     })
-    .catch(() => { loading = false; });
+    .catch(err => {
+      clearTimeout(timeoutId);
+      hideLoadingSpinner();
+      loading = false;
+      
+      if (err.name === 'AbortError') {
+        showError('Request timed out. Please check your connection and try again.');
+      } else {
+        showError('Failed to load articles. Please try again.');
+      }
+      
+      // Show retry button if no articles loaded
+      if (articles.length === 0) {
+        showRetryButton();
+      }
+    });
+}
+
+function showLoadingSpinner() {
+  const slider = document.getElementById('flashcard-slider');
+  slider.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: #b3b3b3;">
+      <div style="border: 3px solid #f3f3f3; border-top: 3px solid #8B5CF6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+      <p>Loading articles...</p>
+    </div>
+  `;
+}
+
+function hideLoadingSpinner() {
+  // Spinner will be replaced by content or error message
+}
+
+function showError(message) {
+  const slider = document.getElementById('flashcard-slider');
+  slider.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: #ff6b6b; text-align: center; padding: 2rem;">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+      <h3 style="margin: 0 0 0.5rem 0; color: #fff;">Oops!</h3>
+      <p style="margin: 0; color: #b3b3b3;">${message}</p>
+    </div>
+  `;
+}
+
+function showRetryButton() {
+  const slider = document.getElementById('flashcard-slider');
+  slider.innerHTML += `
+    <button onclick="retryFetch()" style="background: #8B5CF6; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 1rem;">
+      Try Again
+    </button>
+  `;
+}
+
+function retryFetch() {
+  loading = false;
+  offset = 0;
+  articles = [];
+  currentIdx = 0;
+  fetchNextBatch();
 }
 
 

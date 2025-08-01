@@ -18,6 +18,17 @@ import src.services.content_service as content_service
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
+# Configure production settings
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['DEBUG'] = False
+    app.config['TESTING'] = False
+else:
+    app.config['DEBUG'] = True
+
+# Set Redis URL for caching (used by cache.py)
+if not os.getenv('REDIS_URL'):
+    os.environ['REDIS_URL'] = 'redis://redis:6379/0'
+
 # ------------------- AUTH DECORATOR -------------------
 def login_required_api(f):
     """

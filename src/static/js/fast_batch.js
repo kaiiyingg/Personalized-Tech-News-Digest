@@ -68,8 +68,10 @@ function fetchNextBatch() {
   if (loading) return;
   loading = true;
   
-  // Show loading indicator
-  showLoadingSpinner();
+  // Show loading indicator only if no articles loaded yet
+  if (articles.length === 0) {
+    showLoadingSpinner();
+  }
   
   // Add timeout for slow requests
   const controller = new AbortController();
@@ -86,13 +88,27 @@ function fetchNextBatch() {
     .then(data => {
       hideLoadingSpinner();
       const batch = (data.articles || []);
+      console.log(`Fetched batch: offset=${offset}, received=${batch.length} articles`);
+      
       if (batch.length > 0) {
         articles = articles.concat(batch);
-        totalArticles = articles.length;
+        // Don't update totalArticles to articles.length - keep it dynamic
+        // totalArticles will be updated when we know there are no more articles
         updateStats();
         if (currentIdx === 0) showFlashcard(currentIdx);
-      } else if (articles.length === 0) {
-        showNoMoreArticles();
+        
+        // Update offset for next batch
+        offset += batchSize;
+      } else {
+        // No more articles available
+        console.log('No more articles to fetch');
+        if (articles.length === 0) {
+          showNoMoreArticles();
+        } else {
+          // Set total to current loaded articles since no more are available
+          totalArticles = articles.length;
+          updateStats();
+        }
       }
       loading = false;
     })
@@ -183,22 +199,26 @@ document.addEventListener('DOMContentLoaded', function() {
         updateStats();
         // If near end, prefetch next batch
         if (articles.length - currentIdx <= 2) {
-          offset += batchSize;
           fetchNextBatch();
         }
-      } else if (!loading) {
-        // Try to fetch next batch if not already loading
-        offset += batchSize;
+      } else if (!loading && totalArticles === 0) {
+        // We're at the end and don't know total yet, try to fetch more
+        markArticleRead(articles[currentIdx].id);
+        articlesRead++;
+        updateStats();
         fetchNextBatch();
         // If still no more articles after fetch, show message
         setTimeout(() => {
           if (currentIdx >= articles.length - 1) {
-            markArticleRead(articles[currentIdx].id);
-            articlesRead++;
-            updateStats();
             showNoMoreArticles();
           }
         }, 500);
+      } else {
+        // We're at the end and know there are no more articles
+        markArticleRead(articles[currentIdx].id);
+        articlesRead++;
+        updateStats();
+        showNoMoreArticles();
       }
     });
   }

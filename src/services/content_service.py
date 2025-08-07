@@ -298,6 +298,64 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100, of
         close_db_connection(conn)
     return articles
 
+def get_articles_by_user_topics_extended(user_id: int, topics: list, limit: int = 100, offset: int = 0) -> list:
+    """
+    Fetches articles matching the user's selected topics with extended time range (7 days).
+    This ensures Fast View shows content even if no articles from last 24h.
+    """
+    if not topics:
+        return []
+    conn = None
+    articles = []
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Fetch articles from the last 7 days to ensure content availability
+        query = """
+            SELECT
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.topic, c.image_url,
+                uci.is_read, uci.is_liked, uci.interaction_at,
+                s.source_name AS source_name, s.feed_url AS source_feed_url
+            FROM
+                content c
+            JOIN
+                sources s ON c.source_id = s.id
+            LEFT JOIN
+                user_content_interactions uci ON c.id = uci.content_id AND uci.user_id = %s
+            WHERE
+                c.topic = ANY(%s)
+                AND c.published_at >= (NOW() - INTERVAL '7 days')
+            ORDER BY c.published_at DESC
+            LIMIT %s OFFSET %s;
+        """
+        cur.execute(query, (user_id, topics, limit, offset))
+        for row in cur.fetchall():
+            topic_display = row[6]
+            if topic_display == "Artificial Intelligence (AI) & Machine Learning (ML)":
+                topic_display = "AI & ML"
+            articles.append({
+                'id': row[0],
+                'source_id': row[1],
+                'title': row[2],
+                'summary': row[3],
+                'article_url': row[4],
+                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'topic': topic_display,
+                'image_url': row[7],
+                'is_read': row[8] if row[8] is not None else False,
+                'is_liked': row[9] if row[9] is not None else False,
+                'is_saved': row[9] if row[9] is not None else False,
+                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
+                'source_name': row[11],
+                'source_feed_url': row[12]
+            })
+    except Exception as e:
+        print(f"Error fetching articles by user topics (extended): {e}")
+    finally:
+        close_db_connection(conn)
+    return articles
+
 def _upsert_user_content_interaction(user_id: int, content_item_id: int,
                                      is_read: Optional[bool] = None,
                                      is_liked: Optional[bool] = None) -> bool:
@@ -385,9 +443,20 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     # Get user's selected topics from user_topics table
     user_topics = get_user_topics(user_id)
 
-    # Fast View: unread articles from user topics (last 24h, unread only) - reduced limit
-    all_topic_articles = get_articles_by_user_topics(user_id, user_topics, limit=30, offset=0)
-    fast_view_articles = [a for a in all_topic_articles if not a.get('is_read', False)]
+    # Fast View: Show articles based on user's selected topics or general articles
+    if user_topics:
+        # User has selected topics, show topic-based articles (from last 7 days, not just 24h)
+        all_topic_articles = get_articles_by_user_topics_extended(user_id, user_topics, limit=30, offset=0)
+        fast_view_articles = [a for a in all_topic_articles if not a.get('is_read', False)]
+        
+        # If no unread articles from user topics, show some recent unread articles as fallback
+        if not fast_view_articles:
+            fallback_articles = get_personalized_digest(user_id, limit=15, offset=0, include_read=False)
+            fast_view_articles = [a for a in fallback_articles if not a.get('is_read', False)][:10]
+    else:
+        # User hasn't selected topics yet, show recent unread articles from all topics
+        all_recent_articles = get_personalized_digest(user_id, limit=30, offset=0, include_read=False)
+        fast_view_articles = [a for a in all_recent_articles if not a.get('is_read', False)]
 
     # For topic and recommended sections, use smaller limit - reduced from 200 to 80
     all_articles = get_personalized_digest(user_id, limit=80, offset=0, include_read=True)

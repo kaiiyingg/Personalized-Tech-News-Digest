@@ -5,11 +5,11 @@ from dotenv import load_dotenv # type: ignore
 load_dotenv()  # Load environment variables from .env file
 
 # Supabase/PostgreSQL connection details from .env
-PG_DATABASE = os.getenv('PG_DATABASE')
-PG_USER = os.getenv('PG_USER')
-PG_PASSWORD = os.getenv('PG_PASSWORD')
-PG_HOST = os.getenv('PG_HOST')
-PG_PORT = os.getenv('PG_PORT', 5432)
+PG_DATABASE = os.getenv('DB_NAME')
+PG_USER = os.getenv('DB_USER')
+PG_PASSWORD = os.getenv('DB_PASSWORD')
+PG_HOST = os.getenv('DB_HOST')
+PG_PORT = os.getenv('DB_PORT', 5432)
 
 """
 This module handles database connections and table creation for the TechPulse application.

@@ -13,27 +13,93 @@ try:
     from src.utils.cache import cache_result
 except ImportError:
     # Fallback if cache module doesn't exist
-    def cache_result(expiry=300):
+    def cache_result():
         def decorator(func):
             return func
         return decorator
 
-# Define topic labels for zero-shot classification
+# Constants for repeated strings
+AI_ML_TOPIC = "Artificial Intelligence (AI) & Machine Learning (ML)"
+AI_ML_SHORT = "AI & ML"
+EMERGING_TECH_TOPIC = "Emerging Technologies"
+
+# Define topic labels for zero-shot classification (removed "Other" to force tech categorization)
 TOPIC_LABELS = [
-    "Artificial Intelligence (AI) & Machine Learning (ML)",
+    AI_ML_TOPIC,
     "Cybersecurity & Privacy",
-    "Cloud Computing & DevOps",
+    "Cloud Computing & DevOps", 
     "Software Development & Web Technologies",
     "Data Science & Analytics",
-    "Emerging Technologies",
+    EMERGING_TECH_TOPIC,
     "Big Tech & Industry Trends",
     "Tech Culture & Work",
-    "Open Source",
-    "Other"
+    "Open Source"
 ]
 
 # Load zero-shot classifier lazily (only when needed)
 zero_shot_classifier = None
+
+def format_datetime(dt):
+    """Helper function to format datetime objects consistently"""
+    if dt and hasattr(dt, 'isoformat'):
+        return dt.isoformat()
+    elif dt:
+        return str(dt)
+    else:
+        return None
+
+def build_article_dict(row, custom_topic=None):
+    """Helper function to build article dictionary from database row"""
+    published_at = format_datetime(row[5])
+    interaction_at = format_datetime(row[10]) if len(row) > 10 else None
+    
+    # Handle topic display logic
+    topic = custom_topic if custom_topic else row[6]
+    if topic == AI_ML_TOPIC:
+        topic = AI_ML_SHORT
+    
+    article = {
+        'id': row[0],
+        'source_id': row[1],
+        'title': row[2],
+        'summary': row[3],
+        'article_url': row[4],
+        'published_at': published_at,
+        'topic': topic,
+        'image_url': row[7],
+        'source_name': row[8] if len(row) > 8 else None,
+        'source_feed_url': row[9] if len(row) > 9 else None
+    }
+    
+    # Add interaction data if available
+    if len(row) > 10:
+        article.update({
+            'is_read': row[8] if row[8] is not None else False,
+            'is_liked': row[9] if row[9] is not None else False,
+            'is_saved': row[9] if row[9] is not None else False,
+            'interaction_at': interaction_at,
+            'source_name': row[11],
+            'source_feed_url': row[12]
+        })
+    
+    return article
+
+def build_simple_article_dict(row):
+    """Helper function to build article dictionary from simple database row (no interaction data)"""
+    published_at = format_datetime(row[5])
+    
+    return {
+        'id': row[0],
+        'source_id': row[1],
+        'title': row[2],
+        'summary': row[3],
+        'article_url': row[4],
+        'published_at': published_at,
+        'topic': row[6],
+        'image_url': row[7],
+        'source_name': row[8],
+        'source_feed_url': row[9]
+    }
 
 def get_classifier():
     """Lazy load the classifier to avoid startup delays"""
@@ -67,13 +133,14 @@ def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
         cur.execute(query, (article_id,))
         row = cur.fetchone()
         if row:
+            published_at = format_datetime(row[5])
             return {
                 'id': row[0],
                 'source_id': row[1],
                 'title': row[2],
                 'summary': row[3],
                 'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
+                'published_at': published_at,
                 'topic': row[6],
                 'image_url': row[7],
                 'source_name': row[8],
@@ -86,26 +153,80 @@ def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
     finally:
         close_db_connection(conn)
 
-def assign_topic(title: str, summary: str) -> str:
+def assign_topic(title: str, summary: str) -> Optional[str]:
     """
-    Assigns a topic to content using zero-shot classification (HuggingFace).
+    Assigns a topic to content using zero-shot classification with STRICT tech filtering.
+    Returns None if content is not tech-related, which prevents ingestion.
     """
-    text = f"{title} {summary}"
+    text = f"{title} {summary}".lower()
+    
+    # STRICT tech keyword requirements - must contain multiple tech indicators
+    tech_keywords = [
+        'technology', 'tech', 'software', 'hardware', 'artificial intelligence', 'ai',
+        'machine learning', 'ml', 'programming', 'coding', 'developer', 'development',
+        'computer', 'computing', 'digital', 'internet', 'web', 'app', 'application',
+        'startup', 'silicon valley', 'google', 'microsoft', 'apple', 'amazon', 'meta',
+        'facebook', 'twitter', 'tesla', 'nvidia', 'cybersecurity', 'security',
+        'blockchain', 'cryptocurrency', 'bitcoin', 'cloud', 'data science', 'analytics',
+        'algorithm', 'api', 'database', 'framework', 'open source', 'github', 'linux',
+        'windows', 'android', 'ios', 'mobile', 'smartphone', 'robotics', 'automation',
+        'fintech', 'edtech', 'saas', 'platform', 'gaming', 'virtual reality', 'vr',
+        'augmented reality', 'ar', 'quantum computing', 'semiconductor', 'chip',
+        'processor', 'server', 'network', 'wifi', 'bluetooth', 'electronic', 'device'
+    ]
+    
+    # Explicit REJECT keywords for inappropriate content
+    reject_keywords = [
+        'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
+        'sports', 'football', 'basketball', 'baseball', 'soccer', 'entertainment',
+        'celebrity', 'movie', 'film', 'music', 'politics', 'election', 'government',
+        'health', 'medical', 'doctor', 'hospital', 'disease', 'weather', 'climate',
+        'food', 'recipe', 'cooking', 'travel', 'tourism', 'fashion', 'beauty',
+        'real estate', 'property', 'finance', 'banking', 'insurance', 'automotive',
+        'car', 'vehicle', 'retail', 'shopping', 'restaurant', 'hotel', 'education',
+        'school', 'university', 'legal', 'law', 'lawyer', 'personal', 'lifestyle'
+    ]
+    
+    # Count tech vs non-tech indicators
+    tech_score = sum(1 for keyword in tech_keywords if keyword in text)
+    reject_score = sum(1 for keyword in reject_keywords if keyword in text)
+    
+    # STRICT filtering: Reject if any inappropriate content or insufficient tech keywords
+    if reject_score > 0:
+        print(f"REJECTED: Inappropriate content detected in '{title[:50]}...'")
+        return None
+        
+    if tech_score < 2:  # Require at least 2 tech keywords
+        print(f"REJECTED: Insufficient tech keywords ({tech_score}) in '{title[:50]}...'")
+        return None
+    
     try:
-        classifier = get_classifier()  # Lazy load the classifier
+        classifier = get_classifier()
         result = classifier(text, TOPIC_LABELS)
-        # HuggingFace pipeline may return a dict or a list of dicts
+        
+        # Handle different result formats
         labels = []
+        scores = []
         if isinstance(result, dict):
             labels = result.get('labels', [])
+            scores = result.get('scores', [])
         elif isinstance(result, list) and result and isinstance(result[0], dict):
             labels = result[0].get('labels', [])
+            scores = result[0].get('scores', [])
+        
         if labels and isinstance(labels[0], str):
+            # Require high confidence for classification
+            if scores and len(scores) > 0 and scores[0] < 0.4:
+                print(f"REJECTED: Low classification confidence ({scores[0]:.2f}) for '{title[:50]}...'")
+                return None
             return labels[0]
         else:
-            return "Other"
-    except Exception:
-        return "Other"
+            print(f"REJECTED: Classification failed for '{title[:50]}...'")
+            return None
+            
+    except Exception as e:
+        print(f"REJECTED: Classification error for '{title[:50]}...': {e}")
+        return None
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None, image_url: Optional[str] = None) -> Optional[Content]:
@@ -122,19 +243,39 @@ def create_content_item(source_id: int, title: str, summary: str,
     Returns:
         Optional[content]: The created content object if successful, None if article_url already exists.
     """
+    # Clean HTML from summary before storing in database
+    import re
+    from bs4 import BeautifulSoup
+    
+    # Multi-stage HTML cleaning
+    clean_soup = BeautifulSoup(summary, "html.parser")
+    cleaned_summary = clean_soup.get_text(separator=" ", strip=True)
+    
+    # Additional regex cleaning for any remaining HTML
+    cleaned_summary = re.sub(r'<[^>]+>', '', cleaned_summary)  # Remove any remaining tags
+    cleaned_summary = re.sub(r'&[a-zA-Z0-9#]+;', ' ', cleaned_summary)  # Remove HTML entities
+    cleaned_summary = re.sub(r'\s+', ' ', cleaned_summary).strip()  # Clean up whitespace
+    cleaned_summary = cleaned_summary.replace('"', '').replace("'", "")  # Remove quotes from attributes
+    
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         # Assign topic if not provided
-        topic_val = topic if topic else assign_topic(title, summary)
+        topic_val = topic if topic else assign_topic(title, cleaned_summary)
+        
+        # If topic assignment returns None, reject the content (not tech-related)
+        if topic_val is None:
+            print(f"Content rejected - not tech-related: {title[:50]}...")
+            return None
+            
         cur.execute(
             """
             INSERT INTO content (source_id, title, summary, article_url, published_at, topic, image_url)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id, topic, image_url;
             """,
-            (source_id, title, summary, article_url, published_at, topic_val, image_url)
+            (source_id, title, cleaned_summary, article_url, published_at, topic_val, image_url)
         )
         row = cur.fetchone()
         if row is None:
@@ -142,7 +283,7 @@ def create_content_item(source_id: int, title: str, summary: str,
             return None
         content_id, topic_db, image_url_db = row
         conn.commit()
-        return Content(content_id, source_id, title, summary, article_url, published_at, topic_db, image_url_db)
+        return Content(content_id, source_id, title, cleaned_summary, article_url, published_at, topic_db, image_url_db)
     except pg_errors.UniqueViolation as e:
         print(f"Error: Content item with URL '{article_url}' already exists. {e}")
         if conn: conn.rollback()
@@ -154,7 +295,7 @@ def create_content_item(source_id: int, title: str, summary: str,
     finally:
         close_db_connection(conn)
 
-@cache_result(expiry=300)  # Cache for 5 minutes
+@cache_result(expiry=60)  # Cache for only 1 minute for faster refreshes
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                              include_read: bool = False) -> List[Dict[str, Any]]:
     """
@@ -209,22 +350,7 @@ def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
         for row in cur.fetchall():
             # Double-check article still exists (paranoia, but ensures no ghost cards)
             if row[0] is not None:
-                digest_items.append({
-                    'id': row[0],
-                    'source_id': row[1],
-                    'title': row[2],
-                    'summary': row[3],
-                    'article_url': row[4],
-                    'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                    'topic': row[6],
-                    'image_url': row[7],
-                    'is_read': row[8] if row[8] is not None else False,
-                    'is_liked': row[9] if row[9] is not None else False,
-                    'is_saved': row[9] if row[9] is not None else False,
-                    'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
-                    'source_name': row[11],
-                    'source_feed_url': row[12]
-                })
+                digest_items.append(build_article_dict(row))
         # Add an aesthetic instruction for the user (for frontend display)
         digest_items.insert(0, {
             'instruction': "<div style='background: linear-gradient(90deg, #232526 0%, #414345 100%); color: #fff; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); text-align: center;'>\u2B50 Like the articles you enjoy! The more you like, the smarter your recommendations become. Your personalized tech digest will adapt to your interests. \u2B50</div>"
@@ -273,25 +399,7 @@ def get_articles_by_user_topics(user_id: int, topics: list, limit: int = 100, of
         """
         cur.execute(query, (user_id, topics, limit, offset))
         for row in cur.fetchall():
-            topic_display = row[6]
-            if topic_display == "Artificial Intelligence (AI) & Machine Learning (ML)":
-                topic_display = "AI & ML"
-            articles.append({
-                'id': row[0],
-                'source_id': row[1],
-                'title': row[2],
-                'summary': row[3],
-                'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                'topic': topic_display,
-                'image_url': row[7],
-                'is_read': row[8] if row[8] is not None else False,
-                'is_liked': row[9] if row[9] is not None else False,
-                'is_saved': row[9] if row[9] is not None else False,
-                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
-                'source_name': row[11],
-                'source_feed_url': row[12]
-            })
+            articles.append(build_article_dict(row))
     except Exception as e:
         print(f"Error fetching articles by user topics: {e}")
     finally:
@@ -331,25 +439,7 @@ def get_articles_by_user_topics_extended(user_id: int, topics: list, limit: int 
         """
         cur.execute(query, (user_id, topics, limit, offset))
         for row in cur.fetchall():
-            topic_display = row[6]
-            if topic_display == "Artificial Intelligence (AI) & Machine Learning (ML)":
-                topic_display = "AI & ML"
-            articles.append({
-                'id': row[0],
-                'source_id': row[1],
-                'title': row[2],
-                'summary': row[3],
-                'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                'topic': topic_display,
-                'image_url': row[7],
-                'is_read': row[8] if row[8] is not None else False,
-                'is_liked': row[9] if row[9] is not None else False,
-                'is_saved': row[9] if row[9] is not None else False,
-                'interaction_at': row[10].isoformat() if row[10] and hasattr(row[10], 'isoformat') else str(row[10]) if row[10] else None,
-                'source_name': row[11],
-                'source_feed_url': row[12]
-            })
+            articles.append(build_article_dict(row))
     except Exception as e:
         print(f"Error fetching articles by user topics (extended): {e}")
     finally:
@@ -434,7 +524,7 @@ def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = Tr
     """Marks a content item as liked (and saved) for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
 
-@cache_result(expiry=600)  # Cache for 10 minutes
+@cache_result(expiry=60)  # Cache for only 1 minute for faster refreshes
 def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:
     """
     Get articles grouped by topics for the main page display.
@@ -469,16 +559,15 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     # Group articles by their assigned topics (including those in recommended)
     topic_order = [
         "Recommended For You",
-        "Artificial Intelligence (AI) & Machine Learning (ML)",
+        AI_ML_TOPIC,
         "Cybersecurity & Privacy",
         "Cloud Computing & DevOps",
         "Software Development & Web Technologies",
         "Data Science & Analytics",
-        "Emerging Technologies",
+        EMERGING_TECH_TOPIC,
         "Big Tech & Industry Trends",
         "Tech Culture & Work",
-        "Open Source",
-        "Other"
+        "Open Source"
     ]
     topics_dict = {topic: [] for topic in topic_order}
     topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]
@@ -614,7 +703,7 @@ def cleanup_old_articles():
             })
         
         # Log the decision
-        print(f"=== Smart Cleanup Results ===")
+        print("=== Smart Cleanup Results ===")
         print(f"Fresh articles today: {result['fresh_today']}")
         print(f"Yesterday's articles: {result['yesterday_count']}")
         print(f"Total available: {result['total_available']}")
@@ -670,18 +759,7 @@ def get_general_digest(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]
         """
         cur.execute(query, (limit, offset))
         for row in cur.fetchall():
-            digest_items.append({
-                'id': row[0],
-                'source_id': row[1],
-                'title': row[2],
-                'summary': row[3],
-                'article_url': row[4],
-                'published_at': row[5].isoformat() if row[5] and hasattr(row[5], 'isoformat') else str(row[5]) if row[5] else None,
-                'topic': row[6],
-                'image_url': row[7],
-                'source_name': row[8],
-                'source_feed_url': row[9]
-            })
+            digest_items.append(build_simple_article_dict(row))
         # Add an instruction for the user (for frontend display)
         digest_items.insert(0, {
             'instruction': "<div style='background: linear-gradient(90deg, #232526 0%, #414345 100%); color: #fff; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); text-align: center;'>\u2B50 This is the global tech digest. Like articles to save them to your favorites. \u2B50</div>"

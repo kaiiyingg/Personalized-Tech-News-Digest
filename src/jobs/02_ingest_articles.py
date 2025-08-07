@@ -33,6 +33,11 @@ from transformers import AutoTokenizer
 summarizer = pipeline("summarization", model="t5-small")
 tokenizer = AutoTokenizer.from_pretrained("t5-small")
 
+# Constants for HTML cleaning and parsing
+HTML_PARSER = "html.parser"
+HTML_TAG_PATTERN = r'<[^>]+>'
+HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
+
 # Helper to truncate input to 512 tokens for t5-small
 def truncate_text(text, tokenizer, max_tokens=512):
     tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
@@ -86,20 +91,72 @@ def fetch_and_ingest():
                             for c in entry.content:
                                 html = c.get("value") if isinstance(c, dict) else None
                                 if html:
-                                    soup = BeautifulSoup(html, "html.parser")
+                                    soup = BeautifulSoup(html, HTML_PARSER)
                                     article_text = soup.get_text(separator=" ", strip=True)
                                     break
                         if not article_text:
-                            # Fallback to summary or title
-                            article_text = str(entry.get("summary", "")) or title
+                            # Fallback to summary from RSS feed, but clean it first
+                            raw_summary = str(entry.get("summary", ""))
+                            if raw_summary:
+                                # Clean HTML tags from RSS summary
+                                soup = BeautifulSoup(raw_summary, "html.parser")
+                                article_text = soup.get_text(separator=" ", strip=True)
+                            else:
+                                article_text = title
+                        
+                        # Always process through AI summarization for consistency
                         # Truncate input to 512 tokens for t5-small
                         truncated_text = truncate_text(article_text, tokenizer)
+                        
                         # Generate summary using Hugging Face summarizer
                         try:
-                            summary = summarizer(truncated_text, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
+                            # Ensure we have enough text to summarize
+                            if len(truncated_text.split()) > 10:
+                                # Improved summarization parameters for better quality
+                                ai_summary = summarizer(
+                                    truncated_text, 
+                                    max_length=100,  # Increased for more detail
+                                    min_length=30,   # Increased minimum length
+                                    do_sample=True,  # Enable sampling for more natural text
+                                    temperature=0.7, # Add some creativity
+                                    early_stopping=True
+                                )[0]['summary_text']
+                                
+                                # Multiple-stage HTML cleaning for the AI summary
+                                from bs4 import BeautifulSoup
+                                # First pass: Remove all HTML tags
+                                clean_soup = BeautifulSoup(ai_summary, "html.parser")
+                                summary = clean_soup.get_text(separator=" ", strip=True)
+                                
+                                # Second pass: Handle any remaining HTML entities or malformed tags
+                                import re
+                                # Remove any remaining HTML-like patterns
+                                summary = re.sub(HTML_TAG_PATTERN, '', summary)  # Remove any remaining tags
+                                summary = re.sub(HTML_ENTITY_PATTERN, ' ', summary)  # Remove HTML entities
+                                summary = re.sub(r'\s+', ' ', summary).strip()  # Clean up whitespace
+                                
+                                # Third pass: Remove any orphaned quotes or incomplete HTML
+                                summary = summary.replace('"', '').replace("'", "")  # Remove quotes that might be from attributes
+                                
+                                # Ensure summary ends properly
+                                if not summary.endswith(('.', '!', '?')):
+                                    summary = summary.rstrip(',;:') + '.'
+                                
+                            else:
+                                # Too short to summarize, use truncated version with cleaning
+                                import re
+                                clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
+                                clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
+                                clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
+                                summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
                         except Exception as e:
                             print(f"[Ingestion] Summarization failed for article '{title}': {e}")
-                            summary = truncated_text[:200]  # fallback: truncate
+                            # Better fallback: create a meaningful excerpt with HTML cleaning
+                            import re
+                            clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
+                            clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
+                            clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
+                            summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
                         published_at = entry.get("published_parsed")
                         if published_at and isinstance(published_at, time.struct_time):
                             published_at = datetime.fromtimestamp(time.mktime(published_at))

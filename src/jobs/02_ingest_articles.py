@@ -21,7 +21,7 @@ For automation, set up a scheduler to run this script as needed.
 import feedparser
 import schedule
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from src.database.connection import get_db_connection, close_db_connection
 from src.services.content_service import create_content_item
 from src.services.source_service import get_all_sources
@@ -33,16 +33,63 @@ from transformers import AutoTokenizer
 summarizer = pipeline("summarization", model="t5-small")
 tokenizer = AutoTokenizer.from_pretrained("t5-small")
 
+# Constants for HTML cleaning and parsing
+HTML_PARSER = "html.parser"
+HTML_TAG_PATTERN = r'<[^>]+>'
+HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
+
 # Helper to truncate input to 512 tokens for t5-small
 def truncate_text(text, tokenizer, max_tokens=512):
     tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
     return tokenizer.decode(tokens, skip_special_tokens=True)
+
+def cleanup_old_articles(days_to_keep=30):
+    """Remove articles older than specified days to keep database manageable"""
+    print(f"[Cleanup] Removing articles older than {days_to_keep} days...")
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Calculate cutoff date
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        
+        # Get count before cleanup
+        cur.execute("SELECT COUNT(*) FROM content WHERE created_at < %s", (cutoff_date,))
+        old_count = cur.fetchone()[0]
+        
+        if old_count > 0:
+            print(f"[Cleanup] Found {old_count} articles older than {cutoff_date.strftime('%Y-%m-%d')}")
+            
+            # Remove old articles (preserve user interactions by using CASCADE or handling separately)
+            cur.execute("DELETE FROM content WHERE created_at < %s", (cutoff_date,))
+            conn.commit()
+            
+            print(f"[Cleanup] ✅ Removed {old_count} old articles")
+        else:
+            print("[Cleanup] ✅ No old articles to remove")
+            
+        # Get total remaining articles
+        cur.execute("SELECT COUNT(*) FROM content")
+        remaining_count = cur.fetchone()[0]
+        print(f"[Cleanup] 📊 Database now contains {remaining_count} articles")
+        
+        close_db_connection(conn)
+        return True
+        
+    except Exception as e:
+        print(f"[Cleanup] ❌ Error during cleanup: {e}")
+        return False
 
 ## NOTE: RSS_SOURCES is not used for ingestion. The script fetches sources from your database.
 
 
 def fetch_and_ingest():
     print(f"[Ingestion] Starting at {datetime.now().isoformat()}")
+    
+    # Step 1: Clean up old articles first
+    if not cleanup_old_articles(days_to_keep=30):
+        print("[Ingestion] ⚠️  Cleanup failed, continuing with ingestion...")
+    
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -86,20 +133,72 @@ def fetch_and_ingest():
                             for c in entry.content:
                                 html = c.get("value") if isinstance(c, dict) else None
                                 if html:
-                                    soup = BeautifulSoup(html, "html.parser")
+                                    soup = BeautifulSoup(html, HTML_PARSER)
                                     article_text = soup.get_text(separator=" ", strip=True)
                                     break
                         if not article_text:
-                            # Fallback to summary or title
-                            article_text = str(entry.get("summary", "")) or title
+                            # Fallback to summary from RSS feed, but clean it first
+                            raw_summary = str(entry.get("summary", ""))
+                            if raw_summary:
+                                # Clean HTML tags from RSS summary
+                                soup = BeautifulSoup(raw_summary, "html.parser")
+                                article_text = soup.get_text(separator=" ", strip=True)
+                            else:
+                                article_text = title
+                        
+                        # Always process through AI summarization for consistency
                         # Truncate input to 512 tokens for t5-small
                         truncated_text = truncate_text(article_text, tokenizer)
+                        
                         # Generate summary using Hugging Face summarizer
                         try:
-                            summary = summarizer(truncated_text, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
+                            # Ensure we have enough text to summarize
+                            if len(truncated_text.split()) > 10:
+                                # Improved summarization parameters for better quality
+                                ai_summary = summarizer(
+                                    truncated_text, 
+                                    max_length=100,  # Increased for more detail
+                                    min_length=30,   # Increased minimum length
+                                    do_sample=True,  # Enable sampling for more natural text
+                                    temperature=0.7, # Add some creativity
+                                    early_stopping=True
+                                )[0]['summary_text']
+                                
+                                # Multiple-stage HTML cleaning for the AI summary
+                                from bs4 import BeautifulSoup
+                                # First pass: Remove all HTML tags
+                                clean_soup = BeautifulSoup(ai_summary, "html.parser")
+                                summary = clean_soup.get_text(separator=" ", strip=True)
+                                
+                                # Second pass: Handle any remaining HTML entities or malformed tags
+                                import re
+                                # Remove any remaining HTML-like patterns
+                                summary = re.sub(HTML_TAG_PATTERN, '', summary)  # Remove any remaining tags
+                                summary = re.sub(HTML_ENTITY_PATTERN, ' ', summary)  # Remove HTML entities
+                                summary = re.sub(r'\s+', ' ', summary).strip()  # Clean up whitespace
+                                
+                                # Third pass: Remove any orphaned quotes or incomplete HTML
+                                summary = summary.replace('"', '').replace("'", "")  # Remove quotes that might be from attributes
+                                
+                                # Ensure summary ends properly
+                                if not summary.endswith(('.', '!', '?')):
+                                    summary = summary.rstrip(',;:') + '.'
+                                
+                            else:
+                                # Too short to summarize, use truncated version with cleaning
+                                import re
+                                clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
+                                clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
+                                clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
+                                summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
                         except Exception as e:
                             print(f"[Ingestion] Summarization failed for article '{title}': {e}")
-                            summary = truncated_text[:200]  # fallback: truncate
+                            # Better fallback: create a meaningful excerpt with HTML cleaning
+                            import re
+                            clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
+                            clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
+                            clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
+                            summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
                         published_at = entry.get("published_parsed")
                         if published_at and isinstance(published_at, time.struct_time):
                             published_at = datetime.fromtimestamp(time.mktime(published_at))
@@ -242,13 +341,32 @@ def fetch_and_ingest():
     except Exception as e:
         print(f"[Ingestion] Fatal error: {e}")
 
-# Schedule to run every hour
-schedule.every(60).minutes.do(fetch_and_ingest)  
+# Schedule to run every hour for ingestion
+schedule.every(60).minutes.do(fetch_and_ingest)
+
+# Schedule daily cleanup at 3 AM (independent of ingestion)
+schedule.every().day.at("03:00").do(lambda: cleanup_old_articles(days_to_keep=30))  
 
 if __name__ == "__main__":
-    print("Starting scheduler for article ingestion...")
-    fetch_and_ingest()  # Run once at startup
+    print("🚀 TechPulse Enhanced Article Ingestion & Cleanup Scheduler")
+    print("=" * 60)
+    print("📅 Schedule:")
+    print("   • Article Ingestion: Every 60 minutes")
+    print("   • Database Cleanup: Daily at 3:00 AM") 
+    print("   • Old Article Retention: 30 days")
+    print("🔍 Features:")
+    print("   • Strict tech content filtering")
+    print("   • AI-powered summarization")
+    print("   • Automatic HTML cleaning")
+    print("   • Image extraction")
+    print("   • Inappropriate content rejection")
+    print("=" * 60)
+    
+    # Run initial ingestion (includes cleanup)
+    fetch_and_ingest()
+    
+    # Start scheduler loop
     while True:
-        print(f"[Scheduler] Heartbeat: {datetime.now().isoformat()}")
+        print(f"[Scheduler] ⏰ Heartbeat: {datetime.now().isoformat()}")
         schedule.run_pending()
         time.sleep(60)

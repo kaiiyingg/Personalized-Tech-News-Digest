@@ -1,19 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}Fast View{% endblock %}
 {% block content %}
-<div id="fast-view-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;">
-  <div id="fast-view-stats" style="margin-bottom:1.5em;text-align:center;">
-    <h3>You've read <span id="articles-read">{{ articles_read }}</span> out of <span id="total-articles">{{ total_articles }}</span> articles today.</h3>
+<div id="fast-view-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:85vh;max-height:100vh;padding:1rem 0 2rem 0;overflow:hidden;">
+  <div id="fast-view-stats" style="margin-bottom:1rem;text-align:center;flex-shrink:0;">
+    <h3>Article <span id="articles-read">0</span> of <span id="total-articles">0</span></h3>
   </div>
-  <div id="flashcard-slider" style="width:100%;max-width:900px;display:flex;flex-direction:row;align-items:center;justify-content:center;">
+  <div id="flashcard-slider" style="width:100%;max-width:800px;display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;min-height:0;padding:0 1rem;">
     <!-- Flashcards will be injected here by JS -->
   </div>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <div id="fast-view-arrows" style="display:flex;justify-content:center;align-items:center;margin-top:2em;gap:3em;">
-    <div id="fast-arrow-left" class="arrow left" aria-label="Previous"></div>
-    <div id="fast-arrow-right" class="arrow right" aria-label="Next"></div>
+  <div id="fast-view-arrows" style="display:flex;justify-content:center;align-items:center;margin-top:1.5rem;gap:3rem;flex-shrink:0;padding-bottom:1rem;">
+    <div id="fast-arrow-left" class="prev" aria-label="Previous"></div>
+    <div id="fast-arrow-right" class="next" aria-label="Next"></div>
   </div>
-  <div id="no-more-articles" style="display:none;text-align:center;margin-top:1em;"></div>
+  <div id="no-more-articles" style="display:none;text-align:center;margin-top:1rem;"></div>
 </div>
 <script src="{{ url_for('static', filename='js/fast_batch.js') }}"></script>
 {% endblock %}

@@ -21,8 +21,7 @@
         "Emerging Technologies",
         "Big Tech & Industry Trends",
         "Tech Culture & Work",
-        "Open Source",
-        "Other"
+        "Open Source"
     ] %}
     
 {% if topics_articles %}
@@ -39,8 +38,7 @@
         "Emerging Technologies": "emerging-tech",
         "Big Tech & Industry Trends": "big-tech",
         "Tech Culture & Work": "tech-culture",
-        "Open Source": "open-source",
-        "Other": "other"
+        "Open Source": "open-source"
       }[topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' and 'AI & ML' or topic] %}
       <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
         <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
@@ -65,7 +63,6 @@
                   'Big Tech & Industry Trends': '🏢',
                   'Tech Culture & Work': '🎧',
                   'Open Source': '🌐',
-                  'Other': '📰',
                   'Recommended For You': '✨'
                 } %}
                 {% set topic_gradient_class = {
@@ -78,10 +75,9 @@
                   'Big Tech & Industry Trends': 'bigtech-gradient',
                   'Tech Culture & Work': 'culture-gradient',
                   'Open Source': 'oss-gradient',
-                  'Other': 'other-gradient',
                   'Recommended For You': 'ai-ml-gradient'
                 } %}
-                <div class="article-image {{ topic_gradient_class.get(article.topic, 'other-gradient') }}" style="width: 100%; height: 160px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <div class="article-image {{ topic_gradient_class.get(article.topic, 'oss-gradient') }}" style="width: 100%; height: 160px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                   {% if article.get('image_url') %}
                     <img src="{{ article.image_url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.8rem;">
                   {% else %}

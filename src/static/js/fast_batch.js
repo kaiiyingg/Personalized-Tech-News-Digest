@@ -1,11 +1,12 @@
 // Fast View batching and slider logic
 let articles = [];
 let currentIdx = 0;
-let totalArticles = parseInt(document.getElementById('total-articles').textContent) || 0;
-let articlesRead = parseInt(document.getElementById('articles-read').textContent) || 0;
-let batchSize = 10; // Should match backend default
+let totalUnreadArticles = 0; // Total unread articles available from API
+let articlesRead = 0;  // Start with 0, will increment as user reads
+let batchSize = 8; // Initial batch size for Fast View
 let offset = 0;
 let loading = false;
+let sessionStartTime = Date.now(); // Track when session started
 
 // Fisher-Yates shuffle to mix articles of different topics
 function shuffleArray(arr) {
@@ -16,23 +17,129 @@ function shuffleArray(arr) {
   return arr;
 }
 
+// Add refresh functionality
+function addRefreshButton() {
+    if (document.getElementById('refresh-btn')) return; // Already exists
+    
+    const container = document.querySelector('.fast-container') || document.body;
+    const refreshBtn = document.createElement('button');
+    refreshBtn.id = 'refresh-btn';
+    refreshBtn.innerHTML = '🔄';
+    refreshBtn.className = 'refresh-btn';
+    refreshBtn.style.cssText = `
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        background: #8B5CF6;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 14px;
+        width: 40px;
+        height: 40px;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    refreshBtn.title = 'Refresh Articles (R)';
+    refreshBtn.addEventListener('click', refreshArticles);
+    refreshBtn.addEventListener('mouseenter', function() {
+        this.style.background = '#7C3AED';
+        this.style.transform = 'scale(1.1) rotate(90deg)';
+    });
+    refreshBtn.addEventListener('mouseleave', function() {
+        this.style.background = '#8B5CF6';
+        this.style.transform = 'scale(1) rotate(0deg)';
+    });
+    container.appendChild(refreshBtn);
+}
+
+function refreshArticles() {
+    console.log('[Fast View] Refreshing articles...');
+    // Reset state
+    articles = [];
+    currentIdx = 0;
+    totalUnreadArticles = 0;
+    articlesRead = 0;
+    offset = 0;
+    loading = false;
+    sessionStartTime = Date.now();
+    
+    // Remove existing content
+    const slider = document.getElementById('flashcard-slider');
+    if (slider) {
+        slider.innerHTML = '<div style="text-align: center; padding: 2rem;">🔄 Loading fresh articles...</div>';
+    }
+    
+    // Load new articles
+    fetchNextBatch(true);
+}
+
+// Keyboard support for refresh
+document.addEventListener('keydown', function(e) {
+    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        refreshArticles();
+    }
+});
+
 function renderFlashcard(article) {
   if (!article) return '';
+  
+  // Clean up summary: remove common unwanted content and HTML tags
+  let cleanSummary = article.summary || '';
+  
+  // First strip HTML tags completely
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = cleanSummary;
+  cleanSummary = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // Remove table of contents indicators
+  cleanSummary = cleanSummary.replace(/Table of contents[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '');
+  cleanSummary = cleanSummary.replace(/Contents[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '');
+  
+  // Remove common article artifacts
+  cleanSummary = cleanSummary.replace(/\s*\.\s*$/g, ''); // trailing periods
+  cleanSummary = cleanSummary.replace(/\n+/g, ' '); // multiple newlines
+  cleanSummary = cleanSummary.replace(/\s+/g, ' '); // multiple spaces
+  cleanSummary = cleanSummary.trim();
+  
+  // If summary is too long (likely full article), truncate intelligently
+  if (cleanSummary.length > 300) {
+    // Find the end of the first sentence or two
+    const sentences = cleanSummary.split(/[.!?]+/);
+    let truncated = sentences[0];
+    if (sentences.length > 1 && truncated.length < 150) {
+      truncated += '. ' + sentences[1];
+    }
+    cleanSummary = truncated + (truncated.endsWith('.') ? '' : '...');
+  }
+  
+  // Ensure we have meaningful content
+  if (!cleanSummary || cleanSummary.length < 10) {
+    cleanSummary = 'Summary not available for this article.';
+  }
+  
   return `
-    <div class="fast-horizontal-card" data-article-id="${article.id}" style="background: #23262f; border-radius: 1.1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 2.1rem 2.2rem 1.7rem 2.2rem; min-width: 340px; max-width: 540px; width: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;">
-      <div class="fast-card-topic" style="margin-bottom: 0.4rem;">
-        <span class="fast-topic-badge" style="font-size: 0.98rem; font-weight: 600; background: #3b3f4a; color: #b3b3b3; border-radius: 0.5rem; padding: 0.18em 0.7em 0.18em 0.7em;">${article.topic || 'Tech News'}</span>
+    <div class="fast-horizontal-card" data-article-id="${article.id}" style="background: #23262f; border-radius: 1.1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 1.5rem 1.8rem; min-width: 340px; max-width: 550px; width: 100%; max-height: 65vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; overflow: hidden;">
+      <div class="fast-card-title" style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 0.6rem 0; line-height: 1.3; max-height: 2.6em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${article.title}</div>
+      <div class="fast-card-topic" style="margin-bottom: 0.6rem;">
+        <span class="topic-badge" style="background: #8B5CF6; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block;">${article.topic || 'Tech News'}</span>
       </div>
-      <div class="fast-card-meta" style="margin-bottom: 0.2rem; font-size: 0.92rem; color: #b3b3b3;">
-        <span class="fast-card-date">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
-        <span style="margin: 0 0.5em;">·</span>
-        <span class="fast-card-source">${article.source_name}</span>
+      ${article.image_url ? `<div class="fast-card-image" style="margin-bottom: 0.6rem; width: 100%; height: 100px; border-radius: 0.5rem; overflow: hidden; background: #1a1a1a;"><img src="${article.image_url}" alt="Article image" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem;" onerror="this.parentElement.style.display='none'"></div>` : ''}
+      <div class="fast-card-meta" style="margin-bottom: 0.6rem;">
+        <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.8rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">${article.source_name}</span>
+        <span style="color: #b3b3b3; font-size: 0.75rem; margin-left: 0.5rem;">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
       </div>
-      <h2 class="fast-card-title full-title" style="font-size: 1.22rem; font-weight: 800; color: #fff; margin: 0 0 0.7rem 0; line-height: 1.22; max-height: 3.2em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${article.title}</h2>
-      <div class="fast-card-summary" style="font-size: 1.01rem; color: #e0e0e0; margin-bottom: 1.1rem; line-height: 1.5; max-height: 5.5em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">${article.summary || ''}</div>
-      <div class="fast-card-actions" style="margin-top: auto; display: flex; align-items: center; gap: 0.9rem;">
-        <a href="${article.article_url}" target="_blank" class="fast-read-more-btn" style="background: #8B5CF6; color: white; padding: 0.5rem 1.1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.93rem; font-weight: 600; transition: background 0.2s;">
-          Read Full Article <i class="ph ph-arrow-up-right"></i>
+      <div class="fast-card-summary" style="font-size: 0.95rem; color: #e0e0e0; margin-bottom: 1rem; line-height: 1.4; max-height: 6em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; flex-grow: 1; word-wrap: break-word; word-break: break-word; white-space: normal; width: 100%;">${cleanSummary}</div>
+      <div class="fast-card-actions" style="margin-top: auto; display: flex; align-items: center; gap: 0.8rem;">
+        <a href="${article.article_url}" target="_blank" class="fast-read-more-btn" style="background: #8B5CF6; color: white; padding: 0.4rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: background 0.2s;">
+          Read More <i class="ph ph-arrow-up-right"></i>
         </a>
         <button type="button" id="heart-${article.id}" class="heart-button${article.is_liked ? ' active' : ''}" data-article-id="${article.id}" title="${article.is_liked ? 'Unlike' : 'Like'}"><div class="heart-animation"></div></button>
       </div>
@@ -41,8 +148,11 @@ function renderFlashcard(article) {
 }
 
 function updateStats() {
-  document.getElementById('articles-read').textContent = articlesRead;
-  document.getElementById('total-articles').textContent = totalArticles;
+  // Show current position (1-based) out of total unread articles
+  const currentPosition = currentIdx + 1; // Convert to 1-based counting
+  const displayTotal = totalUnreadArticles > 0 ? totalUnreadArticles : articles.length;
+  document.getElementById('articles-read').textContent = currentPosition;
+  document.getElementById('total-articles').textContent = displayTotal;
 }
 
 function showFlashcard(idx) {
@@ -53,29 +163,37 @@ function showFlashcard(idx) {
   }
 }
 
-
 function showNoMoreArticles() {
-  document.getElementById('no-more-articles').style.display = 'block';
-  document.getElementById('no-more-articles').innerHTML = `<h3>No more articles to swipe!</h3><p>Check back later for new content.</p>`;
-  // Hide arrows when no articles
-  const leftBtn = document.getElementById('fast-arrow-left');
-  const rightBtn = document.getElementById('fast-arrow-right');
-  if (leftBtn) leftBtn.style.display = 'none';
-  if (rightBtn) rightBtn.style.display = 'none';
+  const slider = document.getElementById('flashcard-slider');
+  slider.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: #b3b3b3; text-align: center; padding: 2rem;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">📰</div>
+      <h3 style="margin: 0 0 0.5rem 0; color: #fff;">That's all for now!</h3>
+      <p style="margin: 0; color: #b3b3b3;">You've read all available articles. Check back later for more.</p>
+      <button onclick="refreshArticles()" style="background: #8B5CF6; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 1rem;">
+        Refresh Articles
+      </button>
+    </div>
+  `;
 }
 
-function fetchNextBatch() {
+function fetchNextBatch(refresh = false) {
   if (loading) return;
   loading = true;
   
-  // Show loading indicator
-  showLoadingSpinner();
+  // Show loading indicator only if no articles loaded yet
+  if (articles.length === 0) {
+    showLoadingSpinner();
+  }
   
   // Add timeout for slow requests
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
   
-  fetch(`/api/fast_articles?offset=${offset}&limit=${batchSize}`, {
+  // Add refresh parameter if needed
+  const refreshParam = refresh ? '&refresh=true' : '';
+  
+  fetch(`/api/fast_articles?offset=${offset}&limit=${batchSize}${refreshParam}`, {
     signal: controller.signal
   })
     .then(res => {
@@ -86,13 +204,37 @@ function fetchNextBatch() {
     .then(data => {
       hideLoadingSpinner();
       const batch = (data.articles || []);
+      console.log(`Fetched batch: offset=${offset}, received=${batch.length} articles, refresh=${refresh}`);
+      
+      // Update total unread count from API response
+      if (data.total_unread !== undefined) {
+        totalUnreadArticles = data.total_unread;
+        console.log(`Total unread articles available: ${totalUnreadArticles}`);
+      }
+      
       if (batch.length > 0) {
         articles = articles.concat(batch);
-        totalArticles = articles.length;
+        // Update stats to show current position (starting from 1)
         updateStats();
-        if (currentIdx === 0) showFlashcard(currentIdx);
-      } else if (articles.length === 0) {
-        showNoMoreArticles();
+        if (currentIdx === 0 && articles.length > 0) {
+          showFlashcard(currentIdx);
+        }
+        
+        // Update offset for next batch - use 10 for subsequent batches
+        offset += batch.length;
+        batchSize = 10;
+      } else {
+        // No more articles available
+        console.log('No more articles to fetch');
+        if (articles.length === 0) {
+          showNoMoreArticles();
+        } else {
+          // Keep the total from API, or fallback to loaded articles
+          if (totalUnreadArticles === 0) {
+            totalUnreadArticles = articles.length;
+          }
+          updateStats();
+        }
       }
       loading = false;
     })
@@ -156,13 +298,15 @@ function retryFetch() {
   fetchNextBatch();
 }
 
-
 function markArticleRead(articleId) {
   fetch(`/api/mark_read/${articleId}`, { method: 'POST' });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
   fetchNextBatch();
+  
+  // Add refresh button to the page
+  addRefreshButton();
 
   // Arrow navigation
   const leftBtn = document.getElementById('fast-arrow-left');
@@ -172,33 +316,85 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentIdx > 0) {
         currentIdx--;
         showFlashcard(currentIdx);
+        updateStats();
       }
     });
     rightBtn.addEventListener('click', function() {
       if (currentIdx < articles.length - 1) {
+        // Mark current article as read before moving to next
         markArticleRead(articles[currentIdx].id);
+        articlesRead++;
         currentIdx++;
         showFlashcard(currentIdx);
+        updateStats();
+        
+        // If we're near the end (2 articles left), preload next batch
+        if (articles.length - currentIdx <= 2 && !loading && totalUnreadArticles === 0) {
+          // Load next batch of 10 articles
+          const nextBatchSize = 10;
+          fetch(`/api/fast_articles?offset=${offset}&limit=${nextBatchSize}`)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+              const batch = (data.articles || []);
+              if (data.total_unread !== undefined) {
+                totalUnreadArticles = data.total_unread;
+              }
+              if (batch.length > 0) {
+                articles = articles.concat(batch);
+                offset += batch.length;
+                updateStats();
+              } else {
+                // No more articles available
+                if (totalUnreadArticles === 0) {
+                  totalUnreadArticles = articles.length;
+                }
+                updateStats();
+              }
+            })
+            .catch(err => console.log('Failed to preload next batch:', err));
+        }
+      } else if (!loading && totalUnreadArticles === 0) {
+        // We're at the end, try to fetch more
+        markArticleRead(articles[currentIdx].id);
         articlesRead++;
         updateStats();
-        // If near end, prefetch next batch
-        if (articles.length - currentIdx <= 2) {
-          offset += batchSize;
-          fetchNextBatch();
-        }
-      } else if (!loading) {
-        // Try to fetch next batch if not already loading
-        offset += batchSize;
-        fetchNextBatch();
-        // If still no more articles after fetch, show message
-        setTimeout(() => {
-          if (currentIdx >= articles.length - 1) {
-            markArticleRead(articles[currentIdx].id);
-            articlesRead++;
+        
+        const nextBatchSize = 10;
+        fetch(`/api/fast_articles?offset=${offset}&limit=${nextBatchSize}`)
+          .then(res => res.ok ? res.json() : Promise.reject())
+          .then(data => {
+            const batch = (data.articles || []);
+            if (data.total_unread !== undefined) {
+              totalUnreadArticles = data.total_unread;
+            }
+            if (batch.length > 0) {
+              articles = articles.concat(batch);
+              offset += batch.length;
+              currentIdx++;
+              showFlashcard(currentIdx);
+              updateStats();
+            } else {
+              // No more articles available
+              if (totalUnreadArticles === 0) {
+                totalUnreadArticles = articles.length;
+              }
+              updateStats();
+              showNoMoreArticles();
+            }
+          })
+          .catch(err => {
+            if (totalUnreadArticles === 0) {
+              totalUnreadArticles = articles.length;
+            }
             updateStats();
             showNoMoreArticles();
-          }
-        }, 500);
+          });
+      } else {
+        // We're at the end and know there are no more articles
+        markArticleRead(articles[currentIdx].id);
+        articlesRead++;
+        updateStats();
+        showNoMoreArticles();
       }
     });
   }

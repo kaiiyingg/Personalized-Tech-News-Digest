@@ -8,29 +8,39 @@ async function refreshContent() {
     
     try {
         btn.innerHTML = '<span>🔄 Refreshing...</span>';
-        btn.disabled = true;
+        btn.style.pointerEvents = 'none'; // Disable clicking
         
         // Step 1: Fetch fresh articles
-        showNotification('Fetching fresh articles...', 'info');
+        showNotification('Fetching latest tech articles...', 'info');
+        
         const ingestResponse = await fetch('/api/jobs/ingest', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
         });
         
         if (!ingestResponse.ok) {
-            throw new Error('Failed to fetch fresh content');
+            const errorText = await ingestResponse.text();
+            throw new Error(`Ingestion failed: ${ingestResponse.status} - ${errorText}`);
         }
+        
+        const ingestResult = await ingestResponse.json();
+        console.log('Ingestion result:', ingestResult);
         
         // Step 2: Clean up old articles to manage storage
         btn.innerHTML = '<span>🧹 Optimizing...</span>';
-        showNotification('Cleaning up old articles...', 'info');
+        showNotification('Optimizing storage...', 'info');
+        
         const cleanupResponse = await fetch('/api/jobs/cleanup', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
         });
         
         if (!cleanupResponse.ok) {
@@ -38,18 +48,23 @@ async function refreshContent() {
         }
         
         btn.innerHTML = '<span>✅ Updated!</span>';
-        showNotification('Fresh articles loaded & storage optimized! 🎉', 'success');
+        showNotification('Content refreshed successfully! Loading fresh articles...', 'success');
+        
         // Reload page after short delay to show fresh content
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
         
     } catch (error) {
         console.error('Refresh failed:', error);
         btn.innerHTML = '<span>❌ Failed</span>';
-        showNotification('Failed to refresh content. Try again later.', 'error');
+        showNotification(`Refresh failed: ${error.message}. Please try again.`, 'error');
+        
+        // Reset button after error
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.disabled = false;
-        }, 2000);
+            btn.style.pointerEvents = 'auto';
+        }, 3000);
     }
 }
 

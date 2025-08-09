@@ -18,9 +18,6 @@
             <span class="brand-icon">💜</span>
         </div>
         <ul class="navbar-links">
-            <li><a href="{{ url_for('profile') }}" class="nav-link">
-                <span>Profile</span>
-            </a></li>
             <li><a href="{{ url_for('index') }}" class="nav-link">
                 <span>Discover</span>
             </a></li>
@@ -31,9 +28,9 @@
                 <span>Favorites</span>
             </a></li>
             <li>
-                <button onclick="refreshContent()" class="nav-link" id="refresh-content-btn" title="Refresh latest articles" style="background: none; border: none; color: inherit; cursor: pointer; font: inherit; padding: inherit;">
+                <a href="#" onclick="refreshContent(); return false;" class="nav-link" id="refresh-content-btn" title="Fetch latest tech articles and optimize storage">
                     <span>🔄 Refresh</span>
-                </button>
+                </a>
             </li>
             <li class="dropdown">
                 <a href="#" class="dropdown-toggle nav-link">
@@ -55,6 +52,9 @@
             </li>
             <li><a href="{{ url_for('manage_interests') }}" class="nav-link">
                 <span>My Interests</span>
+            </a></li>
+            <li><a href="{{ url_for('profile') }}" class="nav-link">
+                <span>Profile</span>
             </a></li>
             <li><a href="{{ url_for('logout') }}" class="nav-link logout-btn">
                 <span>Logout</span>

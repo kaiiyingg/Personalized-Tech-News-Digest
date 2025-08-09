@@ -28,7 +28,7 @@ async function startRefresh() {
         refreshBtn.disabled = true;
     }
     
-    showNotification('Starting refresh process... Processing 5 most recent articles per feed for optimal speed.', 'info');
+    showNotification('Starting refresh process... Processing 3 most recent articles per feed with AI summarization for optimal Fast view experience.', 'info');
     
     try {
         // Start ingest process

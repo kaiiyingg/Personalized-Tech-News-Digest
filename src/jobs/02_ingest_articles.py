@@ -37,17 +37,31 @@ HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 
 # Configuration for refresh speed optimization
 # Limit articles per feed for faster refresh (recommended: 3-5 for speed, 10+ for comprehensive)
-MAX_ARTICLES_PER_FEED = 5  # Process only the 5 most recent articles per feed
+MAX_ARTICLES_PER_FEED = 3  # Reduced to 3 for faster processing and better diversity
+
+# Memory optimization: Enable AI processing for better summaries in Fast view
+USE_AI_PROCESSING = True  # Set to True to enable AI summarization for Fast view
 
 def get_summarizer():
     """Lazy load summarizer to save memory on startup"""
     global summarizer, tokenizer
+    if not USE_AI_PROCESSING:
+        return None, None
+        
     if summarizer is None:
         try:
             from transformers.pipelines import pipeline
             from transformers import AutoTokenizer
-            summarizer = pipeline("summarization", model="t5-small", device="cpu")
-            tokenizer = AutoTokenizer.from_pretrained("t5-small")
+            import torch
+            
+            # Use distilbart for lower memory usage (vs t5-small)
+            summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-6-6", device="cpu")
+            tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-6-6")
+            
+            # Force garbage collection to free memory
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
         except Exception as e:
             print(f"[WARNING] Could not load summarizer: {e}")
             summarizer = False  # Mark as failed

@@ -160,7 +160,7 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
     """
     text = f"{title} {summary}".lower()
     
-    # STRICT tech keyword requirements - must contain multiple tech indicators
+    # OPTIMIZED tech keyword requirements - relaxed for speed and accuracy
     tech_keywords = [
         'technology', 'tech', 'software', 'hardware', 'artificial intelligence', 'ai',
         'machine learning', 'ml', 'programming', 'coding', 'developer', 'development',
@@ -172,19 +172,18 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'windows', 'android', 'ios', 'mobile', 'smartphone', 'robotics', 'automation',
         'fintech', 'edtech', 'saas', 'platform', 'gaming', 'virtual reality', 'vr',
         'augmented reality', 'ar', 'quantum computing', 'semiconductor', 'chip',
-        'processor', 'server', 'network', 'wifi', 'bluetooth', 'electronic', 'device'
+        'processor', 'server', 'network', 'wifi', 'bluetooth', 'electronic', 'device',
+        'python', 'javascript', 'java', 'react', 'node', 'typescript', 'rust', 'go',
+        'kubernetes', 'docker', 'aws', 'azure', 'gcp', 'devops', 'ci/cd', 'agile',
+        'scrum', 'bug', 'feature', 'release', 'version', 'update', 'upgrade', 'patch',
+        'chatbot', 'gpt', 'llm', 'neural', 'model', 'training', 'dataset', 'inference'
     ]
     
-    # Explicit REJECT keywords for inappropriate content
+    # MINIMAL reject keywords - only clearly inappropriate content
     reject_keywords = [
         'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
-        'sports', 'football', 'basketball', 'baseball', 'soccer', 'entertainment',
-        'celebrity', 'movie', 'film', 'music', 'politics', 'election', 'government',
-        'health', 'medical', 'doctor', 'hospital', 'disease', 'weather', 'climate',
-        'food', 'recipe', 'cooking', 'travel', 'tourism', 'fashion', 'beauty',
-        'real estate', 'property', 'finance', 'banking', 'insurance', 'automotive',
-        'car', 'vehicle', 'retail', 'shopping', 'restaurant', 'hotel', 'education',
-        'school', 'university', 'legal', 'law', 'lawyer', 'personal', 'lifestyle'
+        'sports', 'football', 'basketball', 'baseball', 'soccer', 
+        'weather', 'recipe', 'cooking', 'fashion', 'beauty'
     ]
     
     # Count tech vs non-tech indicators
@@ -196,7 +195,7 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         print(f"REJECTED: Inappropriate content detected in '{title[:50]}...'")
         return None
         
-    if tech_score < 2:  # Require at least 2 tech keywords
+    if tech_score < 1:  # Require at least 1 tech keyword (relaxed from 2)
         print(f"REJECTED: Insufficient tech keywords ({tech_score}) in '{title[:50]}...'")
         return None
     
@@ -215,8 +214,8 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
             scores = result[0].get('scores', [])
         
         if labels and isinstance(labels[0], str):
-            # Require high confidence for classification
-            if scores and len(scores) > 0 and scores[0] < 0.4:
+            # RELAXED confidence requirement for speed (0.15 instead of 0.4)
+            if scores and len(scores) > 0 and scores[0] < 0.15:
                 print(f"REJECTED: Low classification confidence ({scores[0]:.2f}) for '{title[:50]}...'")
                 return None
             return labels[0]

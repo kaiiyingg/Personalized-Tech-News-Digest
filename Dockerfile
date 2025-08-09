@@ -32,6 +32,11 @@ ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
 ENV TRANSFORMERS_CACHE=/tmp/transformers_cache
 ENV HF_HOME=/tmp/huggingface_cache
+ENV PYTORCH_TRANSFORMERS_CACHE=/tmp/transformers_cache
+ENV TORCH_HOME=/tmp/torch_cache
+# Memory optimization for AI models
+ENV TOKENIZERS_PARALLELISM=false
+ENV OMP_NUM_THREADS=1
 
 # Expose the port your application will run on.
 EXPOSE 8000

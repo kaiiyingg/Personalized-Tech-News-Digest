@@ -27,21 +27,41 @@ from src.services.content_service import create_content_item
 from src.services.source_service import get_all_sources
 from bs4 import BeautifulSoup
 from src.services.url_validator import is_url_reachable
-# Summarization imports
-from transformers.pipelines import pipeline
-from transformers import AutoTokenizer
-summarizer = pipeline("summarization", model="t5-small")
-tokenizer = AutoTokenizer.from_pretrained("t5-small")
+
+# Lazy import for ML libraries to save memory
+summarizer = None
+tokenizer = None
 
 # Constants for HTML cleaning and parsing
 HTML_PARSER = "html.parser"
 HTML_TAG_PATTERN = r'<[^>]+>'
 HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 
+def get_summarizer():
+    """Lazy load summarizer to save memory on startup"""
+    global summarizer, tokenizer
+    if summarizer is None:
+        try:
+            from transformers.pipelines import pipeline
+            from transformers import AutoTokenizer
+            summarizer = pipeline("summarization", model="t5-small", device="cpu")
+            tokenizer = AutoTokenizer.from_pretrained("t5-small")
+        except Exception as e:
+            print(f"[WARNING] Could not load summarizer: {e}")
+            summarizer = False  # Mark as failed
+            tokenizer = False
+    return summarizer, tokenizer
+
 # Helper to truncate input to 512 tokens for t5-small
 def truncate_text(text, tokenizer, max_tokens=512):
-    tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
-    return tokenizer.decode(tokens, skip_special_tokens=True)
+    if not tokenizer:
+        # Fallback: simple character truncation if tokenizer failed to load
+        return text[:2000]  # Roughly 500 tokens worth of characters
+    try:
+        tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
+        return tokenizer.decode(tokens, skip_special_tokens=True)
+    except Exception:
+        return text[:2000]  # Fallback
 
 def cleanup_old_articles(days_to_keep=30):
     """Remove articles older than specified days to keep database manageable"""
@@ -147,20 +167,22 @@ def fetch_and_ingest():
                                 article_text = title
                         
                         # Always process through AI summarization for consistency
+                        # Get lazy-loaded summarizer and tokenizer
+                        current_summarizer, current_tokenizer = get_summarizer()
+                        
                         # Truncate input to 512 tokens for t5-small
-                        truncated_text = truncate_text(article_text, tokenizer)
+                        truncated_text = truncate_text(article_text, current_tokenizer)
                         
                         # Generate summary using Hugging Face summarizer
                         try:
-                            # Ensure we have enough text to summarize
-                            if len(truncated_text.split()) > 10:
+                            # Ensure we have enough text to summarize and summarizer is available
+                            if current_summarizer and len(truncated_text.split()) > 10:
                                 # Improved summarization parameters for better quality
-                                ai_summary = summarizer(
+                                ai_summary = current_summarizer(
                                     truncated_text, 
-                                    max_length=100,  # Increased for more detail
-                                    min_length=30,   # Increased minimum length
-                                    do_sample=True,  # Enable sampling for more natural text
-                                    temperature=0.7, # Add some creativity
+                                    max_new_tokens=50,  # Use max_new_tokens instead of max_length to avoid warning
+                                    min_length=20,      # Reduced for free tier
+                                    do_sample=False,    # Disable sampling for faster processing
                                     early_stopping=True
                                 )[0]['summary_text']
                                 
@@ -185,7 +207,7 @@ def fetch_and_ingest():
                                     summary = summary.rstrip(',;:') + '.'
                                 
                             else:
-                                # Too short to summarize, use truncated version with cleaning
+                                # Too short to summarize or summarizer unavailable, use truncated version with cleaning
                                 import re
                                 clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
                                 clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities

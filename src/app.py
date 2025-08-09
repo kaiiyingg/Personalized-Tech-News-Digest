@@ -549,6 +549,17 @@ def unlike_article(article_id):
     flash('Article removed from favorites', 'info')
     return redirect(url_for('index'))
 
+# ------------------- HEALTH CHECK -------------------
+@app.route('/health')
+@app.route('/healthz')
+def health_check():
+    """Simple health check endpoint for Render"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'TechPulse'
+    }), 200
+
 # ------------------- MAIN -------------------
 if __name__ == '__main__':
     app.run(debug=True)

@@ -42,5 +42,5 @@ ENV OMP_NUM_THREADS=1
 EXPOSE 8000
 
 # Define the command to run when the container starts.
-# Use single worker for free tier to save memory
-CMD ["sh", "-c", "cd /app && gunicorn -w 1 -k sync -b 0.0.0.0:8000 --timeout 120 --graceful-timeout 60 --max-requests 1000 --max-requests-jitter 50 src.app:app"]
+# Increased timeout for AI processing and article ingestion
+CMD ["sh", "-c", "cd /app && gunicorn -w 1 -k sync -b 0.0.0.0:8000 --timeout 300 --graceful-timeout 90 --max-requests 500 --max-requests-jitter 25 src.app:app"]

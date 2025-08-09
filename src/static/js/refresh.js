@@ -17,15 +17,20 @@ async function startRefresh() {
 
     const refreshBtn = document.getElementById('refreshBtn');
     const refreshIcon = refreshBtn?.querySelector('i');
+    const refreshText = refreshBtn?.querySelector('span');
     
     refreshInProgress = true;
     
-    // Show loading state
+    // Show loading state in navigation button
     if (refreshIcon) {
         refreshIcon.className = 'fas fa-spinner fa-spin';
     }
+    if (refreshText) {
+        refreshText.textContent = 'Refreshing...';
+    }
     if (refreshBtn) {
         refreshBtn.disabled = true;
+        refreshBtn.style.opacity = '0.7';
     }
     
     showNotification('Starting refresh process... Processing 3 most recent articles per feed with AI summarization for optimal Fast view experience.', 'info');
@@ -36,7 +41,9 @@ async function startRefresh() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            // Add timeout to prevent hanging
+            signal: AbortSignal.timeout(180000) // 3 minute timeout
         });
         
         if (ingestResponse.status === 429) {
@@ -44,25 +51,34 @@ async function startRefresh() {
             return;
         }
         
+        if (ingestResponse.status === 502) {
+            throw new Error('Server temporarily unavailable. This usually happens during heavy processing. Please try again in a few moments.');
+        }
+        
         if (!ingestResponse.ok) {
-            throw new Error(`Ingest failed: ${ingestResponse.status}`);
+            const errorText = await ingestResponse.text();
+            throw new Error(`Ingest failed: ${ingestResponse.status} - ${errorText}`);
         }
         
         const ingestResult = await ingestResponse.json();
         console.log('Ingest completed:', ingestResult);
         
-        // Start cleanup process
+        // Update button to show cleanup phase
+        if (refreshText) {
+            refreshText.textContent = 'Optimizing...';
+        }
         showNotification('Processing articles... Almost done!', 'info');
         
         const cleanupResponse = await fetch('/api/jobs/cleanup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            signal: AbortSignal.timeout(60000) // 1 minute timeout for cleanup
         });
         
         if (!cleanupResponse.ok) {
-            throw new Error(`Cleanup failed: ${cleanupResponse.status}`);
+            console.warn('Cleanup failed, but continuing...');
         }
         
         const cleanupResult = await cleanupResponse.json();
@@ -78,15 +94,28 @@ async function startRefresh() {
         
     } catch (error) {
         console.error('Refresh error:', error);
-        showNotification('Refresh failed: ' + error.message, 'error');
+        
+        // Handle specific errors with user-friendly messages
+        let errorMessage = error.message;
+        if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+            errorMessage = 'Request timed out. The server is taking longer than expected. Please try again.';
+        } else if (error.message.includes('502')) {
+            errorMessage = 'Server temporarily overloaded. Please wait a moment and try again.';
+        }
+        
+        showNotification('Refresh failed: ' + errorMessage, 'error');
     } finally {
-        // Reset button state
+        // Always reset button state
         refreshInProgress = false;
         if (refreshIcon) {
             refreshIcon.className = 'fas fa-sync-alt';
         }
+        if (refreshText) {
+            refreshText.textContent = 'Refresh';
+        }
         if (refreshBtn) {
             refreshBtn.disabled = false;
+            refreshBtn.style.opacity = '1';
         }
     }
 }

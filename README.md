@@ -142,7 +142,7 @@ TechPulse/
 5. **Access Application**
    - Navigate to `http://localhost:5000`
    - Register a new account with TOTP authentication
-   - Click "🔄 Refresh" to load fresh articles with AI processing
+   - Click "Refresh" to load fresh articles with AI processing
 
 ### **Running Tests**
 ```bash

@@ -33,7 +33,7 @@ async function startRefresh() {
         refreshBtn.style.opacity = '0.7';
     }
     
-    showNotification('Starting refresh process... Processing 3 most recent articles per feed with AI summarization for optimal Fast view experience.', 'info');
+    showNotification('Starting refresh process... Processing 3 most recent articles per feed (AI disabled for memory optimization).', 'info');
     
     try {
         // Start ingest process

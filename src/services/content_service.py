@@ -21,15 +21,19 @@ except ImportError:
 # Constants for repeated strings
 AI_ML_TOPIC = "Artificial Intelligence (AI) & Machine Learning (ML)"
 AI_ML_SHORT = "AI & ML"
+CYBERSECURITY_TOPIC = "Cybersecurity & Privacy"
+CLOUD_DEVOPS_TOPIC = "Cloud Computing & DevOps"
+SOFTWARE_DEV_TOPIC = "Software Development & Web Technologies"
+DATA_SCIENCE_TOPIC = "Data Science & Analytics"
 EMERGING_TECH_TOPIC = "Emerging Technologies"
 
 # Define topic labels for zero-shot classification (removed "Other" to force tech categorization)
 TOPIC_LABELS = [
     AI_ML_TOPIC,
-    "Cybersecurity & Privacy",
-    "Cloud Computing & DevOps", 
-    "Software Development & Web Technologies",
-    "Data Science & Analytics",
+    CYBERSECURITY_TOPIC,
+    CLOUD_DEVOPS_TOPIC, 
+    SOFTWARE_DEV_TOPIC,
+    DATA_SCIENCE_TOPIC,
     EMERGING_TECH_TOPIC,
     "Big Tech & Industry Trends",
     "Tech Culture & Work",
@@ -100,6 +104,48 @@ def build_simple_article_dict(row):
         'source_name': row[8],
         'source_feed_url': row[9]
     }
+
+def classify_topic_by_keywords(text: str, title: str) -> str:
+    """
+    Simple keyword-based topic classification to avoid loading AI models.
+    Memory optimization for 512MB hosting environments.
+    """
+    combined_text = (title + " " + text).lower()
+    
+    # AI & ML keywords
+    ai_keywords = ["ai", "artificial intelligence", "machine learning", "ml", "neural network", 
+                   "deep learning", "nlp", "computer vision", "tensorflow", "pytorch", "chatgpt", 
+                   "llm", "gpt", "bert", "transformer", "openai", "anthropic"]
+    
+    # Cybersecurity keywords  
+    security_keywords = ["security", "cybersecurity", "hack", "breach", "vulnerability", 
+                        "encryption", "privacy", "malware", "ransomware", "phishing"]
+    
+    # Cloud & DevOps keywords
+    cloud_keywords = ["cloud", "aws", "azure", "gcp", "docker", "kubernetes", "devops", 
+                     "ci/cd", "deployment", "infrastructure", "serverless"]
+    
+    # Software Development keywords
+    dev_keywords = ["programming", "coding", "developer", "software", "web development", 
+                   "javascript", "python", "react", "node.js", "framework", "api"]
+    
+    # Data Science keywords
+    data_keywords = ["data science", "analytics", "big data", "database", "sql", 
+                    "visualization", "statistics", "analysis"]
+    
+    # Check for keyword matches (prioritize AI/ML as it's most popular)
+    if any(keyword in combined_text for keyword in ai_keywords):
+        return AI_ML_TOPIC
+    elif any(keyword in combined_text for keyword in security_keywords):
+        return CYBERSECURITY_TOPIC
+    elif any(keyword in combined_text for keyword in cloud_keywords):
+        return CLOUD_DEVOPS_TOPIC
+    elif any(keyword in combined_text for keyword in dev_keywords):
+        return SOFTWARE_DEV_TOPIC
+    elif any(keyword in combined_text for keyword in data_keywords):
+        return DATA_SCIENCE_TOPIC
+    else:
+        return EMERGING_TECH_TOPIC  # Default fallback
 
 def get_classifier():
     """Lazy load the classifier to avoid startup delays"""
@@ -199,33 +245,12 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         print(f"REJECTED: Insufficient tech keywords ({tech_score}) in '{title[:50]}...'")
         return None
     
-    try:
-        classifier = get_classifier()
-        result = classifier(text, TOPIC_LABELS)
-        
-        # Handle different result formats
-        labels = []
-        scores = []
-        if isinstance(result, dict):
-            labels = result.get('labels', [])
-            scores = result.get('scores', [])
-        elif isinstance(result, list) and result and isinstance(result[0], dict):
-            labels = result[0].get('labels', [])
-            scores = result[0].get('scores', [])
-        
-        if labels and isinstance(labels[0], str):
-            # RELAXED confidence requirement for speed (0.15 instead of 0.4)
-            if scores and len(scores) > 0 and scores[0] < 0.15:
-                print(f"REJECTED: Low classification confidence ({scores[0]:.2f}) for '{title[:50]}...'")
-                return None
-            return labels[0]
-        else:
-            print(f"REJECTED: Classification failed for '{title[:50]}...'")
-            return None
-            
-    except Exception as e:
-        print(f"REJECTED: Classification error for '{title[:50]}...': {e}")
-        return None
+    # Memory optimization: Use simple keyword-based topic classification instead of AI
+    # to avoid loading large transformer models that exceed 512MB memory limit
+    topic = classify_topic_by_keywords(text, title)
+    print(f"ACCEPTED: Tech article classified as '{topic}' for '{title[:50]}...'")
+    
+    return topic
 
 def create_content_item(source_id: int, title: str, summary: str,
                         article_url: str, published_at: Optional[datetime], topic: Optional[str] = None, image_url: Optional[str] = None) -> Optional[Content]:

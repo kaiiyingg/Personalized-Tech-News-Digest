@@ -26,10 +26,6 @@ from src.services.source_service import get_all_sources
 from bs4 import BeautifulSoup
 from src.services.url_validator import is_url_reachable
 
-# Lazy import for ML libraries to save memory
-summarizer = None
-tokenizer = None
-
 # Constants for HTML cleaning and parsing
 HTML_PARSER = "html.parser"
 HTML_TAG_PATTERN = r'<[^>]+>'
@@ -39,45 +35,8 @@ HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 # Limit articles per feed for faster refresh (recommended: 3-5 for speed, 10+ for comprehensive)
 MAX_ARTICLES_PER_FEED = 3  # Reduced to 3 for faster processing and better diversity
 
-# Memory optimization: Enable AI processing for better summaries in Fast view
-USE_AI_PROCESSING = True  # Set to True to enable AI summarization for Fast view
-
-def get_summarizer():
-    """Lazy load summarizer to save memory on startup"""
-    global summarizer, tokenizer
-    if not USE_AI_PROCESSING:
-        return None, None
-        
-    if summarizer is None:
-        try:
-            from transformers.pipelines import pipeline
-            from transformers import AutoTokenizer
-            import torch
-            
-            # Use distilbart for lower memory usage (vs t5-small)
-            summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-6-6", device="cpu")
-            tokenizer = AutoTokenizer.from_pretrained("sshleifer/distilbart-cnn-6-6")
-            
-            # Force garbage collection to free memory
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                
-        except Exception as e:
-            print(f"[WARNING] Could not load summarizer: {e}")
-            summarizer = False  # Mark as failed
-            tokenizer = False
-    return summarizer, tokenizer
-
-# Helper to truncate input to 512 tokens for t5-small
-def truncate_text(text, tokenizer, max_tokens=512):
-    if not tokenizer:
-        # Fallback: simple character truncation if tokenizer failed to load
-        return text[:2000]  # Roughly 500 tokens worth of characters
-    try:
-        tokens = tokenizer.encode(text, truncation=True, max_length=max_tokens)
-        return tokenizer.decode(tokens, skip_special_tokens=True)
-    except Exception:
-        return text[:2000]  # Fallback
+# Memory optimization: Disable AI processing for 512MB memory limit
+USE_AI_PROCESSING = False  # Set to False to avoid memory issues on free tier
 
 def cleanup_old_articles(days_to_keep=30):
     """Remove articles older than specified days to keep database manageable"""
@@ -185,61 +144,28 @@ def fetch_and_ingest():
                             else:
                                 article_text = title
                         
-                        # Always process through AI summarization for consistency
-                        # Get lazy-loaded summarizer and tokenizer
-                        current_summarizer, current_tokenizer = get_summarizer()
+                        # Memory optimization: Skip AI processing to stay within 512MB limit
+                        # Create a simple excerpt from the article text
+                        import re
                         
-                        # Truncate input to 512 tokens for t5-small
-                        truncated_text = truncate_text(article_text, current_tokenizer)
+                        # Clean the text and create an excerpt
+                        clean_text = re.sub(HTML_TAG_PATTERN, '', article_text)  # Remove HTML tags
+                        clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
+                        clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
                         
-                        # Generate summary using Hugging Face summarizer
-                        try:
-                            # Ensure we have enough text to summarize and summarizer is available
-                            if current_summarizer and len(truncated_text.split()) > 10:
-                                # Improved summarization parameters for better quality
-                                ai_summary = current_summarizer(
-                                    truncated_text, 
-                                    max_new_tokens=50,  # Use max_new_tokens instead of max_length to avoid warning
-                                    min_length=20,      # Reduced for free tier
-                                    do_sample=False,    # Disable sampling for faster processing
-                                    early_stopping=True
-                                )[0]['summary_text']
-                                
-                                # Multiple-stage HTML cleaning for the AI summary
-                                # BeautifulSoup is already imported at module level
-                                # First pass: Remove all HTML tags
-                                clean_soup = BeautifulSoup(ai_summary, "html.parser")
-                                summary = clean_soup.get_text(separator=" ", strip=True)
-                                
-                                # Second pass: Handle any remaining HTML entities or malformed tags
-                                import re
-                                # Remove any remaining HTML-like patterns
-                                summary = re.sub(HTML_TAG_PATTERN, '', summary)  # Remove any remaining tags
-                                summary = re.sub(HTML_ENTITY_PATTERN, ' ', summary)  # Remove HTML entities
-                                summary = re.sub(r'\s+', ' ', summary).strip()  # Clean up whitespace
-                                
-                                # Third pass: Remove any orphaned quotes or incomplete HTML
-                                summary = summary.replace('"', '').replace("'", "")  # Remove quotes that might be from attributes
-                                
-                                # Ensure summary ends properly
-                                if not summary.endswith(('.', '!', '?')):
-                                    summary = summary.rstrip(',;:') + '.'
-                                
+                        # Create excerpt: first 200 characters or first complete sentence
+                        if len(clean_text) > 200:
+                            excerpt = clean_text[:200]
+                            # Try to end at a sentence boundary
+                            last_period = excerpt.rfind('.')
+                            if last_period > 100:  # Only use sentence boundary if it's not too short
+                                excerpt = excerpt[:last_period + 1]
                             else:
-                                # Too short to summarize or summarizer unavailable, use truncated version with cleaning
-                                import re
-                                clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
-                                clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
-                                clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
-                                summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
-                        except Exception as e:
-                            print(f"[Ingestion] Summarization failed for article '{title}': {e}")
-                            # Better fallback: create a meaningful excerpt with HTML cleaning
-                            import re
-                            clean_text = re.sub(HTML_TAG_PATTERN, '', truncated_text)  # Remove HTML tags
-                            clean_text = re.sub(HTML_ENTITY_PATTERN, ' ', clean_text)  # Remove HTML entities
-                            clean_text = re.sub(r'\s+', ' ', clean_text).strip()  # Clean up whitespace
-                            summary = clean_text[:150] + "..." if len(clean_text) > 150 else clean_text
+                                excerpt += "..."
+                        else:
+                            excerpt = clean_text
+                        
+                        summary = excerpt
                         published_at = entry.get("published_parsed")
                         if published_at and isinstance(published_at, time.struct_time):
                             published_at = datetime.fromtimestamp(time.mktime(published_at))

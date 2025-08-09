@@ -35,6 +35,10 @@ HTML_PARSER = "html.parser"
 HTML_TAG_PATTERN = r'<[^>]+>'
 HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 
+# Configuration for refresh speed optimization
+# Limit articles per feed for faster refresh (recommended: 3-5 for speed, 10+ for comprehensive)
+MAX_ARTICLES_PER_FEED = 5  # Process only the 5 most recent articles per feed
+
 def get_summarizer():
     """Lazy load summarizer to save memory on startup"""
     global summarizer, tokenizer
@@ -126,7 +130,10 @@ def fetch_and_ingest():
             try:
                 feed = feedparser.parse(feed_url)
                 print(f"[Ingestion] {feed_url} returned {len(feed.entries)} entries.")
-                feeds.append({"source_id": source_id, "entries": list(feed.entries), "feed_url": feed_url})
+                # Limit entries for faster refresh - take only the most recent ones
+                limited_entries = list(feed.entries)[:MAX_ARTICLES_PER_FEED]
+                print(f"[Ingestion] Processing {len(limited_entries)} most recent entries for speed optimization.")
+                feeds.append({"source_id": source_id, "entries": limited_entries, "feed_url": feed_url})
             except Exception as e:
                 print(f"[Ingestion] Error parsing feed {feed_url}: {e}")
                 continue

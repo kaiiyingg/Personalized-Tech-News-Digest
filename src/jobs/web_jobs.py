@@ -15,7 +15,7 @@ sys.path.insert(0, project_root)
 from src.services.content_service import cleanup_old_articles
 
 def run_ingest_articles():
-    """Run article ingestion job"""
+    """Run article ingestion job with better error handling"""
     try:
         print(f"[{datetime.now()}] Starting article ingestion...")
         
@@ -37,6 +37,13 @@ def run_ingest_articles():
             "message": "Article ingestion completed",
             "timestamp": datetime.now().isoformat(),
             "result": result
+        }
+    except ImportError as e:
+        print(f"Import error during ingestion: {e}")
+        return {
+            "success": False,
+            "error": f"Module import failed: {str(e)}",
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         print(f"Ingestion error: {e}")

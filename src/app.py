@@ -2,6 +2,7 @@ import random
 import pyotp 
 import os
 import sys
+import threading
 from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -26,6 +27,10 @@ DANGER_CATEGORY = 'danger'
 # ------------------- APP CONFIG -------------------
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
+
+# Global lock for refresh operations to prevent concurrent refreshes
+refresh_lock = threading.Lock()
+refresh_in_progress = False
 
 # Configure production settings
 if os.getenv('FLASK_ENV') == 'production':
@@ -547,8 +552,28 @@ def trigger_ingest_job():
     """
     Trigger article ingestion job via HTTP endpoint.
     This works better than background scheduling on Render free tier.
+    Includes concurrency protection to prevent multiple simultaneous refreshes.
     """
+    global refresh_in_progress
+    
+    # Check if refresh is already in progress
+    if refresh_in_progress:
+        return jsonify({
+            'success': False,
+            'error': 'Refresh already in progress. Please wait for it to complete.',
+            'timestamp': datetime.now().isoformat()
+        }), 429  # Too Many Requests
+    
+    # Try to acquire lock with timeout
+    if not refresh_lock.acquire(blocking=False):
+        return jsonify({
+            'success': False,
+            'error': 'Another refresh operation is currently running. Please try again in a moment.',
+            'timestamp': datetime.now().isoformat()
+        }), 429
+    
     try:
+        refresh_in_progress = True
         # Import and run the ingestion job directly
         from src.jobs.web_jobs import run_ingest_articles
         result = run_ingest_articles()
@@ -564,6 +589,9 @@ def trigger_ingest_job():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+    finally:
+        refresh_in_progress = False
+        refresh_lock.release()
 
 @app.route('/api/jobs/cleanup', methods=['POST'])
 def trigger_cleanup_job():
@@ -590,9 +618,11 @@ def trigger_cleanup_job():
 @app.route('/api/jobs/status', methods=['GET'])
 def job_status():
     """
-    Get information about when jobs were last run.
+    Get information about when jobs were last run and current refresh status.
     Useful for monitoring on free tier.
     """
+    global refresh_in_progress
+    
     try:
         # Get some basic stats about content freshness
         stats = content_service.get_content_stats()
@@ -601,13 +631,15 @@ def job_status():
             'success': True,
             'timestamp': datetime.now().isoformat(),
             'stats': stats,
-            'message': 'Job status retrieved successfully'
+            'refresh_in_progress': refresh_in_progress,
+            'message': 'Refresh is currently running' if refresh_in_progress else 'Job status retrieved successfully'
         }), 200
         
     except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e),
+            'refresh_in_progress': refresh_in_progress,
             'timestamp': datetime.now().isoformat()
         }), 500
 

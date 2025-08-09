@@ -1,237 +1,159 @@
-// Content refresh functionality for TechPulse
-// Handles both article ingestion and smart cleanup
+// Refresh functionality with concurrency protection
+let refreshInProgress = false;
 
-// Track refresh state to prevent multiple simultaneous refreshes
-let isRefreshing = false;
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', startRefresh);
+    }
+    initializeNotificationStyles();
+});
 
-// Content refresh functionality
-async function refreshContent() {
-    // Prevent multiple simultaneous refreshes
-    if (isRefreshing) {
-        showNotification('Refresh already in progress. Please wait for it to complete.', 'info');
+async function startRefresh() {
+    if (refreshInProgress) {
+        showNotification('Refresh already in progress. Please wait...', 'warning');
         return;
     }
+
+    const refreshBtn = document.getElementById('refreshBtn');
+    const refreshIcon = refreshBtn?.querySelector('i');
     
-    const btn = document.getElementById('refresh-content-btn');
-    const originalText = btn.innerHTML;
+    refreshInProgress = true;
+    
+    // Show loading state
+    if (refreshIcon) {
+        refreshIcon.className = 'fas fa-spinner fa-spin';
+    }
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+    }
+    
+    showNotification('Starting refresh process... Processing 5 most recent articles per feed for optimal speed.', 'info');
     
     try {
-        isRefreshing = true;
-        btn.innerHTML = '<span>🔄 <span class="loading-spinner"></span> Refreshing...</span>';
-        btn.style.pointerEvents = 'none'; // Disable clicking
-        btn.style.opacity = '0.7'; // Visual indication that it's disabled
-        
-        // Step 1: Fetch fresh articles
-        showNotification('Fetching latest tech articles from multiple sources... This may take a moment.', 'info');
-        
+        // Start ingest process
         const ingestResponse = await fetch('/api/jobs/ingest', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            credentials: 'same-origin',
-            signal: AbortSignal.timeout(120000) // 2 minute timeout
+                'Content-Type': 'application/json'
+            }
         });
         
+        if (ingestResponse.status === 429) {
+            showNotification('Another refresh is already running. Please wait and try again.', 'warning');
+            return;
+        }
+        
         if (!ingestResponse.ok) {
-            const errorText = await ingestResponse.text();
-            throw new Error(`Ingestion failed: ${ingestResponse.status} - ${errorText}`);
+            throw new Error(`Ingest failed: ${ingestResponse.status}`);
         }
         
         const ingestResult = await ingestResponse.json();
-        console.log('Ingestion result:', ingestResult);
+        console.log('Ingest completed:', ingestResult);
         
-        // Step 2: Clean up old articles to manage storage
-        btn.innerHTML = '<span>🧹 <span class="loading-spinner"></span> Optimizing...</span>';
-        showNotification('Organizing and optimizing content... Almost done!', 'info');
+        // Start cleanup process
+        showNotification('Processing articles... Almost done!', 'info');
         
         const cleanupResponse = await fetch('/api/jobs/cleanup', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            credentials: 'same-origin',
-            signal: AbortSignal.timeout(60000) // 1 minute timeout for cleanup
+                'Content-Type': 'application/json'
+            }
         });
         
         if (!cleanupResponse.ok) {
-            console.warn('Cleanup failed, but continuing...');
+            throw new Error(`Cleanup failed: ${cleanupResponse.status}`);
         }
         
-        btn.innerHTML = '<span>✅ <span class="loading-spinner"></span> Complete!</span>';
-        showNotification('Content refreshed successfully! Loading your personalized feed with the latest articles...', 'success');
+        const cleanupResult = await cleanupResponse.json();
+        console.log('Cleanup completed:', cleanupResult);
         
-        // Reload page after short delay to show fresh content
+        // Success notification
+        showNotification('Refresh completed successfully! New articles have been added.', 'success');
+        
+        // Auto-refresh the page after a short delay
         setTimeout(() => {
             window.location.reload();
         }, 2000);
         
     } catch (error) {
-        console.error('Refresh failed:', error);
-        btn.innerHTML = '<span>❌ Failed</span>';
-        
-        // Show user-friendly error message
-        let errorMessage = 'Unable to refresh content at the moment. ';
-        if (error.message.includes('500')) {
-            errorMessage += 'Our servers are working hard to process your request. Please wait a moment and try again.';
-        } else if (error.message.includes('Network')) {
-            errorMessage += 'Please check your internet connection and try again.';
-        } else {
-            errorMessage += 'This usually resolves quickly. Please try again in a few moments.';
-        }
-        
-        showNotification(errorMessage, 'error');
-        
-        // Reset button after error
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.pointerEvents = 'auto';
-            btn.style.opacity = '1';
-            isRefreshing = false;
-        }, 4000);
+        console.error('Refresh error:', error);
+        showNotification('Refresh failed: ' + error.message, 'error');
     } finally {
-        // Ensure refresh state is always reset, even if something unexpected happens
-        if (isRefreshing) {
-            setTimeout(() => {
-                isRefreshing = false;
-                if (btn.style.pointerEvents === 'none') {
-                    btn.innerHTML = originalText;
-                    btn.style.pointerEvents = 'auto';
-                    btn.style.opacity = '1';
-                }
-            }, 10000); // Fallback reset after 10 seconds
+        // Reset button state
+        refreshInProgress = false;
+        if (refreshIcon) {
+            refreshIcon.className = 'fas fa-sync-alt';
+        }
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
         }
     }
 }
 
-// Simple notification system with close button
-function showNotification(message, type) {
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.refresh-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Create notification element
     const notification = document.createElement('div');
-    
-    // Determine background color based on type
-    let backgroundColor;
-    if (type === 'success') {
-        backgroundColor = '#10B981';
-    } else if (type === 'info') {
-        backgroundColor = '#3B82F6';
-    } else {
-        backgroundColor = '#EF4444';
-    }
-    
+    notification.className = `refresh-notification alert alert-${getBootstrapClass(type)} alert-dismissible fade show`;
     notification.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
-        padding: 12px 45px 12px 15px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        animation: slideIn 0.3s ease;
-        background: ${backgroundColor};
+        z-index: 9999;
+        min-width: 300px;
         max-width: 400px;
-        font-size: 14px;
-        line-height: 1.4;
-        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     `;
     
-    // Add loading spinner for info messages
-    const messageContent = document.createElement('span');
-    if (type === 'info') {
-        messageContent.innerHTML = `<span class="loading-spinner" style="margin-right: 8px;"></span>${message}`;
-    } else {
-        messageContent.textContent = message;
-    }
-    
-    // Create close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: none;
-        border: none;
-        color: white;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        padding: 0;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: background-color 0.2s ease;
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas ${getIcon(type)} me-2"></i>
+            <span>${message}</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
     `;
     
-    // Close button hover effect
-    closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.backgroundColor = 'rgba(255,255,255,0.2)';
-    });
-    closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.backgroundColor = 'transparent';
-    });
-    
-    // Close notification when button is clicked
-    closeBtn.addEventListener('click', () => {
-        closeNotification(notification);
-    });
-    
-    // Add message and close button
-    notification.appendChild(messageContent);
-    notification.appendChild(closeBtn);
+    // Add to page
     document.body.appendChild(notification);
     
-    // Auto-remove after duration (longer for info messages since they have important loading info)
-    const duration = type === 'info' ? 4000 : 5000;
-    const autoRemove = setTimeout(() => {
-        closeNotification(notification);
-    }, duration);
-    
-    // Store timeout ID so we can clear it if user closes manually
-    notification.autoRemove = autoRemove;
-    
-    return notification;
-}
-
-// Function to close notification with animation
-function closeNotification(notification) {
-    if (notification && notification.parentNode) {
-        // Clear auto-remove timeout if it exists
-        if (notification.autoRemove) {
-            clearTimeout(notification.autoRemove);
-        }
-        
-        notification.style.animation = 'slideOut 0.3s ease';
+    // Auto-remove after 5 seconds for non-error messages
+    if (type !== 'error') {
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, 300);
+        }, 5000);
     }
+}
+
+function getBootstrapClass(type) {
+    const classMap = {
+        'info': 'info',
+        'success': 'success',
+        'warning': 'warning',
+        'error': 'danger'
+    };
+    return classMap[type] || 'info';
+}
+
+function getIcon(type) {
+    const iconMap = {
+        'info': 'fa-info-circle',
+        'success': 'fa-check-circle',
+        'warning': 'fa-exclamation-triangle',
+        'error': 'fa-exclamation-circle'
+    };
+    return iconMap[type] || 'fa-info-circle';
 }
 
 // Add CSS for animations when script loads
 function initializeNotificationStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
         .loading-spinner {
             display: inline-block;
             width: 12px;
@@ -243,9 +165,10 @@ function initializeNotificationStyles() {
             margin: 0 4px;
             vertical-align: middle;
         }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     `;
     document.head.appendChild(style);
 }
-
-// Initialize styles when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeNotificationStyles);

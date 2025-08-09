@@ -17,75 +17,11 @@ function shuffleArray(arr) {
   return arr;
 }
 
-// Add refresh functionality
-function addRefreshButton() {
-    if (document.getElementById('refresh-btn')) return; // Already exists
-    
-    const container = document.querySelector('.fast-container') || document.body;
-    const refreshBtn = document.createElement('button');
-    refreshBtn.id = 'refresh-btn';
-    refreshBtn.innerHTML = '🔄';
-    refreshBtn.className = 'refresh-btn';
-    refreshBtn.style.cssText = `
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        background: #8B5CF6;
-        color: white;
-        border: none;
-        padding: 8px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 14px;
-        width: 40px;
-        height: 40px;
-        z-index: 1000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
-    refreshBtn.title = 'Refresh Articles (R)';
-    refreshBtn.addEventListener('click', refreshArticles);
-    refreshBtn.addEventListener('mouseenter', function() {
-        this.style.background = '#7C3AED';
-        this.style.transform = 'scale(1.1) rotate(90deg)';
-    });
-    refreshBtn.addEventListener('mouseleave', function() {
-        this.style.background = '#8B5CF6';
-        this.style.transform = 'scale(1) rotate(0deg)';
-    });
-    container.appendChild(refreshBtn);
-}
+// Using global refresh button from navbar instead
 
-function refreshArticles() {
-    console.log('[Fast View] Refreshing articles...');
-    // Reset state
-    articles = [];
-    currentIdx = 0;
-    totalUnreadArticles = 0;
-    articlesRead = 0;
-    offset = 0;
-    loading = false;
-    sessionStartTime = Date.now();
-    
-    // Remove existing content
-    const slider = document.getElementById('flashcard-slider');
-    if (slider) {
-        slider.innerHTML = '<div style="text-align: center; padding: 2rem;">🔄 Loading fresh articles...</div>';
-    }
-    
-    // Load new articles
-    fetchNextBatch(true);
-}
-
-// Keyboard support for refresh
+// Keyboard support for navigation only
 document.addEventListener('keydown', function(e) {
-    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        refreshArticles();
-    }
+    // Removed refresh shortcut - using global refresh from navbar instead
 });
 
 function renderFlashcard(article) {
@@ -176,10 +112,7 @@ function showNoMoreArticles() {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: #b3b3b3; text-align: center; padding: 2rem;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">📰</div>
       <h3 style="margin: 0 0 0.5rem 0; color: #fff;">That's all for now!</h3>
-      <p style="margin: 0; color: #b3b3b3;">You've read all available articles. Check back later for more.</p>
-      <button onclick="refreshArticles()" style="background: #8B5CF6; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 1rem;">
-        Refresh Articles
-      </button>
+      <p style="margin: 0; color: #b3b3b3;">You've read all available articles. Use the refresh button in the navigation bar to fetch new content.</p>
     </div>
   `;
 }
@@ -319,8 +252,7 @@ function markArticleRead(articleId) {
 document.addEventListener('DOMContentLoaded', function() {
   fetchNextBatch();
   
-  // Add refresh button to the page
-  addRefreshButton();
+  // Using global refresh button from navbar instead of local refresh button
 
   // Arrow navigation
   const leftBtn = document.getElementById('fast-arrow-left');

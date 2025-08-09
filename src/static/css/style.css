@@ -2383,15 +2383,16 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   border-radius: 50%;
-  background: rgba(139, 92, 246, 0.1);
+  background: transparent;
   border: 2px solid rgba(139, 92, 246, 0.3);
 }
 
 .prev:hover, .next:hover {
-  opacity: 0.7;
-  background: rgba(139, 92, 246, 0.2);
+  opacity: 0.8;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .prev::before {

@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 """
-TechPulse Article Ingestion Script (Automated)
+TechPulse Article Ingestion Script (On-Demand)
 
 This script fetches and ingests new articles from all RSS sources in your database.
-It is designed to be run automatically via a scheduler to keep your tech news feed up to date.
+It is designed to be triggered on-demand via web interface for user-driven content updates.
 
 Key points:
 - This script does NOT manage the list of RSS sources. To add/remove sources, run the sync_sources script manually.
 - Ingestion will only use sources currently in your database.
 - Avoids duplicates, skips unreachable URLs, and only ingests tech-related articles.
-- Can be scheduled to run every hour (or as desired) using Python's schedule library or an external scheduler.
+- Optimized for user-driven updates rather than background scheduling.
 
-Usage (manual run for testing):
+Usage:
     python -m src.jobs.02_ingest_articles
-
-For automation, set up a scheduler to run this script as needed.
+    Or call fetch_and_ingest() function directly from web endpoints.
 """
 
 
 import feedparser
-import schedule
 import time
 from datetime import datetime, timedelta
 from src.database.connection import get_db_connection, close_db_connection
@@ -362,33 +360,25 @@ def fetch_and_ingest():
             print(f"[Ingestion] Finished. {new_articles} new articles added.")
     except Exception as e:
         print(f"[Ingestion] Fatal error: {e}")
-
-# Schedule to run every hour for ingestion
-schedule.every(60).minutes.do(fetch_and_ingest)
-
-# Schedule daily cleanup at 3 AM (independent of ingestion)
-schedule.every().day.at("03:00").do(lambda: cleanup_old_articles(days_to_keep=30))  
+        return {"success": False, "error": str(e)}
+    
+    return {"success": True, "articles_added": new_articles}
 
 if __name__ == "__main__":
-    print("🚀 TechPulse Enhanced Article Ingestion & Cleanup Scheduler")
-    print("=" * 60)
-    print("📅 Schedule:")
-    print("   • Article Ingestion: Every 60 minutes")
-    print("   • Database Cleanup: Daily at 3:00 AM") 
-    print("   • Old Article Retention: 30 days")
-    print("🔍 Features:")
+    print("🚀 TechPulse On-Demand Article Ingestion")
+    print("=" * 50)
+    print(" Features:")
     print("   • Strict tech content filtering")
-    print("   • AI-powered summarization")
+    print("   • AI-powered topic classification")
     print("   • Automatic HTML cleaning")
     print("   • Image extraction")
     print("   • Inappropriate content rejection")
-    print("=" * 60)
+    print("=" * 50)
     
-    # Run initial ingestion (includes cleanup)
-    fetch_and_ingest()
+    # Run single ingestion
+    result = fetch_and_ingest()
     
-    # Start scheduler loop
-    while True:
-        print(f"[Scheduler] ⏰ Heartbeat: {datetime.now().isoformat()}")
-        schedule.run_pending()
-        time.sleep(60)
+    if result.get("success"):
+        print(f"✅ Ingestion completed successfully! Added {result.get('articles_added', 0)} new articles.")
+    else:
+        print(f"❌ Ingestion failed: {result.get('error', 'Unknown error')}")

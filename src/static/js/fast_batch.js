@@ -149,8 +149,15 @@ function renderFlashcard(article) {
 
 function updateStats() {
   // Show current position (1-based) out of total unread articles
+  // If there are no articles, show 0 of 0
+  if (articles.length === 0 || totalUnreadArticles === 0) {
+    document.getElementById('articles-read').textContent = 0;
+    document.getElementById('total-articles').textContent = 0;
+    return;
+  }
+  
   const currentPosition = currentIdx + 1; // Convert to 1-based counting
-  const displayTotal = totalUnreadArticles > 0 ? totalUnreadArticles : articles.length;
+  const displayTotal = totalUnreadArticles;
   document.getElementById('articles-read').textContent = currentPosition;
   document.getElementById('total-articles').textContent = displayTotal;
 }
@@ -227,6 +234,13 @@ function fetchNextBatch(refresh = false) {
         // No more articles available
         console.log('No more articles to fetch');
         if (articles.length === 0) {
+          // Set totalUnreadArticles to 0 if no articles available
+          if (data.total_unread !== undefined) {
+            totalUnreadArticles = data.total_unread;
+          } else {
+            totalUnreadArticles = 0;
+          }
+          updateStats(); // Update stats to show 0 of 0
           showNoMoreArticles();
         } else {
           // Keep the total from API, or fallback to loaded articles

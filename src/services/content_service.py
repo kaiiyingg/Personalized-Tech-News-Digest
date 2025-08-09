@@ -769,3 +769,57 @@ def get_general_digest(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]
     finally:
         close_db_connection(conn)
     return digest_items
+
+def get_content_stats():
+    """
+    Get basic statistics about content for job monitoring.
+    Returns info about total articles, recent articles, etc.
+    """
+    conn = get_db_connection()
+    stats = {}
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get total article count
+        cur.execute("SELECT COUNT(*) FROM content")
+        stats['total_articles'] = cur.fetchone()[0]
+        
+        # Get articles from last 24 hours
+        cur.execute("""
+            SELECT COUNT(*) FROM content 
+            WHERE published_at >= NOW() - INTERVAL '24 hours'
+        """)
+        stats['articles_last_24h'] = cur.fetchone()[0]
+        
+        # Get articles from last week
+        cur.execute("""
+            SELECT COUNT(*) FROM content 
+            WHERE published_at >= NOW() - INTERVAL '7 days'
+        """)
+        stats['articles_last_week'] = cur.fetchone()[0]
+        
+        # Get most recent article timestamp
+        cur.execute("""
+            SELECT MAX(published_at) FROM content
+        """)
+        result = cur.fetchone()[0]
+        stats['most_recent_article'] = format_datetime(result) if result else None
+        
+        # Get articles by topic (top 5)
+        cur.execute("""
+            SELECT topic, COUNT(*) as count 
+            FROM content 
+            GROUP BY topic 
+            ORDER BY count DESC 
+            LIMIT 5
+        """)
+        stats['top_topics'] = [{'topic': row[0], 'count': row[1]} for row in cur.fetchall()]
+        
+    except Exception as e:
+        print(f"Error getting content stats: {e}")
+        stats['error'] = str(e)
+    finally:
+        close_db_connection(conn)
+    
+    return stats

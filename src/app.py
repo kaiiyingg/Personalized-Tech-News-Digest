@@ -450,33 +450,25 @@ def api_fast_articles():
         user_topics = user_service.get_user_topics(user_id)
         print(f"[api_fast_articles] User topics: {user_topics}")
         
-        # Get total count of available unread articles first
+        # Get articles based on user topics or fallback to general
         if user_topics:
-            # Get total count from user topics
-            all_user_articles = content_service.get_articles_by_user_topics_extended(user_id, user_topics, limit=1000, offset=0)
-            total_unread = len([a for a in all_user_articles if not a.get('is_read', False)])
-            
-            # Get current batch
-            batch_articles = content_service.get_articles_by_user_topics_extended(user_id, user_topics, limit=limit, offset=offset)
-            
-            # If no articles from user topics and offset is 0, fallback to general articles
-            if not batch_articles and offset == 0:
-                general_articles = content_service.get_personalized_digest(user_id, limit=1000, offset=0, include_read=False)
-                all_general = [a for a in general_articles if isinstance(a, dict) and a.get('id')]
-                total_unread = len([a for a in all_general if not a.get('is_read', False)])
-                
-                batch_articles = content_service.get_personalized_digest(user_id, limit=limit, offset=offset, include_read=False)
-                batch_articles = [a for a in batch_articles if isinstance(a, dict) and a.get('id')]
+            # Get articles from user topics
+            all_articles = content_service.get_articles_by_user_topics_extended(user_id, user_topics, limit=10000, offset=0)
         else:
             # User has no topics selected, get general articles
-            all_general = content_service.get_personalized_digest(user_id, limit=1000, offset=0, include_read=False)
-            all_general = [a for a in all_general if isinstance(a, dict) and a.get('id')]
-            total_unread = len([a for a in all_general if not a.get('is_read', False)])
-            
-            batch_articles = content_service.get_personalized_digest(user_id, limit=limit, offset=offset, include_read=False)
-            batch_articles = [a for a in batch_articles if isinstance(a, dict) and a.get('id')]
+            all_articles = content_service.get_personalized_digest(user_id, limit=10000, offset=0, include_read=False)
+            all_articles = [a for a in all_articles if isinstance(a, dict) and a.get('id')]
         
-        # Filter to unread articles only for Fast View
+        # Filter to only unread articles
+        all_unread_articles = [a for a in all_articles if not a.get('is_read', False)]
+        total_unread = len(all_unread_articles)
+        
+        # Get the batch for current request
+        start_idx = offset
+        end_idx = offset + limit
+        batch_articles = all_unread_articles[start_idx:end_idx]
+        
+        # Filter to unread articles only for Fast View (redundant check but for safety)
         unread_articles = [a for a in batch_articles if not a.get('is_read', False)]
         
         # Shuffle articles on first load (offset=0) or when refresh is requested
@@ -548,6 +540,76 @@ def unlike_article(article_id):
     content_service.update_content_liked(user_id, article_id, is_liked=False)
     flash('Article removed from favorites', 'info')
     return redirect(url_for('index'))
+
+# ------------------- JOB ENDPOINTS FOR RENDER FREE TIER -------------------
+@app.route('/api/jobs/ingest', methods=['POST'])
+def trigger_ingest_job():
+    """
+    Trigger article ingestion job via HTTP endpoint.
+    This works better than background scheduling on Render free tier.
+    """
+    try:
+        # Import and run the ingestion job directly
+        from jobs.web_jobs import run_ingest_articles
+        result = run_ingest_articles()
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/jobs/cleanup', methods=['POST'])
+def trigger_cleanup_job():
+    """
+    Trigger cleanup job via HTTP endpoint.
+    This works better than background scheduling on Render free tier.
+    """
+    try:
+        from jobs.web_jobs import run_cleanup
+        result = run_cleanup()
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/jobs/status', methods=['GET'])
+def job_status():
+    """
+    Get information about when jobs were last run.
+    Useful for monitoring on free tier.
+    """
+    try:
+        # Get some basic stats about content freshness
+        stats = content_service.get_content_stats()
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'stats': stats,
+            'message': 'Job status retrieved successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 # ------------------- HEALTH CHECK -------------------
 @app.route('/health')

@@ -550,7 +550,7 @@ def trigger_ingest_job():
     """
     try:
         # Import and run the ingestion job directly
-        from jobs.web_jobs import run_ingest_articles
+        from src.jobs.web_jobs import run_ingest_articles
         result = run_ingest_articles()
         
         if result.get('success'):
@@ -572,7 +572,7 @@ def trigger_cleanup_job():
     This works better than background scheduling on Render free tier.
     """
     try:
-        from jobs.web_jobs import run_cleanup
+        from src.jobs.web_jobs import run_cleanup
         result = run_cleanup()
         
         if result.get('success'):

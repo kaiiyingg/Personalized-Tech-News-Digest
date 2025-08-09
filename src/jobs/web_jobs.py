@@ -9,9 +9,10 @@ import os
 from datetime import datetime
 import json
 
-# Add the parent directory to the path to import services
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from services.content_service import cleanup_old_articles
+# Add the project root directory to the path to import services
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, project_root)
+from src.services.content_service import cleanup_old_articles
 
 def run_ingest_articles():
     """Run article ingestion job"""

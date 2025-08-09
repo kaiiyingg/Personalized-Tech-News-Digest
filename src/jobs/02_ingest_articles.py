@@ -72,14 +72,14 @@ def cleanup_old_articles(days_to_keep=30):
         cutoff_date = datetime.now() - timedelta(days=days_to_keep)
         
         # Get count before cleanup
-        cur.execute("SELECT COUNT(*) FROM content WHERE created_at < %s", (cutoff_date,))
+        cur.execute("SELECT COUNT(*) FROM content WHERE published_at < %s", (cutoff_date,))
         old_count = cur.fetchone()[0]
         
         if old_count > 0:
             print(f"[Cleanup] Found {old_count} articles older than {cutoff_date.strftime('%Y-%m-%d')}")
             
             # Remove old articles (preserve user interactions by using CASCADE or handling separately)
-            cur.execute("DELETE FROM content WHERE created_at < %s", (cutoff_date,))
+            cur.execute("DELETE FROM content WHERE published_at < %s", (cutoff_date,))
             conn.commit()
             
             print(f"[Cleanup] ✅ Removed {old_count} old articles")
@@ -185,7 +185,7 @@ def fetch_and_ingest():
                                 )[0]['summary_text']
                                 
                                 # Multiple-stage HTML cleaning for the AI summary
-                                from bs4 import BeautifulSoup
+                                # BeautifulSoup is already imported at module level
                                 # First pass: Remove all HTML tags
                                 clean_soup = BeautifulSoup(ai_summary, "html.parser")
                                 summary = clean_soup.get_text(separator=" ", strip=True)

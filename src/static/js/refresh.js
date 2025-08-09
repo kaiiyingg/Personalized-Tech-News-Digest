@@ -1,17 +1,28 @@
 // Content refresh functionality for TechPulse
 // Handles both article ingestion and smart cleanup
 
+// Track refresh state to prevent multiple simultaneous refreshes
+let isRefreshing = false;
+
 // Content refresh functionality
 async function refreshContent() {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshing) {
+        showNotification('Refresh already in progress. Please wait for it to complete.', 'info');
+        return;
+    }
+    
     const btn = document.getElementById('refresh-content-btn');
     const originalText = btn.innerHTML;
     
     try {
-        btn.innerHTML = '<span>🔄 Refreshing...</span>';
+        isRefreshing = true;
+        btn.innerHTML = '<span>🔄 <span class="loading-spinner"></span> Refreshing...</span>';
         btn.style.pointerEvents = 'none'; // Disable clicking
+        btn.style.opacity = '0.7'; // Visual indication that it's disabled
         
         // Step 1: Fetch fresh articles
-        showNotification('Fetching latest tech articles...', 'info');
+        showNotification('Fetching latest tech articles from multiple sources... This may take a moment.', 'info');
         
         const ingestResponse = await fetch('/api/jobs/ingest', {
             method: 'POST',
@@ -19,7 +30,8 @@ async function refreshContent() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            signal: AbortSignal.timeout(120000) // 2 minute timeout
         });
         
         if (!ingestResponse.ok) {
@@ -31,8 +43,8 @@ async function refreshContent() {
         console.log('Ingestion result:', ingestResult);
         
         // Step 2: Clean up old articles to manage storage
-        btn.innerHTML = '<span>🧹 Optimizing...</span>';
-        showNotification('Optimizing storage...', 'info');
+        btn.innerHTML = '<span>🧹 <span class="loading-spinner"></span> Optimizing...</span>';
+        showNotification('Organizing and optimizing content... Almost done!', 'info');
         
         const cleanupResponse = await fetch('/api/jobs/cleanup', {
             method: 'POST',
@@ -40,15 +52,16 @@ async function refreshContent() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            signal: AbortSignal.timeout(60000) // 1 minute timeout for cleanup
         });
         
         if (!cleanupResponse.ok) {
             console.warn('Cleanup failed, but continuing...');
         }
         
-        btn.innerHTML = '<span>✅ Updated!</span>';
-        showNotification('Content refreshed successfully! Loading fresh articles...', 'success');
+        btn.innerHTML = '<span>✅ <span class="loading-spinner"></span> Complete!</span>';
+        showNotification('Content refreshed successfully! Loading your personalized feed with the latest articles...', 'success');
         
         // Reload page after short delay to show fresh content
         setTimeout(() => {
@@ -60,13 +73,13 @@ async function refreshContent() {
         btn.innerHTML = '<span>❌ Failed</span>';
         
         // Show user-friendly error message
-        let errorMessage = 'Unable to refresh content. ';
+        let errorMessage = 'Unable to refresh content at the moment. ';
         if (error.message.includes('500')) {
-            errorMessage += 'Server is experiencing issues. Please try again in a moment.';
+            errorMessage += 'Our servers are working hard to process your request. Please wait a moment and try again.';
         } else if (error.message.includes('Network')) {
-            errorMessage += 'Please check your internet connection.';
+            errorMessage += 'Please check your internet connection and try again.';
         } else {
-            errorMessage += 'Please try again later.';
+            errorMessage += 'This usually resolves quickly. Please try again in a few moments.';
         }
         
         showNotification(errorMessage, 'error');
@@ -75,7 +88,21 @@ async function refreshContent() {
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.style.pointerEvents = 'auto';
-        }, 3000);
+            btn.style.opacity = '1';
+            isRefreshing = false;
+        }, 4000);
+    } finally {
+        // Ensure refresh state is always reset, even if something unexpected happens
+        if (isRefreshing) {
+            setTimeout(() => {
+                isRefreshing = false;
+                if (btn.style.pointerEvents === 'none') {
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                }
+            }, 10000); // Fallback reset after 10 seconds
+        }
     }
 }
 
@@ -110,6 +137,14 @@ function showNotification(message, type) {
         line-height: 1.4;
         border: 1px solid rgba(255,255,255,0.2);
     `;
+    
+    // Add loading spinner for info messages
+    const messageContent = document.createElement('span');
+    if (type === 'info') {
+        messageContent.innerHTML = `<span class="loading-spinner" style="margin-right: 8px;"></span>${message}`;
+    } else {
+        messageContent.textContent = message;
+    }
     
     // Create close button
     const closeBtn = document.createElement('button');
@@ -148,12 +183,12 @@ function showNotification(message, type) {
     });
     
     // Add message and close button
-    notification.textContent = message;
+    notification.appendChild(messageContent);
     notification.appendChild(closeBtn);
     document.body.appendChild(notification);
     
-    // Auto-remove after duration (longer for info messages)
-    const duration = type === 'info' ? 3000 : 5000;
+    // Auto-remove after duration (longer for info messages since they have important loading info)
+    const duration = type === 'info' ? 4000 : 5000;
     const autoRemove = setTimeout(() => {
         closeNotification(notification);
     }, duration);
@@ -192,6 +227,21 @@ function initializeNotificationStyles() {
         @keyframes slideOut {
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 4px;
+            vertical-align: middle;
         }
     `;
     document.head.appendChild(style);

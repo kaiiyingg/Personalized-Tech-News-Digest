@@ -98,7 +98,28 @@ function showNotification(message, type = 'info') {
     
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `refresh-notification alert alert-${getBootstrapClass(type)} alert-dismissible fade show`;
+    notification.className = 'refresh-notification';
+    
+    // Set colors based on type
+    let backgroundColor, borderColor;
+    switch(type) {
+        case 'success':
+            backgroundColor = '#10B981';
+            borderColor = '#059669';
+            break;
+        case 'warning':
+            backgroundColor = '#F59E0B';
+            borderColor = '#D97706';
+            break;
+        case 'error':
+            backgroundColor = '#EF4444';
+            borderColor = '#DC2626';
+            break;
+        default: // info
+            backgroundColor = '#3B82F6';
+            borderColor = '#2563EB';
+    }
+    
     notification.style.cssText = `
         position: fixed;
         top: 80px;
@@ -106,28 +127,75 @@ function showNotification(message, type = 'info') {
         z-index: 9999;
         min-width: 300px;
         max-width: 400px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: ${backgroundColor};
+        border: 2px solid ${borderColor};
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        line-height: 1.4;
     `;
     
     notification.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas ${getIcon(type)} me-2"></i>
-            <span>${message}</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
+        <i class="fas ${getIcon(type)}"></i>
+        <span style="flex: 1;">${message}</span>
+        <button type="button" class="notification-close" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            margin-left: 8px;
+        " title="Close">×</button>
     `;
+    
+    // Add close button functionality
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        // Clear the auto-remove timer if user closes manually
+        if (notification.autoRemoveTimer) {
+            clearTimeout(notification.autoRemoveTimer);
+        }
+        notification.remove();
+    });
+    
+    // Hover effect for close button
+    closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.backgroundColor = 'transparent';
+    });
     
     // Add to page
     document.body.appendChild(notification);
     
-    // Auto-remove after 5 seconds for non-error messages
-    if (type !== 'error') {
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
-    }
+    // Auto-remove after 5 seconds (but longer for errors so user can read them)
+    const duration = type === 'error' ? 8000 : 5000;
+    const autoRemoveTimer = setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, duration);
+    
+    // Store timer on notification so we can clear it if user closes manually
+    notification.autoRemoveTimer = autoRemoveTimer;
+    
+    return notification;
 }
 
 function getBootstrapClass(type) {

@@ -1,4 +1,12 @@
--- Performance Optimization SQL Indexes
+-- Performance Optimization SQL Indexes for TechPulse
+-- WHEN TO USE: Run these when deploying to production (Render) for better performance
+-- FOR DEVELOPMENT: Optional - your app works fine without these
+-- 
+-- HOW TO APPLY: 
+-- 1. Connect to your PostgreSQL database
+-- 2. Run each CREATE INDEX command
+-- 3. Indexes will build in background (CONCURRENTLY)
+--
 -- Run these in your database to improve query performance
 
 -- Index for content table - most important for fast lookups

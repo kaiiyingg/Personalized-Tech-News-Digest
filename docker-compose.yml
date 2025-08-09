@@ -15,13 +15,13 @@ services:
     container_name: techdigest_app
     environment:
       FLASK_APP: src/app.py
-      FLASK_ENV: production
-      DB_NAME: postgres
-      DB_USER: postgres.ukkecrhvlkjkgfkdiare
-      DB_PASSWORD: Oreoicecream4950 #change this DB password to a unique one
-      DB_HOST: aws-0-ap-southeast-1.pooler.supabase.com
-      DB_PORT: 6543
-      FLASK_SECRET_KEY: 'a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890'
+      FLASK_ENV: ${FLASK_ENV:-production}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
       PYTHONPATH: /app/src
       # Redis configuration
       REDIS_URL: redis://redis:6379/0

@@ -67,7 +67,8 @@ TechPulse implements a thoughtful content management strategy that demonstrates 
    pip install -r requirements.txt
    ```
 2. **Configure Environment:**
-   - Copy `.env.example` to `.env` and fill in your DB credentials.
+   - Copy `.env.template` to `.env` and fill in your actual database credentials.
+   - **Security Note:** Never commit `.env` file to git - it contains sensitive credentials.
 3. **Run Locally:**
    - Start the Flask app: `python src/app.py`
    - Use Docker Compose: `docker-compose up --build`

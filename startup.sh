@@ -45,10 +45,10 @@ except Exception as e:
 "
 
 # Run database migrations/setup if needed
-if [ -f "/app/database_indexes.sql" ]; then
+if [ -f "/app/src/database/06_indexes.sql" ]; then
     echo "🗄️ Setting up database indexes..."
     # This would run in a real deployment with proper DB credentials
-    echo "📝 Note: Run 'psql -f database_indexes.sql' manually for index setup"
+    echo "📝 Note: Run 'psql -f src/database/06_indexes.sql' manually for index setup"
 fi
 
 # Set production environment

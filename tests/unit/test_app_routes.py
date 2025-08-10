@@ -351,13 +351,13 @@ class TestFlaskApp:
             
             # This might not trigger a 500 in test mode
             # Adjust based on your error handling implementation
-            response = client.get('/login')
+            client.get('/login')
             # Check if error is handled gracefully
 
     def test_csrf_protection(self, client):
         """Test CSRF protection on forms"""
         # This test depends on your CSRF implementation
-        response = client.post('/login', data={
+        client.post('/login', data={
             'email': 'test@example.com',
             'password': 'password123'
         }, headers={'Content-Type': 'application/x-www-form-urlencoded'})
@@ -369,8 +369,8 @@ class TestFlaskApp:
         """Test rate limiting on endpoints"""
         # This test depends on your rate limiting implementation
         # Make multiple rapid requests to test rate limiting
-        for i in range(20):
-            response = client.post('/login', data={
+        for _ in range(20):
+            client.post('/login', data={
                 'email': 'test@example.com',
                 'password': 'password123'
             })
@@ -385,7 +385,7 @@ class TestFlaskApp:
             sess['username'] = 'testuser'
             
         # Test that session persists
-        response = client.get('/index')
+        client.get('/index')
         # Should not redirect to login since session exists
 
     @patch('src.app.content_service.update_content_liked')
@@ -441,14 +441,10 @@ class TestFlaskApp:
 
     def test_security_headers(self, client):
         """Test security headers are set"""
-        response = client.get('/login')
+        client.get('/login')
         
         # Check for security headers (adjust based on your implementation)
-        headers_to_check = [
-            'X-Frame-Options',
-            'X-Content-Type-Options',
-            'X-XSS-Protection'
-        ]
+        # Expected headers: X-Frame-Options, X-Content-Type-Options, X-XSS-Protection
         
         # Note: This depends on your security header implementation
         # Uncomment and adjust based on your actual headers
@@ -460,7 +456,7 @@ class TestFlaskApp:
         with patch('src.app.content_service.get_articles_by_topics') as mock_get_articles:
             mock_get_articles.side_effect = Exception("Database connection error")
             
-            response = authenticated_client.get('/index')
+            authenticated_client.get('/index')
             # Should handle database errors gracefully
             # Adjust based on your error handling
 

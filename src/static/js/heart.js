@@ -116,6 +116,12 @@ function executeUnlikeFromDiscover() {
     headers: { 'Content-Type': 'application/json' },
     success: function(response) {
       showFlashMessage('Article removed from favorites', 'info');
+      
+      // Broadcast state change to other pages
+      if (window.ArticleStateSync) {
+        window.ArticleStateSync.broadcast(articleId, false, 'unlike');
+      }
+      
       // Remove article from fast view if on fast page
       if (window.location.pathname === '/fast') {
         const articleCard = button.closest('.horizontal-flashcard');
@@ -184,7 +190,28 @@ function executeUnlikeFromDiscover() {
           // Broadcast state change to other pages
           if (window.ArticleStateSync) {
             const action = isCurrentlyLiked ? 'unlike' : 'like';
-            window.ArticleStateSync.broadcast(articleId, !isCurrentlyLiked, action);
+            let articleData = null;
+            
+            // If liking an article, collect data to send to favorites page
+            if (!isCurrentlyLiked) {
+              const articleCard = button.closest('.topic-article-card, .horizontal-flashcard, .fast-horizontal-card');
+              if (articleCard) {
+                // Try to get article data from the card
+                const titleElement = articleCard.find('.article-title-full, .fast-card-title, h3').first();
+                const summaryElement = articleCard.find('.article-summary, .fast-card-summary, .fast-card-description, p, div').filter(function() {
+                  const text = $(this).text().trim();
+                  return text.length > 20 && !$(this).find('button, a').length;
+                }).first();
+                
+                articleData = {
+                  id: articleId,
+                  title: titleElement.length ? titleElement.text().trim() : `Article ${articleId}`,
+                  summary: summaryElement.length ? summaryElement.text().trim() : ''
+                };
+              }
+            }
+            
+            window.ArticleStateSync.broadcast(articleId, !isCurrentlyLiked, action, articleData);
           }
           
           // Show success notification and handle DOM updates

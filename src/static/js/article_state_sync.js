@@ -12,13 +12,14 @@ window.addEventListener('storage', function(e) {
 });
 
 // Broadcast article state change to other tabs/pages
-function broadcastArticleStateChange(articleId, isLiked, action) {
+function broadcastArticleStateChange(articleId, isLiked, action, articleData = null) {
   const data = {
     articleId: articleId,
     isLiked: isLiked,
     action: action, // 'like' or 'unlike'
     timestamp: Date.now(),
-    page: window.location.pathname
+    page: window.location.pathname,
+    articleData: articleData // Include article data for adding to favorites
   };
   
   localStorage.setItem('article_state_change', JSON.stringify(data));
@@ -44,9 +45,14 @@ function handleArticleStateChange(data) {
   updateHeartButtonState(articleId, isLiked);
   
   // Handle page-specific updates
-  if (window.location.pathname === '/favorites' && !isLiked) {
-    // Remove article from favorites page if unliked
-    removeArticleFromFavorites(articleId);
+  if (window.location.pathname === '/favorites') {
+    if (!isLiked) {
+      // Remove article from favorites page if unliked
+      removeArticleFromFavorites(articleId);
+    } else {
+      // Add article to favorites page if liked from another page
+      addArticleToFavorites(articleId, data);
+    }
   } else if (window.location.pathname === '/fast' && !isLiked) {
     // Remove article from fast view if unliked
     removeArticleFromFast(articleId);
@@ -70,6 +76,100 @@ function updateHeartButtonState(articleId, isLiked) {
       $button.attr('aria-label', 'Like this article');
       $button.attr('title', 'Like');
     }
+  }
+}
+
+// Add article to favorites page
+function addArticleToFavorites(articleId, articleData) {
+  // Check if article already exists
+  const existingCard = document.querySelector(`button[data-article-id="${articleId}"]`)?.closest('.topic-article-card');
+  if (existingCard) {
+    return; // Article already exists, no need to add
+  }
+
+  // Only add if we have article data and we're on favorites page
+  if (!articleData || window.location.pathname !== '/favorites') {
+    return;
+  }
+
+  // Remove empty state if it exists
+  let emptyState = document.querySelector('.empty-state');
+  if (!emptyState) {
+    // Look for the specific empty state content
+    const headings = document.querySelectorAll('h3');
+    for (const heading of headings) {
+      if (heading.textContent.includes('No Favorite Articles Yet')) {
+        emptyState = heading.closest('div, section');
+        break;
+      }
+    }
+  }
+  
+  if (emptyState) {
+    emptyState.remove();
+  }
+
+  // Get or create the favorites grid
+  let favoritesGrid = document.querySelector('.favorites-grid');
+  if (!favoritesGrid) {
+    // Create favorites grid structure if it doesn't exist
+    const mainContent = document.querySelector('main .container') || document.querySelector('main');
+    if (mainContent) {
+      const gridSection = document.createElement('section');
+      gridSection.innerHTML = `
+        <div class="favorites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; padding: 1rem 0;">
+        </div>
+      `;
+      mainContent.appendChild(gridSection);
+      favoritesGrid = gridSection.querySelector('.favorites-grid');
+    }
+  }
+
+  if (favoritesGrid) {
+    // Create new article card
+    const articleCard = document.createElement('div');
+    articleCard.className = 'topic-article-card';
+    articleCard.style.cssText = 'background: #23262f; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; opacity: 0; transform: scale(0.95);';
+    
+    const truncatedTitle = articleData.title && articleData.title.length > 50 ? 
+      articleData.title.substring(0, 50) + '...' : (articleData.title || 'Article');
+    
+    articleCard.innerHTML = `
+      <article style="height: 100%; display: flex; flex-direction: column;">
+        <header style="margin-bottom: 1rem;">
+          <h3 style="color: #e6e6e6; font-size: 1.1rem; line-height: 1.4; margin: 0; word-wrap: break-word;">
+            ${articleData.title || 'Article'}
+          </h3>
+        </header>
+        <div style="color: #b3b3b3; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem; flex-grow: 1; overflow: hidden;">
+          ${articleData.summary || ''}
+        </div>
+        <footer style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+          <a href="/read_article/${articleId}" target="_blank" rel="noopener" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+            Read More
+          </a>
+          <button 
+            type="button" 
+            class="heart-button active"
+            data-article-id="${articleId}"
+            data-article-title="${truncatedTitle}"
+            onclick="confirmUnlike(this)"
+            aria-label="Unlike this article"
+            aria-pressed="true"
+            title="Unlike">
+          </button>
+        </footer>
+      </article>
+    `;
+
+    // Add to favorites grid with animation
+    favoritesGrid.appendChild(articleCard);
+    
+    // Trigger animation
+    setTimeout(() => {
+      articleCard.style.opacity = '1';
+      articleCard.style.transform = 'scale(1)';
+    }, 50);
   }
 }
 

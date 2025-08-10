@@ -86,6 +86,9 @@ def index():
         return redirect(url_for('login'))
     user_id = session['user_id']
     
+    # Check if this is a fresh login (auto-refresh trigger)
+    auto_refresh = session.pop('trigger_auto_refresh', False)
+    
     # Get articles grouped by topics
     topics_articles = content_service.get_articles_by_topics(user_id, limit_per_topic=8)
 
@@ -95,7 +98,8 @@ def index():
     return render_template('index.html', 
                          topics_articles=topics_articles, 
                          username=username, 
-                         current_year=current_year)
+                         current_year=current_year,
+                         auto_refresh=auto_refresh)
 
 # --- Legacy route for backward compatibility ---
 @app.route('/index', methods=['GET'])
@@ -350,6 +354,7 @@ def login():
                 return render_template(LOGIN_TEMPLATE)
         session['user_id'] = user.id
         session['username'] = user.username
+        session['trigger_auto_refresh'] = True  # Trigger auto-refresh on successful login
         flash('Welcome back!', 'success')
         return redirect(url_for('index'))
     return render_template(LOGIN_TEMPLATE)

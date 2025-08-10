@@ -19,6 +19,8 @@ from .user_service import get_user_topics
 from typing import List, Optional, Dict, Any, Union
 from psycopg2 import errors as pg_errors
 from datetime import datetime
+from datetime import datetime
+from datetime import datetime
 
 # Import caching utility
 try:
@@ -1010,3 +1012,123 @@ def get_content_stats():
         close_db_connection(conn)
     
     return stats
+
+def cleanup_irrelevant_articles():
+    """
+    Remove articles that don't meet current filtering standards.
+    This ensures that articles that slipped through old filters are cleaned up.
+    
+    Returns:
+        dict: Cleanup results with statistics
+    """
+    conn = None
+    removed_count = 0
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get all articles that need to be re-evaluated
+        cur.execute("""
+            SELECT id, title, summary, url 
+            FROM content 
+            WHERE id NOT IN (
+                SELECT DISTINCT content_id 
+                FROM user_content_interactions 
+                WHERE interaction_type = 'like'
+            )
+            ORDER BY published_at DESC
+        """)
+        
+        articles_to_check = cur.fetchall()
+        articles_to_remove = []
+        
+        print(f"[cleanup_irrelevant_articles] Checking {len(articles_to_check)} articles for relevance...")
+        
+        # Re-evaluate each article using current filtering standards
+        for article_id, title, summary, url in articles_to_check:
+            combined_text = f"{title} {summary}".lower()
+            
+            # Use the same rejection keywords as in assign_topic function
+            reject_keywords = [
+                # Non-tech content
+                'welding', 'wedding', 'puzzle', 'crossword', 'sudoku', 'chess', 'poker', 'gambling',
+                'recipe', 'cooking', 'food', 'restaurant', 'diet', 'nutrition', 'fitness', 'exercise',
+                'fashion', 'beauty', 'makeup', 'clothing', 'style', 'shoes', 'jewelry',
+                'travel', 'vacation', 'hotel', 'flight', 'tourism', 'destination',
+                'sports', 'football', 'basketball', 'soccer', 'baseball', 'tennis', 'golf',
+                'movie', 'film', 'cinema', 'actor', 'actress', 'hollywood', 'celebrity',
+                'music', 'concert', 'album', 'song', 'band', 'singer', 'artist',
+                'real estate', 'property', 'mortgage', 'rent', 'lease', 'housing',
+                'insurance', 'loan', 'credit', 'debt', 'mortgage', 'finance',
+                'weather', 'climate', 'temperature', 'rain', 'snow', 'storm',
+                'health', 'medical', 'doctor', 'hospital', 'medicine', 'drug',
+                'politics', 'election', 'vote', 'politician', 'government', 'congress',
+                'war', 'military', 'army', 'navy', 'conflict', 'battle',
+                'religion', 'church', 'faith', 'prayer', 'bible', 'god',
+                
+                # Specific non-tech terms that slip through
+                'autism', 'disability', 'mental health', 'therapy', 'counseling',
+                'shopping', 'sale', 'discount', 'coupon', 'deal', 'bargain',
+                'wordle', 'puzzle game', 'word game', 'trivia', 'quiz',
+                'investment', 'stock market', 'forex', 'trading', 'broker',
+                'car', 'vehicle', 'automotive', 'driving', 'traffic',
+                'education', 'school', 'university', 'student', 'teacher',
+                'job', 'career', 'employment', 'resume', 'interview',
+                'baby', 'child', 'parent', 'family', 'pregnancy',
+                'pet', 'dog', 'cat', 'animal', 'veterinary'
+            ]
+            
+            # Check if article contains rejection keywords
+            reject_score = sum(1 for keyword in reject_keywords if keyword in combined_text)
+            
+            if reject_score > 0:
+                articles_to_remove.append(article_id)
+                print(f"[cleanup_irrelevant_articles] Marking for removal: {title[:50]}... (reject score: {reject_score})")
+        
+        # Remove irrelevant articles
+        if articles_to_remove:
+            # Delete in batches to avoid query length limits
+            batch_size = 100
+            for i in range(0, len(articles_to_remove), batch_size):
+                batch = articles_to_remove[i:i + batch_size]
+                placeholders = ','.join(['%s'] * len(batch))
+                
+                # First remove related interactions
+                cur.execute(f"""
+                    DELETE FROM user_content_interactions 
+                    WHERE content_id IN ({placeholders})
+                """, batch)
+                
+                # Then remove the articles
+                cur.execute(f"""
+                    DELETE FROM content 
+                    WHERE id IN ({placeholders})
+                """, batch)
+                
+                removed_count += len(batch)
+        
+        conn.commit()
+        
+        print(f"[cleanup_irrelevant_articles] Removed {removed_count} irrelevant articles")
+        
+        return {
+            "success": True,
+            "message": f"Removed {removed_count} irrelevant articles",
+            "articles_checked": len(articles_to_check),
+            "articles_removed": removed_count,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error during irrelevant articles cleanup: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "articles_removed": removed_count,
+            "timestamp": datetime.now().isoformat()
+        }
+    finally:
+        close_db_connection(conn)

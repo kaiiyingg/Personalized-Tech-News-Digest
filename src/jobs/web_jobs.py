@@ -12,10 +12,10 @@ import json
 # Add the project root directory to the path to import services
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, project_root)
-from src.services.content_service import cleanup_old_articles
+from src.services.content_service import cleanup_old_articles, cleanup_irrelevant_articles
 
 def run_ingest_articles():
-    """Run article ingestion job with better error handling"""
+    """Run article ingestion job with better error handling and irrelevant content cleanup"""
     try:
         print(f"[{datetime.now()}] Starting article ingestion...")
         
@@ -30,13 +30,23 @@ def run_ingest_articles():
         ingest_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ingest_module)
         
-        result = ingest_module.fetch_and_ingest()
+        # Run ingestion first
+        ingest_result = ingest_module.fetch_and_ingest()
+        
+        # After ingestion, clean up irrelevant articles
+        print(f"[{datetime.now()}] Starting cleanup of irrelevant articles...")
+        cleanup_result = cleanup_irrelevant_articles()
+        
+        # Also run old articles cleanup
+        old_cleanup_result = cleanup_old_articles()
         
         return {
             "success": True,
-            "message": "Article ingestion completed",
+            "message": "Article ingestion and cleanup completed",
             "timestamp": datetime.now().isoformat(),
-            "result": result
+            "ingest_result": ingest_result,
+            "cleanup_result": cleanup_result,
+            "old_cleanup_result": old_cleanup_result
         }
     except ImportError as e:
         print(f"Import error during ingestion: {e}")
@@ -53,20 +63,23 @@ def run_ingest_articles():
             "timestamp": datetime.now().isoformat()
         }
 
-def run_cleanup():
-    """Run cleanup job"""
+def run_fast_ingest():
+    """Fast refresh mode - optimized for speed"""
     try:
-        print(f"[{datetime.now()}] Starting cleanup...")
-        result = cleanup_old_articles()
+        print(f"[FAST REFRESH] Starting at {datetime.now().isoformat()}")
+        
+        # Import the fast ingest function
+        from .fast_ingest import fast_refresh
+        result = fast_refresh()
         
         return {
             "success": True,
-            "message": "Cleanup completed",
+            "message": f"Fast refresh completed - {result.get('articles_added', 0)} articles",
             "timestamp": datetime.now().isoformat(),
             "result": result
         }
     except Exception as e:
-        print(f"Cleanup error: {e}")
+        print(f"Fast refresh error: {e}")
         return {
             "success": False,
             "error": str(e),

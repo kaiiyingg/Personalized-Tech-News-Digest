@@ -143,4 +143,20 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/topic_url_handler.js') }}"></script>
+<script>
+// Auto-refresh on login functionality
+{% if auto_refresh %}
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Auto-refresh triggered after login');
+    // Wait 1 second for page to fully load, then trigger refresh
+    setTimeout(function() {
+        const refreshButton = document.querySelector('.refresh-btn, [onclick*="refresh"]');
+        if (refreshButton && typeof triggerRefresh === 'function') {
+            console.log('Triggering auto-refresh...');
+            triggerRefresh(); // Call the refresh function from navigation
+        }
+    }, 1000);
+});
+{% endif %}
+</script>
 {% endblock %}

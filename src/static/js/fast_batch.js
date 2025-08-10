@@ -35,6 +35,12 @@ function renderFlashcard(article) {
   tempDiv.innerHTML = cleanSummary;
   cleanSummary = tempDiv.textContent || tempDiv.innerText || '';
   
+  // Remove Hacker News style metadata (Article URL:, Comments URL:, Points:, # Comments:)
+  cleanSummary = cleanSummary.replace(/Article URL:\s*https?:\/\/[^\s]+/gi, '');
+  cleanSummary = cleanSummary.replace(/Comments URL:\s*https?:\/\/[^\s]+/gi, '');
+  cleanSummary = cleanSummary.replace(/Points:\s*\d+/gi, '');
+  cleanSummary = cleanSummary.replace(/#\s*Comments:\s*\d+/gi, '');
+  
   // Remove table of contents indicators
   cleanSummary = cleanSummary.replace(/Table of contents[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '');
   cleanSummary = cleanSummary.replace(/Contents[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '');
@@ -58,7 +64,7 @@ function renderFlashcard(article) {
   
   // Ensure we have meaningful content
   if (!cleanSummary || cleanSummary.length < 10) {
-    cleanSummary = 'Summary not available for this article.';
+    cleanSummary = `Read this ${article.topic || 'tech'} article from ${article.source_name || 'this source'}.`;
   }
   
   return `
@@ -115,6 +121,10 @@ function showNoMoreArticles() {
       <p style="margin: 0; color: #b3b3b3;">You've read all available articles. Use the refresh button in the navigation bar to fetch new content.</p>
     </div>
   `;
+  
+  // Update stats to show completion
+  document.getElementById('articles-read').textContent = articles.length;
+  document.getElementById('total-articles').textContent = articles.length;
 }
 
 function fetchNextBatch(refresh = false) {

@@ -225,23 +225,31 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'chatbot', 'gpt', 'llm', 'neural', 'model', 'training', 'dataset', 'inference'
     ]
     
-    # MINIMAL reject keywords - only clearly inappropriate content
+    # EXPANDED reject keywords - filter out clearly non-tech content
     reject_keywords = [
         'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
-        'sports', 'football', 'basketball', 'baseball', 'soccer', 
-        'weather', 'recipe', 'cooking', 'fashion', 'beauty'
+        'sports', 'football', 'basketball', 'baseball', 'soccer', 'golf', 'tennis',
+        'weather', 'recipe', 'cooking', 'fashion', 'beauty', 'makeup', 'skincare',
+        'parenting', 'autism', 'disability', 'medical', 'health', 'pregnancy', 'baby',
+        'marriage', 'wedding', 'divorce', 'relationship', 'dating', 'romance',
+        'politics', 'election', 'government', 'president', 'senator', 'congress',
+        'religion', 'church', 'prayer', 'spiritual', 'bible', 'god', 'faith',
+        'travel', 'vacation', 'tourism', 'hotel', 'restaurant', 'food', 'dining',
+        'real estate', 'property', 'mortgage', 'insurance', 'finance', 'investment',
+        'celebrity', 'entertainment', 'movie', 'film', 'music', 'concert', 'album',
+        'education', 'school', 'teacher', 'student', 'university', 'college'
     ]
     
     # Count tech vs non-tech indicators
     tech_score = sum(1 for keyword in tech_keywords if keyword in text)
     reject_score = sum(1 for keyword in reject_keywords if keyword in text)
     
-    # STRICT filtering: Reject if any inappropriate content or insufficient tech keywords
+    # STRICTER filtering: Require at least 2 tech keywords AND no reject keywords
     if reject_score > 0:
-        print(f"REJECTED: Inappropriate content detected in '{title[:50]}...'")
+        print(f"REJECTED: Non-tech content detected in '{title[:50]}...'")
         return None
         
-    if tech_score < 1:  # Require at least 1 tech keyword (relaxed from 2)
+    if tech_score < 2:  # Require at least 2 tech keywords for better filtering
         print(f"REJECTED: Insufficient tech keywords ({tech_score}) in '{title[:50]}...'")
         return None
     

@@ -31,9 +31,9 @@ HTML_PARSER = "html.parser"
 HTML_TAG_PATTERN = r'<[^>]+>'
 HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 
-# Configuration for refresh speed optimization
-# Limit articles per feed for faster refresh (recommended: 3-5 for speed, 10+ for comprehensive)
-MAX_ARTICLES_PER_FEED = 3  # Reduced to 3 for faster processing and better diversity
+# Configuration for comprehensive content refresh
+# Increased articles per feed since AI processing is disabled for memory optimization
+MAX_ARTICLES_PER_FEED = 10  # Increased to 10 for comprehensive coverage without AI memory overhead
 
 # Memory optimization: Disable AI processing for 512MB memory limit
 USE_AI_PROCESSING = False  # Set to False to avoid memory issues on free tier

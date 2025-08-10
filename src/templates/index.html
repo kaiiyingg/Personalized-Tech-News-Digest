@@ -90,9 +90,9 @@
                   'Open Source': 'oss-gradient',
                   'Recommended For You': 'ai-ml-gradient'
                 } %}
-                <figure class="article-image {{ topic_gradient_class.get(article.topic, 'oss-gradient') }}" style="width: 100%; height: 140px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <figure class="article-image {{ topic_gradient_class.get(article.topic, 'oss-gradient') }}">
                   {% if article.get('image_url') %}
-                    <img src="{{ article.image_url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.8rem;">
+                    <img src="{{ article.image_url }}" alt="{{ article.title }}">
                   {% else %}
                     <span class="article-emoji-placeholder" aria-hidden="true">
                       {{ topic_emoji.get(article.topic, '📰') }}

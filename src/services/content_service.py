@@ -225,19 +225,84 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'chatbot', 'gpt', 'llm', 'neural', 'model', 'training', 'dataset', 'inference'
     ]
     
-    # EXPANDED reject keywords - filter out clearly non-tech content
+    # COMPREHENSIVE reject keywords - filter out clearly non-tech content
     reject_keywords = [
+        # Adult/NSFW content
         'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
+        'nude', 'naked', 'strip', 'escort', 'prostitution', 'xxx',
+        
+        # Sports & Recreation
         'sports', 'football', 'basketball', 'baseball', 'soccer', 'golf', 'tennis',
-        'weather', 'recipe', 'cooking', 'fashion', 'beauty', 'makeup', 'skincare',
-        'parenting', 'autism', 'disability', 'medical', 'health', 'pregnancy', 'baby',
+        'hockey', 'rugby', 'cricket', 'swimming', 'racing', 'olympics', 'fifa',
+        'nfl', 'nba', 'mlb', 'athlete', 'stadium', 'tournament', 'championship',
+        
+        # Health & Medical (non-tech)
+        'medical', 'health', 'doctor', 'hospital', 'patient', 'disease', 'virus',
+        'vaccine', 'medicine', 'therapy', 'treatment', 'surgery', 'clinic',
+        'prescription', 'pharmaceutical', 'symptoms', 'diagnosis', 'cancer',
+        'diabetes', 'heart disease', 'mental health', 'depression', 'anxiety',
+        
+        # Lifestyle & Personal
+        'parenting', 'autism', 'disability', 'pregnancy', 'baby', 'children',
         'marriage', 'wedding', 'divorce', 'relationship', 'dating', 'romance',
+        'family', 'mother', 'father', 'parent', 'kids', 'toddler', 'infant',
+        
+        # Food & Cooking
+        'recipe', 'cooking', 'kitchen', 'restaurant', 'food', 'dining', 'chef',
+        'nutrition', 'diet', 'meal', 'calories', 'ingredients', 'baking',
+        'grocery', 'supermarket', 'fast food', 'delivery', 'takeout',
+        
+        # Fashion & Beauty
+        'fashion', 'beauty', 'makeup', 'skincare', 'clothing', 'style', 'outfit',
+        'jewelry', 'accessories', 'cosmetics', 'perfume', 'hair', 'salon',
+        'designer', 'brand', 'luxury', 'boutique', 'shopping',
+        
+        # Politics & Government
         'politics', 'election', 'government', 'president', 'senator', 'congress',
+        'parliament', 'democracy', 'republican', 'democrat', 'vote', 'ballot',
+        'campaign', 'policy', 'legislation', 'law', 'court', 'justice', 'legal',
+        
+        # Religion & Spirituality
         'religion', 'church', 'prayer', 'spiritual', 'bible', 'god', 'faith',
-        'travel', 'vacation', 'tourism', 'hotel', 'restaurant', 'food', 'dining',
-        'real estate', 'property', 'mortgage', 'insurance', 'finance', 'investment',
+        'christian', 'muslim', 'jewish', 'buddhist', 'hindu', 'mosque', 'temple',
+        'worship', 'holy', 'sacred', 'divine', 'prophet', 'priest', 'pastor',
+        
+        # Travel & Tourism
+        'travel', 'vacation', 'tourism', 'hotel', 'flight', 'airline', 'airport',
+        'destination', 'cruise', 'resort', 'trip', 'journey', 'adventure',
+        'passport', 'visa', 'booking', 'accommodation', 'sightseeing',
+        
+        # Real Estate & Finance (non-fintech)
+        'real estate', 'property', 'mortgage', 'insurance', 'loan', 'debt',
+        'credit card', 'bank account', 'savings', 'retirement', 'pension',
+        'broker', 'realtor', 'apartment', 'house', 'rent', 'lease',
+        
+        # Entertainment (non-tech)
         'celebrity', 'entertainment', 'movie', 'film', 'music', 'concert', 'album',
-        'education', 'school', 'teacher', 'student', 'university', 'college'
+        'actor', 'actress', 'singer', 'musician', 'band', 'tv show', 'series',
+        'drama', 'comedy', 'horror', 'romance', 'documentary', 'theater',
+        
+        # Traditional Education (non-edtech)
+        'school', 'teacher', 'student', 'university', 'college', 'classroom',
+        'homework', 'exam', 'grade', 'diploma', 'degree', 'tuition', 'campus',
+        'dormitory', 'scholarship', 'academic', 'curriculum', 'syllabus',
+        
+        # Weather & Environment (non-tech)
+        'weather', 'rain', 'snow', 'storm', 'hurricane', 'tornado', 'flood',
+        'drought', 'temperature', 'climate change', 'global warming', 'pollution',
+        'earthquake', 'tsunami', 'volcano', 'wildfire', 'natural disaster',
+        
+        # Automotive (non-tech aspects)
+        'car accident', 'traffic jam', 'speeding', 'parking', 'gas station',
+        'oil change', 'tire', 'engine repair', 'mechanic', 'insurance claim',
+        
+        # Agriculture & Farming
+        'farming', 'agriculture', 'crop', 'harvest', 'livestock', 'cattle',
+        'chicken', 'pig', 'farm', 'farmer', 'tractor', 'fertilizer', 'pesticide',
+        
+        # Arts & Crafts
+        'painting', 'drawing', 'sculpture', 'pottery', 'knitting', 'sewing',
+        'craft', 'art gallery', 'museum', 'exhibition', 'artist', 'canvas'
     ]
     
     # Count tech vs non-tech indicators

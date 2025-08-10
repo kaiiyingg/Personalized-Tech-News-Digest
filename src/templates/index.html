@@ -21,7 +21,7 @@
     <!-- Topics Section -->
     {% set topic_order = [
         "Recommended For You",
-        "Artificial Intelligence (AI) & Machine Learning (ML)",
+        "AI & ML",
         "Cybersecurity & Privacy", 
         "Cloud Computing & DevOps",
         "Software Development & Web Technologies",
@@ -38,7 +38,7 @@
     {% if articles and articles|length > 0 %}
       {% set topic_id_map = {
         "Recommended For You": "recommended-for-you",
-        "Artificial Intelligence (AI) & Machine Learning (ML)": "ai-ml",
+        "AI & ML": "ai-ml",
         "Cybersecurity & Privacy": "cybersecurity",
         "Cloud Computing & DevOps": "cloud-devops",
         "Software Development & Web Technologies": "web-dev",
@@ -52,11 +52,7 @@
       <div class="topic-section" id="{{ topic_id }}" style="margin-bottom: 3rem; margin-left: 0.5rem; scroll-margin-top: 100px;">
         <div class="topic-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
           <h3 class="topic-title" style="font-size: 1.8rem; font-family: 'Merriweather', serif; font-weight: 700; color: #fff; margin: 0;">
-            {% if topic == 'Artificial Intelligence (AI) & Machine Learning (ML)' %}
-              AI & ML
-            {% else %}
-              {{ topic }}
-            {% endif %}
+            {{ topic }}
           </h3>
           <span class="article-count" style="color: #b3b3b3; font-size: 0.9rem; flex-shrink: 0;">
             {{ articles|length }} articles
@@ -67,7 +63,7 @@
             {% for article in articles %}
               <div class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.1rem 1.1rem 1.2rem 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 340px; min-height: 0;">
                 {% set topic_emoji = {
-                  'Artificial Intelligence (AI) & Machine Learning (ML)': '🤖',
+                  'AI & ML': '🤖',
                   'Cybersecurity & Privacy': '🛡️',
                   'Cloud Computing & DevOps': '☁️',
                   'Software Development & Web Technologies': '💻',
@@ -79,7 +75,7 @@
                   'Recommended For You': '✨'
                 } %}
                 {% set topic_gradient_class = {
-                  'Artificial Intelligence (AI) & Machine Learning (ML)': 'ai-ml-gradient',
+                  'AI & ML': 'ai-ml-gradient',
                   'Cybersecurity & Privacy': 'cyber-gradient',
                   'Cloud Computing & DevOps': 'cloud-gradient',
                   'Software Development & Web Technologies': 'webdev-gradient',

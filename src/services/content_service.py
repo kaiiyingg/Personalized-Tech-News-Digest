@@ -19,7 +19,7 @@ except ImportError:
         return decorator
 
 # Constants for repeated strings
-AI_ML_TOPIC = "Artificial Intelligence (AI) & Machine Learning (ML)"
+AI_ML_TOPIC = "AI & ML"
 AI_ML_SHORT = "AI & ML"
 CYBERSECURITY_TOPIC = "Cybersecurity & Privacy"
 CLOUD_DEVOPS_TOPIC = "Cloud Computing & DevOps"

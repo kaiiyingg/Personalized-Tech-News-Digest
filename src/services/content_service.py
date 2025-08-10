@@ -6,8 +6,6 @@ from psycopg2 import errors as pg_errors
 from datetime import datetime
 from typing import Union
 
-from transformers import pipeline #type: ignore
-
 # Import caching utility
 try:
     from src.utils.cache import cache_result
@@ -42,9 +40,6 @@ TOPIC_LABELS = [
     TECH_CULTURE_TOPIC,
     OPEN_SOURCE_TOPIC
 ]
-
-# Load zero-shot classifier lazily (only when needed)
-zero_shot_classifier = None
 
 def format_datetime(dt):
     """Helper function to format datetime objects consistently"""
@@ -183,14 +178,6 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         return DATA_SCIENCE_TOPIC
     else:
         return EMERGING_TECH_TOPIC  # Default fallback
-
-def get_classifier():
-    """Lazy load the classifier to avoid startup delays"""
-    global zero_shot_classifier
-    if zero_shot_classifier is None:
-        from transformers import pipeline
-        zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-    return zero_shot_classifier
 
 # --- Get article by ID (regardless of user/read status) ---
 def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:

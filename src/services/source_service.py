@@ -1,16 +1,32 @@
+"""
+Source Service Module
+
+Manages RSS news sources for the tech news digest:
+- Source creation and retrieval
+- Feed URL validation and management
+- Source metadata tracking (last fetch times, creation dates)
+- Database operations for source management
+
+Supports multiple tech news sources with automatic deduplication.
+"""
+
 from src.database.connection import get_db_connection, close_db_connection
 from src.models.source import Source
 from typing import List, Optional
 from psycopg2 import errors as pg_errors
 
+# ===== SOURCE MANAGEMENT FUNCTIONS =====
+
 def create_source(name: str, feed_url: str) -> Optional[Source]:
     """
-    Creates a new global RSS source.
+    Create a new RSS source or return existing one if URL already exists.
+    
     Args:
-        name (str): The name of the RSS source.
-        feed_url (str): The URL of the RSS feed.
+        name (str): Display name for the RSS source
+        feed_url (str): RSS feed URL (must be unique)
+        
     Returns:
-        Optional[Source]: The created Source object if successful, None if feed_url already exists.
+        Optional[Source]: Created or existing Source object, None on error
     """
     conn = None
     try:
@@ -45,9 +61,10 @@ def create_source(name: str, feed_url: str) -> Optional[Source]:
 
 def get_all_sources() -> List[Source]:
     """
-    Retrieves all global RSS sources.
+    Retrieve all RSS sources from the database.
+    
     Returns:
-        List[Source]: List of Source objects.
+        List[Source]: List of all Source objects, sorted by name
     """
     conn = None
     sources = []
@@ -67,11 +84,13 @@ def get_all_sources() -> List[Source]:
 
 def get_source_by_id(source_id: int) -> Optional[Source]:
     """
-    Retrieves a specific global RSS source by its ID.
+    Retrieve a specific RSS source by its unique ID.
+    
     Args:
-        source_id (int): The ID of the source.
+        source_id (int): The unique identifier of the source
+        
     Returns:
-        Optional[Source]: The Source object if found, None otherwise.
+        Optional[Source]: Source object if found, None otherwise
     """
     conn = None
     try:

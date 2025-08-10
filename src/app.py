@@ -1,3 +1,17 @@
+"""
+TechPulse - Personalized Tech News Digest Application
+
+A Flask web application that provides personalized technology news aggregation:
+- User authentication with TOTP (Two-Factor Authentication)
+- RSS feed ingestion from multiple tech news sources
+- AI-powered content classification and filtering
+- Personalized content recommendations based on user interests
+- Fast-view mode for quick article consumption
+- User preference management and content interaction tracking
+
+Memory-optimized for 512MB hosting environments with efficient content processing.
+"""
+
 import random
 import pyotp 
 import os
@@ -7,15 +21,13 @@ from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
-'''
-Do not import the relevant methods only, import the class directly and if want the relevant methods, use class.method()
-as if add/remove method from class, need to update import area also which is not maintainable
-'''
+# Import service modules directly for better maintainability
 import src.services.user_service as user_service
 import src.services.source_service as source_service
 import src.services.content_service as content_service
 
-# ------------------- CONSTANTS -------------------
+# ===== APPLICATION CONSTANTS =====
+
 LOGIN_TEMPLATE = 'login.html'
 CHANGE_EMAIL_TEMPLATE = 'change_email.html'
 RESET_PASSWORD_TEMPLATE = 'reset_password.html'
@@ -24,30 +36,39 @@ USER_NOT_FOUND_MSG = 'User not found.'
 LOGIN_REQUIRED_MSG = 'You must be logged in to perform this action.'
 DANGER_CATEGORY = 'danger'
 
-# ------------------- APP CONFIG -------------------
+# ===== FLASK APPLICATION SETUP =====
+
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
-# Global lock for refresh operations to prevent concurrent refreshes
+# Global refresh operation management
 refresh_lock = threading.Lock()
 refresh_in_progress = False
 
-# Configure production settings
+# Environment-based configuration
 if os.getenv('FLASK_ENV') == 'production':
     app.config['DEBUG'] = False
     app.config['TESTING'] = False
 else:
     app.config['DEBUG'] = True
 
-# Set Redis URL for caching (used by cache.py)
+# Redis configuration for caching
 if not os.getenv('REDIS_URL'):
     os.environ['REDIS_URL'] = 'redis://redis:6379/0'
 
-# ------------------- AUTH DECORATOR -------------------
+# ===== AUTHENTICATION DECORATORS =====
+
 def login_required_api(f):
     """
-    Decorator to ensure a user is logged in for API endpoints.
-    Returns JSON error if not authenticated.
+    Decorator for API endpoints requiring authentication.
+    Returns JSON error response if user not logged in.
+    
+    Args:
+        f: Function to decorate
+        
+    Returns:
+        Decorated function with authentication check
+    """
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):

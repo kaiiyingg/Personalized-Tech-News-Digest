@@ -1,10 +1,24 @@
+"""
+Content Service Module
+
+Provides content management functionality for the tech news digest application:
+- Content creation, retrieval, and classification
+- Topic-based content filtering and categorization
+- User content interactions (likes, read status)
+- Article ingestion pipeline support
+- Memory-optimized operations for 512MB hosting environments
+
+Content Classification:
+    Uses keyword-based classification instead of AI models for memory efficiency.
+    Supports 9 tech topic categories with strict filtering for quality content.
+"""
+
 from src.database.connection import get_db_connection, close_db_connection
 from src.models.content import Content
 from .user_service import get_user_topics
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from psycopg2 import errors as pg_errors
 from datetime import datetime
-from typing import Union
 
 # Import caching utility
 try:
@@ -16,7 +30,8 @@ except ImportError:
             return func
         return decorator
 
-# Constants for repeated strings
+# ===== TOPIC CLASSIFICATION CONSTANTS =====
+
 AI_ML_TOPIC = "AI & ML"
 AI_ML_SHORT = "AI & ML"
 CYBERSECURITY_TOPIC = "Cybersecurity & Privacy"
@@ -28,21 +43,24 @@ BIG_TECH_TOPIC = "Big Tech & Industry Trends"
 TECH_CULTURE_TOPIC = "Tech Culture & Work"
 OPEN_SOURCE_TOPIC = "Open Source"
 
-# Define topic labels for zero-shot classification (removed "Other" to force tech categorization)
 TOPIC_LABELS = [
-    AI_ML_TOPIC,
-    CYBERSECURITY_TOPIC,
-    CLOUD_DEVOPS_TOPIC, 
-    SOFTWARE_DEV_TOPIC,
-    DATA_SCIENCE_TOPIC,
-    EMERGING_TECH_TOPIC,
-    BIG_TECH_TOPIC,
-    TECH_CULTURE_TOPIC,
-    OPEN_SOURCE_TOPIC
+    AI_ML_TOPIC, CYBERSECURITY_TOPIC, CLOUD_DEVOPS_TOPIC, 
+    SOFTWARE_DEV_TOPIC, DATA_SCIENCE_TOPIC, EMERGING_TECH_TOPIC,
+    BIG_TECH_TOPIC, TECH_CULTURE_TOPIC, OPEN_SOURCE_TOPIC
 ]
 
-def format_datetime(dt):
-    """Helper function to format datetime objects consistently"""
+# ===== UTILITY FUNCTIONS =====
+
+def format_datetime(dt) -> Optional[str]:
+    """
+    Format datetime objects to ISO string format consistently.
+    
+    Args:
+        dt: Datetime object or string to format
+        
+    Returns:
+        Optional[str]: ISO formatted datetime string or None
+    """
     if dt and hasattr(dt, 'isoformat'):
         return dt.isoformat()
     elif dt:
@@ -50,8 +68,19 @@ def format_datetime(dt):
     else:
         return None
 
-def build_article_dict(row, custom_topic=None):
-    """Helper function to build article dictionary from database row"""
+# ===== DATA TRANSFORMATION HELPERS =====
+
+def build_article_dict(row, custom_topic=None) -> Dict[str, Any]:
+    """
+    Transform database row into standardized article dictionary.
+    
+    Args:
+        row: Database row tuple with article data
+        custom_topic: Optional override for article topic
+        
+    Returns:
+        Dict[str, Any]: Standardized article dictionary with metadata
+    """
     published_at = format_datetime(row[5])
     interaction_at = format_datetime(row[10]) if len(row) > 10 else None
     
@@ -86,8 +115,16 @@ def build_article_dict(row, custom_topic=None):
     
     return article
 
-def build_simple_article_dict(row):
-    """Helper function to build article dictionary from simple database row (no interaction data)"""
+def build_simple_article_dict(row) -> Dict[str, Any]:
+    """
+    Build simplified article dictionary without user interaction data.
+    
+    Args:
+        row: Database row tuple with basic article data
+        
+    Returns:
+        Dict[str, Any]: Article dictionary without interaction metadata
+    """
     published_at = format_datetime(row[5])
     
     return {
@@ -103,10 +140,19 @@ def build_simple_article_dict(row):
         'source_feed_url': row[9]
     }
 
+# ===== CONTENT CLASSIFICATION =====
+
 def classify_topic_by_keywords(text: str, title: str) -> str:
     """
-    Enhanced keyword-based topic classification with comprehensive coverage.
-    Memory optimization for 512MB hosting environments.
+    Classify content into tech topics using keyword matching.
+    Memory-optimized alternative to AI models for 512MB hosting.
+    
+    Args:
+        text (str): Article content/summary
+        title (str): Article title
+        
+    Returns:
+        str: Classified topic category from TOPIC_LABELS
     """
     combined_text = (title + " " + text).lower()
     

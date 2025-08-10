@@ -2286,10 +2286,55 @@ a:hover {
   cursor: pointer;
   font-size: 1.5rem;
   color: #e57373;
-  transition: color 0.2s;
+  transition: color 0.2s, transform 0.2s ease;
 }
 .heart-button.active {
   color: #d32f2f;
+}
+
+/* Fast view specific heart button styling */
+.fast-horizontal-card .heart-button {
+  width: 40px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.fast-horizontal-card .heart-button:hover {
+  transform: scale(1.1);
+}
+
+.fast-horizontal-card .heart-button:before,
+.fast-horizontal-card .heart-button:after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 8px;
+  width: 12px;
+  height: 20px;
+  background: #666;
+  border-radius: 12px 12px 0 0;
+  transform: rotate(-45deg);
+  transform-origin: 0 100%;
+  transition: background 0.3s ease;
+}
+
+.fast-horizontal-card .heart-button:after {
+  left: 8px;
+  transform: rotate(45deg);
+  transform-origin: 100% 100%;
+}
+
+.fast-horizontal-card .heart-button.active:before,
+.fast-horizontal-card .heart-button.active:after {
+  background: #ff4444 !important;
 }
 /* Navigation Buttons for Horizontal Flashcard */
 .flashcard-nav-btn {

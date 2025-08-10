@@ -62,7 +62,19 @@ class AutoRefresh {
         // Show loading state
         this.showLoadingState();
 
-        // Call the API endpoint for refresh
+        // Check if we're on the fast view page
+        const isOnFastView = window.location.pathname === '/fast';
+        
+        if (isOnFastView && typeof window.refreshFastView === 'function') {
+            // For fast view, just refresh the articles without API call
+            console.log('Refreshing fast view articles...');
+            window.refreshFastView();
+            this.isRefreshing = false;
+            this.hideLoadingState();
+            return;
+        }
+
+        // Call the API endpoint for refresh (for main page)
         fetch('/api/jobs/ingest', {
             method: 'POST',
             headers: {

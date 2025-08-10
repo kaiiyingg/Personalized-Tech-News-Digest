@@ -1,0 +1,273 @@
+# Pylint Configuration for TechPulse
+# Static code analysis and code quality checks
+
+[MASTER]
+# Python code to execute, usually for sys.path manipulation
+init-hook='import sys; sys.path.append("src")'
+
+# Files or directories to be skipped
+ignore=CVS,.git,__pycache__,.pytest_cache,htmlcov,venv,env,node_modules
+
+# File extensions to analyze
+extension-pkg-whitelist=
+
+# Pickle collected data for later comparisons
+persistent=yes
+
+# List of plugins to load
+load-plugins=
+
+# Use multiple processes to speed up Pylint
+jobs=1
+
+# Allow loading of arbitrary C extensions
+unsafe-load-any-extension=no
+
+[MESSAGES CONTROL]
+# Disable specific warnings and errors
+disable=
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring  
+    C0116,  # missing-function-docstring
+    R0903,  # too-few-public-methods
+    R0913,  # too-many-arguments
+    W0613,  # unused-argument
+    W0621,  # redefined-outer-name (common in tests)
+    C0103,  # invalid-name (for short variable names)
+    R0801,  # duplicate-code
+    W0622,  # redefined-builtin
+    C0411,  # wrong-import-order
+    R0902,  # too-many-instance-attributes
+    R0914,  # too-many-locals
+    C0302,  # too-many-lines
+
+# Enable specific warnings
+enable=
+    W0511,  # fixme (TODO, FIXME, XXX comments)
+
+[REPORTS]
+# Set the output format
+output-format=text
+
+# Include message's symbol in the output
+include-ids=no
+
+# Template used to display messages
+msg-template={path}:{line}:{column}: {msg_id}: {msg} ({symbol})
+
+# Set to 'yes' to store statistics
+reports=no
+
+# Python expression for score display
+score=yes
+
+[REFACTORING]
+# Maximum number of nested blocks for function/method body
+max-nested-blocks=5
+
+# Never refactor to loop
+never-returning-functions=sys.exit
+
+[BASIC]
+# Good variable names
+good-names=i,j,k,ex,Run,_,id,db,app,src
+
+# Bad variable names
+bad-names=foo,bar,baz,toto,tutu,tata
+
+# Naming style for modules
+module-naming-style=snake_case
+
+# Naming style for constants
+const-naming-style=UPPER_CASE
+
+# Naming style for classes
+class-naming-style=PascalCase
+
+# Naming style for functions
+function-naming-style=snake_case
+
+# Naming style for methods
+method-naming-style=snake_case
+
+# Naming style for attributes
+attr-naming-style=snake_case
+
+# Naming style for arguments
+argument-naming-style=snake_case
+
+# Naming style for variables
+variable-naming-style=snake_case
+
+# Regular expression for class attributes
+class-attribute-rgx=([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$
+
+# Regular expression for variables
+variable-rgx=[a-z_][a-z0-9_]{2,30}$
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=88
+
+# String for hanging indentation
+indent-string='    '
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+# Allow hanging continuation at the indent level
+indent-after-paren=4
+
+[LOGGING]
+# The type of string formatting that logging methods do
+logging-format-style=old
+
+# Logging modules to check
+logging-modules=logging
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=FIXME,XXX,TODO,HACK,BUG
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=4
+
+# Ignore imports when computing similarities
+ignore-imports=no
+
+[SPELLING]
+# Spelling dictionary name
+spelling-dict=
+
+# List of comma separated words that should not be checked
+spelling-ignore-words=
+
+# A path to a file that contains the private dictionary
+spelling-private-dict-file=
+
+# Tells whether to store unknown words to the private dictionary
+spelling-store-unknown-words=no
+
+[TYPECHECK]
+# List of decorators that produce context managers
+contextmanager-decorators=contextlib.contextmanager
+
+# List of members which are set dynamically
+generated-members=
+
+# Tells whether missing members accessed in mixin class should be ignored
+ignore-mixin-members=yes
+
+# Tells whether to warn about missing members when the owner of the attribute is inferred to be None
+ignore-none=yes
+
+# List of class names for which member attributes should not be checked
+ignored-classes=optparse.Values,thread._local,_thread._local
+
+# List of module names for which member attributes should not be checked
+ignored-modules=
+
+# Show a hint with possible names when a member name was not found
+missing-member-hint=yes
+
+# The minimum edit distance a name should have to be considered a similar match
+missing-member-hint-distance=1
+
+# The total number of similar names that should be taken in consideration
+missing-member-max-choices=1
+
+[VARIABLES]
+# List of additional names supposed to be defined in builtins
+additional-builtins=
+
+# Tells whether unused global variables should be treated as a violation
+allow-global-unused-variables=yes
+
+# List of strings which can identify a callback function by name
+callbacks=cb_,_cb
+
+# A regular expression for dummy variables
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
+
+# Argument names that match this expression will be ignored
+ignored-argument-names=_.*|^ignored_|^unused_
+
+# Tells whether we should check for unused import in __init__ files
+init-import=no
+
+# List of qualified module names which can have objects reachable from outside
+redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
+
+[CLASSES]
+# List of method names used to declare (i.e. assign) instance attributes
+defining-attr-methods=__init__,__new__,setUp,__post_init__
+
+# List of member names which should be excluded from the protected access warning
+exclude-protected=_asdict,_fields,_replace,_source,_make
+
+# List of valid names for the first argument in a class method
+valid-classmethod-first-arg=cls
+
+# List of valid names for the first argument in a metaclass class method
+valid-metaclass-classmethod-first-arg=cls
+
+[DESIGN]
+# Maximum number of arguments for function/method
+max-args=5
+
+# Maximum number of attributes for a class
+max-attributes=7
+
+# Maximum number of boolean expressions in an if statement
+max-bool-expr=5
+
+# Maximum number of branch for function/method body
+max-branches=12
+
+# Maximum number of locals for function/method body
+max-locals=15
+
+# Maximum number of parents for a class
+max-parents=7
+
+# Maximum number of public methods for a class
+max-public-methods=20
+
+# Maximum number of return/yield for function/method body
+max-returns=6
+
+# Maximum number of statements in function/method body
+max-statements=50
+
+# Minimum number of public methods for a class
+min-public-methods=2
+
+[IMPORTS]
+# List of modules that can be imported at any level
+allow-any-import-level=
+
+# Allow wildcard imports from modules that define __all__
+allow-wildcard-with-all=no
+
+# Analyse import fallback blocks
+analyse-fallback-blocks=no
+
+# Deprecated modules which should not be used
+deprecated-modules=optparse,tkinter.tix
+
+# Create a graph of external dependencies
+ext-import-graph=
+
+# Create a graph of every import
+import-graph=
+
+# Create a graph of internal dependencies
+int-import-graph=
+
+# Force import order to recognize a module as part of a third party library
+known-third-party=enchant
+
+[EXCEPTIONS]
+# Exceptions that will emit a warning when being caught
+overgeneral-exceptions=BaseException,Exception

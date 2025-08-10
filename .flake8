@@ -1,0 +1,58 @@
+# Flake8 Configuration
+# Python linting and style guide enforcement
+
+[flake8]
+# Maximum line length
+max-line-length = 88
+
+# Ignore specific error codes
+extend-ignore = 
+    E203,    # whitespace before ':'
+    W503,    # line break before binary operator
+    E501,    # line too long (handled by black)
+    F401,    # imported but unused (handled by pylint)
+    E402,    # module level import not at top of file
+
+# Directories to exclude from linting
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .env,
+    env,
+    node_modules,
+    .pytest_cache,
+    htmlcov,
+    build,
+    dist,
+    *.egg-info,
+    migrations,
+    .tox
+
+# File patterns to include
+filename = 
+    *.py
+
+# Maximum complexity for functions
+max-complexity = 10
+
+# Import order checking
+import-order-style = google
+
+# Docstring conventions
+docstring-convention = google
+
+# Additional checks
+select = 
+    E,  # pycodestyle errors
+    W,  # pycodestyle warnings  
+    F,  # pyflakes
+    C,  # mccabe complexity
+    N,  # pep8-naming
+    
+# Per-file ignores
+per-file-ignores =
+    __init__.py:F401,E402
+    tests/*:S101,S106
+    conftest.py:E402

@@ -90,18 +90,18 @@ function renderFlashcard(article) {
 }
 
 function updateStats() {
-  // Show current position (1-based) out of total unread articles
-  // If there are no articles, show 0 of 0
-  if (articles.length === 0 || totalUnreadArticles === 0) {
+  // Show current position (1-based) without showing total
+  // Focus on article progression rather than overwhelming with total count
+  if (articles.length === 0) {
     document.getElementById('articles-read').textContent = 0;
-    document.getElementById('total-articles').textContent = 0;
+    document.getElementById('total-articles').style.display = 'none';
     return;
   }
   
-  const currentPosition = currentIdx + 1; // Convert to 1-based counting
-  const displayTotal = totalUnreadArticles;
+  const currentPosition = currentIdx + 1;
   document.getElementById('articles-read').textContent = currentPosition;
-  document.getElementById('total-articles').textContent = displayTotal;
+  // Hide the "of X" part to simplify the display
+  document.getElementById('total-articles').style.display = 'none';
 }
 
 function showFlashcard(idx) {
@@ -109,6 +109,82 @@ function showFlashcard(idx) {
   slider.innerHTML = '';
   if (articles[idx]) {
     slider.innerHTML = renderFlashcard(articles[idx]);
+    // Attach heart button functionality to the newly created button
+    attachHeartButtonListener(articles[idx]);
+  }
+}
+
+// Heart button functionality for fast view
+function attachHeartButtonListener(article) {
+  const heartButton = document.getElementById(`heart-${article.id}`);
+  if (heartButton) {
+    heartButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const articleId = article.id;
+      const isCurrentlyLiked = heartButton.classList.contains('active');
+      
+      console.log('Fast view heart clicked - Article ID:', articleId, 'Currently liked:', isCurrentlyLiked);
+      
+      // Optimistically update UI
+      if (isCurrentlyLiked) {
+        heartButton.classList.remove('active');
+        heartButton.title = 'Like';
+      } else {
+        heartButton.classList.add('active');
+        heartButton.title = 'Unlike';
+        // Add a simple animation with better styling
+        heartButton.style.transition = 'transform 0.2s ease';
+        heartButton.style.transform = 'scale(1.3)';
+        setTimeout(() => {
+          heartButton.style.transform = 'scale(1)';
+        }, 200);
+      }
+      
+      // Update the article object
+      article.is_liked = !isCurrentlyLiked;
+      
+      // Make API call
+      const endpoint = isCurrentlyLiked ? 'unlike' : 'like';
+      const apiUrl = `/api/content/${articleId}/${endpoint}`;
+      
+      console.log('Making API call to:', apiUrl);
+      
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Success:', data.message);
+        // UI already updated optimistically
+      })
+      .catch(error => {
+        console.error('Error updating like status:', error);
+        
+        // Revert UI changes on error
+        if (isCurrentlyLiked) {
+          heartButton.classList.add('active');
+          heartButton.title = 'Unlike';
+        } else {
+          heartButton.classList.remove('active');
+          heartButton.title = 'Like';
+        }
+        
+        // Revert article object
+        article.is_liked = isCurrentlyLiked;
+        
+        alert('Failed to update favorite status. Please try again.');
+      });
+    });
   }
 }
 
@@ -122,9 +198,10 @@ function showNoMoreArticles() {
     </div>
   `;
   
-  // Update stats to show completion
-  document.getElementById('articles-read').textContent = articles.length;
-  document.getElementById('total-articles').textContent = articles.length;
+  // Update stats to show just the current article count without confusing totals
+  const articlesViewed = Math.max(currentIdx + 1, articles.length);
+  document.getElementById('articles-read').textContent = articlesViewed;
+  document.getElementById('total-articles').style.display = 'none';
 }
 
 function fetchNextBatch(refresh = false) {
@@ -246,6 +323,28 @@ function showRetryButton() {
     </button>
   `;
 }
+
+// Add refresh function for fast view
+function refreshFastView() {
+  console.log('Refreshing fast view...');
+  // Reset all state
+  articles = [];
+  currentIdx = 0;
+  totalUnreadArticles = 0;
+  articlesRead = 0;
+  batchSize = 8;
+  offset = 0;
+  loading = false;
+  
+  // Show loading spinner
+  showLoadingSpinner();
+  
+  // Fetch fresh articles with refresh flag
+  fetchNextBatch(true);
+}
+
+// Expose refresh function globally so navbar can call it
+window.refreshFastView = refreshFastView;
 
 function retryFetch() {
   loading = false;

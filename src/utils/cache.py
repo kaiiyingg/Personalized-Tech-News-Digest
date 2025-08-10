@@ -16,11 +16,18 @@ try:
     redis_client.ping()
     USE_REDIS = True
     print("✅ Redis connected successfully")
-except (ImportError, redis.ConnectionError, redis.TimeoutError) as e:
+except ImportError:
+    USE_REDIS = False
+    print("⚠️  Redis not available, using memory cache: Redis not installed")
+    # Fallback to memory cache
+    _memory_cache: Dict[str, Dict[str, Any]] = {}
+    redis_client = None
+except Exception as e:
     USE_REDIS = False
     print(f"⚠️  Redis not available, using memory cache: {e}")
     # Fallback to memory cache
     _memory_cache: Dict[str, Dict[str, Any]] = {}
+    redis_client = None
 
 def cache_result(expiry: int = 300):  # 5 minutes default
     """

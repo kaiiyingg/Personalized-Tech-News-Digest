@@ -28,7 +28,7 @@ $(document).ready(function() {
     const tween2 = new mojs.Tween({
       duration: 900,
       onUpdate: function(progress) {
-        var scaleProgress = scaleCurve(progress);
+        const scaleProgress = scaleCurve(progress);
         el.style.WebkitTransform = el.style.transform = 'scale3d(' + scaleProgress + ',' + scaleProgress + ',1)';
       }
     });
@@ -142,6 +142,7 @@ function executeUnlikeFromDiscover() {
         const responseData = JSON.parse(xhr.responseText);
         errorMsg = responseData.error || 'Failed to update favorite status';
       } catch(e) {
+        console.warn('Failed to parse error response:', e.message);
         errorMsg = 'Failed to update favorite status';
       }
       showFlashMessage('Error: ' + errorMsg + ' (Status: ' + xhr.status + ')', 'danger');
@@ -191,7 +192,7 @@ function executeUnlikeFromDiscover() {
             showFlashMessage('Article removed from favorites', 'info');
             // Remove article from fast view if on fast page
             if (window.location.pathname === '/fast') {
-              var articleCard = button.closest('.horizontal-flashcard');
+              const articleCard = button.closest('.horizontal-flashcard');
               if (articleCard) {
                 articleCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 articleCard.style.opacity = '0';
@@ -227,11 +228,12 @@ function executeUnlikeFromDiscover() {
           console.log('Response Status:', xhr.status);
           console.log('Response Text:', xhr.responseText);
           
-          var errorMsg;
+          let errorMsg;
           try {
-            var responseData = JSON.parse(xhr.responseText);
+            const responseData = JSON.parse(xhr.responseText);
             errorMsg = responseData.error || 'Failed to update favorite status';
           } catch(e) {
+            console.warn('Failed to parse error response:', e.message);
             errorMsg = 'Failed to update favorite status';
           }
           
@@ -267,7 +269,18 @@ function showFlashMessage(message, category) {
   li.style.position = 'relative';
   li.style.paddingRight = '2.2em';
   li.style.background = 'rgba(30,30,30,0.97)';
-  li.style.color = category === 'danger' ? '#dc2626' : category === 'success' ? '#16a34a' : '#2563eb';
+  
+  // Set color based on category
+  let messageColor;
+  if (category === 'danger') {
+    messageColor = '#dc2626';
+  } else if (category === 'success') {
+    messageColor = '#16a34a';
+  } else {
+    messageColor = '#2563eb';
+  }
+  li.style.color = messageColor;
+  
   li.style.borderRadius = '0.5rem';
   li.style.marginBottom = '8px';
   li.style.fontWeight = '600';

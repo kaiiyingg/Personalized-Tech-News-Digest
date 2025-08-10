@@ -13,7 +13,7 @@
       <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.5rem; margin: 2rem auto; max-width: 600px; text-align: left;">
         <h3 style="color: #8B5CF6; font-size: 1.1rem; margin: 0 0 0.8rem 0; font-weight: 600;">📈 Stay Current with Latest Tech News</h3>
         <p style="color: #e3e3e3; font-size: 0.95rem; line-height: 1.5; margin: 0;">
-          Click <strong style="color: #8B5CF6;">Refresh</strong> to fetch and organize the latest articles from top tech sources.
+          Click <strong style="color: #8B5CF6;">Refresh</strong> to fetch the latest articles from top tech sources.
         </p>
       </div>
     </div>
@@ -143,20 +143,11 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/topic_url_handler.js') }}"></script>
-<script>
-// Auto-refresh on login functionality
+<script src="{{ url_for('static', filename='js/auto_refresh.js') }}"></script>
 {% if auto_refresh %}
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Auto-refresh triggered after login');
-    // Wait 1 second for page to fully load, then trigger refresh
-    setTimeout(function() {
-        const refreshButton = document.querySelector('.refresh-btn, [onclick*="refresh"]');
-        if (refreshButton && typeof triggerRefresh === 'function') {
-            console.log('Triggering auto-refresh...');
-            triggerRefresh(); // Call the refresh function from navigation
-        }
-    }, 1000);
-});
-{% endif %}
+<script>
+    // Enable auto-refresh functionality
+    window.autoRefreshEnabled = true;
 </script>
+{% endif %}
 {% endblock %}

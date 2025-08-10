@@ -43,16 +43,21 @@ TechPulse/
 │   ├── templates/                # Responsive Jinja2 templates
 │   ├── static/                   # Optimized CSS, JavaScript, and assets
 │   └── app.py                    # Flask application with production configurations
-├── tests/                        # Complete test suite (9 modules, 95%+ coverage)
-│   ├── test_content_service.py   # Article processing and favorites
-│   ├── test_user_service.py      # Authentication and user management
-│   ├── test_fast_view.py         # UI interactions and heart button functionality
-│   ├── test_html_cleaning.py     # Security and content sanitization
-│   ├── test_improvements.py      # Performance and load testing
-│   └── test_optimizations.py     # Caching and query optimization
-├── jobs/                         # Background RSS processing and ingestion
+├── tests/                        # Complete test suite
+│   ├── unit/                     # Unit tests for individual components
+│   ├── integration/              # Integration tests for system interactions
+│   ├── accessibility/            # Accessibility compliance tests
+│   └── performance/              # Performance and load tests
 ├── docker-compose.yml            # Multi-environment orchestration
-└── requirements.txt              # Pinned dependencies with security updates
+├── requirements.txt              # Pinned dependencies with security updates
+├── run_tests.bat                 # Local test runner and code quality checks
+├── start_app.bat                 # Windows app launcher
+├── setup_dev_environment.sh      # Development environment setup script (Linux/Mac)
+├── .pre-commit-config.yaml       # Pre-commit hooks configuration
+├── .flake8                       # Flake8 linting configuration
+├── pytest.ini                    # Pytest configuration (minimal, optional)
+├── TESTING.md                    # Detailed testing guide
+└── README.md                     # Project overview and documentation
 ```
 
 ## ⚡ Quick Start
@@ -64,9 +69,9 @@ cd Personalized-Tech-News-Digest
 python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Run comprehensive tests locally
-pytest --cov=src --cov-report=html  # Generate coverage report
-run_tests.bat                       # Full test suite with code quality checks
+# Run comprehensive tests locally  
+See [TESTING.md](./TESTING.md) for details on running unit tests and the full test suite.  
+`run_tests.bat`  &nbsp; <sub>(Full test suite with code quality checks)</sub>
 
 # Configure environment and database
 cp .env.template .env  # Edit with your credentials
@@ -79,7 +84,7 @@ docker-compose up --build  # or python src/app.py
 **Live Demo:** [TechPulse on Render](https://personalized-tech-news-digest.onrender.com)  
 **Local Access:** http://localhost:5000 → Register → Click "Refresh" to load articles
 
-## 🔧 Engineering Solutions & Roadmap
+## 🔧 Engineering Challenges, Solutions & Future Enhancement
 
 ### **Challenge 1: Storage Constraints (1GB Hosting Limit)**
 - **Problem:** AI models (460MB+) and accumulated data exceeded hosting storage limits causing deployment issues

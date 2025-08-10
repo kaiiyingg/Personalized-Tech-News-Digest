@@ -69,7 +69,6 @@ def login_required_api(f):
     Returns:
         Decorated function with authentication check
     """
-    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:

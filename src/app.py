@@ -354,7 +354,15 @@ def login():
                 return render_template(LOGIN_TEMPLATE)
         session['user_id'] = user.id
         session['username'] = user.username
-        session['trigger_auto_refresh'] = True  # Trigger auto-refresh on successful login
+        # --- Auto-ingestion logic ---
+        from src.services import content_service
+        import datetime
+        last_ingest = content_service.get_last_ingestion_time()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        trigger_refresh = True
+        if last_ingest and (now - last_ingest).total_seconds() < 2 * 3600:
+            trigger_refresh = False
+        session['trigger_auto_refresh'] = trigger_refresh
         flash('Welcome back!', 'success')
         return redirect(url_for('index'))
     return render_template(LOGIN_TEMPLATE)
@@ -604,6 +612,8 @@ def trigger_ingest_job():
         result = run_ingest_articles()
         
         if result.get('success'):
+            # Update last ingestion time on successful ingestion
+            content_service.update_last_ingestion_time()
             return jsonify(result), 200
         else:
             return jsonify(result), 500
@@ -667,6 +677,20 @@ def job_status():
             'refresh_in_progress': refresh_in_progress,
             'timestamp': datetime.now().isoformat()
         }), 500
+
+@app.route('/api/favorites', methods=['GET'])
+@login_required_api
+def get_favorites_api():
+    """API endpoint to get user's favorite articles"""
+    print("[get_favorites_api] Called. session:", dict(session))
+    try:
+        user_id = session['user_id']
+        articles = content_service.get_personalized_digest(user_id, limit=100, include_read=True)
+        liked_articles = [a for a in articles if a.get('is_liked')]
+        return jsonify(liked_articles), 200
+    except Exception as e:
+        print(f"Error in get_favorites_api: {e}")
+        return jsonify({'error': 'Failed to get favorites'}), 500
 
 # ------------------- HEALTH CHECK -------------------
 @app.route('/health')

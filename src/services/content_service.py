@@ -1324,3 +1324,26 @@ def cleanup_irrelevant_articles():
         }
     finally:
         close_db_connection(conn)
+
+def get_last_ingestion_time():
+    """Return the last global ingestion timestamp (UTC) or None if not set."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT last_ingested_at FROM ingestion_metadata ORDER BY id ASC LIMIT 1;")
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        return None
+    finally:
+        close_db_connection(conn)
+
+def update_last_ingestion_time():
+    """Update the last global ingestion timestamp to now (UTC)."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE ingestion_metadata SET last_ingested_at = CURRENT_TIMESTAMP WHERE id = (SELECT id FROM ingestion_metadata ORDER BY id ASC LIMIT 1);")
+        conn.commit()
+    finally:
+        close_db_connection(conn)

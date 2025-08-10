@@ -1,8 +1,8 @@
 $(document).ready(function() {
-  var scaleCurve = mojs.easing.path('M0,100 L25,99.9999983 C26.2328835,75.0708847 19.7847843,0 100,0');
+  const scaleCurve = mojs.easing.path('M0,100 L25,99.9999983 C26.2328835,75.0708847 19.7847843,0 100,0');
   
   $('.heart-button').each(function() {
-    var el = this;
+    const el = this;
     
     // Skip heart buttons that have custom onclick handlers (like in favorites page)
     if (el.hasAttribute('onclick')) {
@@ -10,8 +10,8 @@ $(document).ready(function() {
       return;
     }
     
-    var timeline = new mojs.Timeline();
-    var tween1 = new mojs.Burst({
+    const timeline = new mojs.Timeline();
+    const tween1 = new mojs.Burst({
       parent: el,
       radius: { 0: 100 },
       angle: { 0: 45 },
@@ -25,14 +25,14 @@ $(document).ready(function() {
         duration: 500,
       }
     });
-    var tween2 = new mojs.Tween({
+    const tween2 = new mojs.Tween({
       duration: 900,
       onUpdate: function(progress) {
         var scaleProgress = scaleCurve(progress);
         el.style.WebkitTransform = el.style.transform = 'scale3d(' + scaleProgress + ',' + scaleProgress + ',1)';
       }
     });
-    var tween3 = new mojs.Burst({
+    const tween3 = new mojs.Burst({
       parent: el,
       radius: { 0: 100 },
       angle: { 0: -45 },
@@ -51,9 +51,9 @@ $(document).ready(function() {
     $(el).click(function(e) {
       e.preventDefault(); // Prevent form submission
       
-      var button = $(this);
-      var articleId = button.data('article-id');
-      var isCurrentlyLiked = button.hasClass('active');
+      const button = $(this);
+      const articleId = button.data('article-id');
+      const isCurrentlyLiked = button.hasClass('active');
       
       console.log('Heart clicked - Article ID:', articleId, 'Currently liked:', isCurrentlyLiked);
       
@@ -67,10 +67,10 @@ $(document).ready(function() {
       // If unliking, show modal confirmation (reuse modal from base.html)
       if (isCurrentlyLiked) {
         // Find article title for confirmation
-        var articleCard = button.closest('.topic-article-card, .horizontal-flashcard');
-        var articleTitle = 'this article';
+        const articleCard = button.closest('.topic-article-card, .horizontal-flashcard');
+        let articleTitle = 'this article';
         if (articleCard) {
-          var titleElement = articleCard.find('.article-title-full, .fast-card-title, h3');
+          const titleElement = articleCard.find('.article-title-full, .fast-card-title, h3');
           if (titleElement.length > 0) {
             articleTitle = titleElement.first().text().trim();
           }
@@ -82,7 +82,7 @@ $(document).ready(function() {
         // Show modal
         document.getElementById('unlikeModal').style.display = 'block';
         // Set up confirm button
-        var confirmBtn = document.getElementById('confirmUnlikeBtn');
+        const confirmBtn = document.getElementById('confirmUnlikeBtn');
         confirmBtn.onclick = function() {
           executeUnlikeFromDiscover();
         };
@@ -97,9 +97,9 @@ function closeUnlikeModal() {
 
 // Modal confirm unlike for discover/fast page
 function executeUnlikeFromDiscover() {
-  var button = window._currentUnlikeButton;
+  const button = window._currentUnlikeButton;
   if (!button) return closeUnlikeModal();
-  var articleId = button.data('article-id');
+  const articleId = button.data('article-id');
   if (!articleId) return closeUnlikeModal();
 
   // Optimistically update UI
@@ -109,14 +109,27 @@ function executeUnlikeFromDiscover() {
   button.attr('title', 'Like');
 
   // Make API call
-  var apiUrl = `/api/content/${articleId}/unlike`;
+  const apiUrl = `/api/content/${articleId}/unlike`;
   $.ajax({
     url: apiUrl,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     success: function(response) {
       showFlashMessage('Article removed from favorites', 'info');
-      // Optionally, remove from DOM if on favorites page
+      // Remove article from fast view if on fast page
+      if (window.location.pathname === '/fast') {
+        const articleCard = button.closest('.horizontal-flashcard');
+        if (articleCard) {
+          articleCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          articleCard.style.opacity = '0';
+          articleCard.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            if (articleCard.parentNode) {
+              articleCard.remove();
+            }
+          }, 300);
+        }
+      }
     },
     error: function(xhr, status, error) {
       // Revert UI changes on error
@@ -124,9 +137,9 @@ function executeUnlikeFromDiscover() {
       button.attr('aria-pressed', 'true');
       button.attr('aria-label', 'Unlike this article');
       button.attr('title', 'Unlike');
-      var errorMsg;
+      let errorMsg;
       try {
-        var responseData = JSON.parse(xhr.responseText);
+        const responseData = JSON.parse(xhr.responseText);
         errorMsg = responseData.error || 'Failed to update favorite status';
       } catch(e) {
         errorMsg = 'Failed to update favorite status';
@@ -152,8 +165,8 @@ function executeUnlikeFromDiscover() {
       }
       
       // Make API call
-      var endpoint = isCurrentlyLiked ? 'unlike' : 'like';
-      var apiUrl = `/api/content/${articleId}/${endpoint}`;
+      const endpoint = isCurrentlyLiked ? 'unlike' : 'like';
+      const apiUrl = `/api/content/${articleId}/${endpoint}`;
       
       console.log('Making API call to:', apiUrl);
       
@@ -167,9 +180,29 @@ function executeUnlikeFromDiscover() {
           // UI already updated optimistically
           console.log('Success:', response.message);
           
-          // Show success notification for unlike actions
+          // Broadcast state change to other pages
+          if (window.ArticleStateSync) {
+            const action = isCurrentlyLiked ? 'unlike' : 'like';
+            window.ArticleStateSync.broadcast(articleId, !isCurrentlyLiked, action);
+          }
+          
+          // Show success notification and handle DOM updates
           if (isCurrentlyLiked) {
             showFlashMessage('Article removed from favorites', 'info');
+            // Remove article from fast view if on fast page
+            if (window.location.pathname === '/fast') {
+              var articleCard = button.closest('.horizontal-flashcard');
+              if (articleCard) {
+                articleCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                articleCard.style.opacity = '0';
+                articleCard.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                  if (articleCard.parentNode) {
+                    articleCard.remove();
+                  }
+                }, 300);
+              }
+            }
           } else {
             showFlashMessage('Article added to favorites', 'success');
           }

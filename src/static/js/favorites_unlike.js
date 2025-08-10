@@ -4,7 +4,6 @@
 let currentUnlikeButton = null;
 
 function confirmUnlike(button) {
-  const articleId = button.getAttribute('data-article-id');
   const articleTitle = button.getAttribute('data-article-title');
   
   currentUnlikeButton = button;
@@ -49,6 +48,11 @@ function executeUnlike() {
       }
       // Show success message
       showFlashMessage(data.message, 'info');
+      
+      // Broadcast state change to other pages
+      if (window.ArticleStateSync) {
+        window.ArticleStateSync.broadcast(articleId, false, 'unlike');
+      }
     } else {
       showFlashMessage('Failed to remove article from favorites', 'danger');
     }
@@ -93,7 +97,18 @@ function showFlashMessage(message, category) {
   li.style.position = 'relative';
   li.style.paddingRight = '2.2em';
   li.style.background = 'rgba(30,30,30,0.97)';
-  li.style.color = category === 'danger' ? '#dc2626' : category === 'success' ? '#16a34a' : '#2563eb';
+  
+  // Set color based on category
+  let textColor;
+  if (category === 'danger') {
+    textColor = '#dc2626';
+  } else if (category === 'success') {
+    textColor = '#16a34a';
+  } else {
+    textColor = '#2563eb';
+  }
+  li.style.color = textColor;
+  
   li.style.borderRadius = '0.5rem';
   li.style.marginBottom = '8px';
   li.style.fontWeight = '600';

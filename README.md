@@ -9,6 +9,7 @@
 - **💡 Resource-Conscious Design:** Redis fallback system with graceful degradation for free-tier compatibility
 - **🔒 Enterprise Security:** TOTP two-factor authentication, XSS prevention, input sanitization, bcrypt password hashing
 - **📊 Real-Time Performance:** Sub-second response times with database optimization, connection pooling, and caching strategies
+- **⏱️ Smart Auto-Ingestion:** On login, the system checks the last article ingestion time; if more than 2 hours have passed, ingestion is triggered automatically, the user is redirected to the discovery page, the refresh button is auto-pressed, and a message is shown to indicate new content is being loaded.
 - **🎯 Enhanced UX:** Accessibility compliance with semantic HTML structure, ARIA labels for interactive elements, keyboard navigation support, focus indicators, and comprehensive accessibility testing suite ensuring inclusive user experience
 
 ## 🛠️ Technical Stack
@@ -99,6 +100,15 @@ docker-compose up --build  # or python src/app.py
 - **Problem:** Production constraints limit feature implementation despite technical feasibility
 - **Current Solution:** Environment-specific configuration with graceful degradation strategies
 - **Future Enhancement:** Advanced search, team collaboration, analytics dashboard, progressive web app
+
+## 🧮 Algorithm Update: Auto-Ingestion Logic
+
+- **Login-Time Ingestion Check:** When a user logs in, the backend checks the timestamp of the last successful article ingestion.
+- **Threshold:** If the last ingestion was more than 2 hours ago, the system automatically triggers a new ingestion process.
+- **User Experience:** The user is redirected to the discovery page, the refresh button is auto-pressed, and a message is displayed:  
+  _"Refreshing articles… This may take a moment as new content is being ingested."_
+- **Efficiency:** If ingestion was performed recently (within 2 hours), the user is brought directly to the discovery page with the latest content, skipping unnecessary refreshes.
+- **Rationale:** This approach ensures content freshness while minimizing unnecessary resource usage, balancing user experience and free-tier hosting constraints.
 
 ## 🤝 Contact & Skills Demonstrated
 

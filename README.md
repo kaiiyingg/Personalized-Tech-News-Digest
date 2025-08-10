@@ -6,7 +6,7 @@
 
 - **🧠 Smart Content Processing:** Keyword-based classification across 10+ tech domains with intelligent text excerpt generation
 - **🏗️ Production Architecture:** Flask REST API, PostgreSQL, Docker containerization, comprehensive test coverage
-- **💡 Resource-Conscious Design:** Optimized for 512MB memory limits through efficient algorithms and lightweight processing
+- **💡 Resource-Conscious Design:** Optimized for 1GB storage limits through efficient algorithms and lightweight processing
 - **🔒 Enterprise Security:** TOTP two-factor authentication, bcrypt password hashing, environment-based configuration
 - **📊 Real-Time Performance:** Sub-second response times with database optimization and connection pooling
 
@@ -67,15 +67,15 @@ docker-compose up --build  # or python src/app.py
 
 ## 🔧 Engineering Solutions & Roadmap
 
-### **Challenge 1: Memory Constraints (512MB Hosting Limit)**
-- **Problem:** AI models (460MB+) exceeded hosting memory limits causing crashes
-- **Current Solution:** Keyword-based classification maintaining 90% functionality with 85% memory reduction
-- **Future Enhancement:** HuggingFace Transformers integration when upgraded hosting allows (works as tested locally but unable to deploy)
+### **Challenge 1: Storage Constraints (1GB Hosting Limit)**
+- **Problem:** AI models (460MB+) and accumulated data exceeded hosting storage limits causing deployment issues
+- **Current Solution:** Keyword-based classification maintaining 90% functionality with efficient data management
+- **Future Enhancement:** HuggingFace Transformers integration when upgraded hosting becomes available (tested locally, deployment limited by current hosting tier)
 
 ### **Challenge 2: Free-Tier Infrastructure Limitations**
 - **Problem:** No persistent background processes, cron jobs, or advanced caching
 - **Current Solution:** User-driven refresh system with real-time feedback and efficient on-demand processing
-- **Future Enhancement:** Automated scheduling, Redis caching, real-time WebSocket updates
+- **Future Enhancement:** Automated scheduling, Redis caching, real-time WebSocket updates (tested locally, deployment limited by current hosting tier) 
 
 ### **Challenge 3: Scalability & Advanced Features**
 - **Problem:** Production constraints limit feature implementation despite technical feasibility

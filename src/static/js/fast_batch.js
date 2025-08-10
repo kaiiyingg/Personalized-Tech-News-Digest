@@ -68,12 +68,12 @@ function renderFlashcard(article) {
   }
   
   return `
-    <div class="fast-horizontal-card" data-article-id="${article.id}" style="background: #23262f; border-radius: 1.1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 1.5rem 1.8rem; min-width: 340px; max-width: 550px; width: 100%; max-height: 65vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; overflow: hidden;">
+    <div class="fast-horizontal-card" data-article-id="${article.id}" style="background: #23262f; border-radius: 1.1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 1.5rem 1.8rem; min-width: 340px; max-width: 550px; width: 100%; max-height: 70vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; overflow: hidden;">
       <div class="fast-card-title" style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 0.6rem 0; line-height: 1.3; max-height: 2.6em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${article.title}</div>
       <div class="fast-card-topic" style="margin-bottom: 0.6rem;">
         <span class="topic-badge" style="background: #8B5CF6; color: white; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block;">${article.topic || 'Tech News'}</span>
       </div>
-      ${article.image_url ? `<div class="fast-card-image" style="margin-bottom: 0.6rem; width: 100%; height: 100px; border-radius: 0.5rem; overflow: hidden; background: #1a1a1a;"><img src="${article.image_url}" alt="Article image" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem;" onerror="this.parentElement.style.display='none'"></div>` : ''}
+      ${article.image_url ? `<div class="fast-card-image" style="margin-bottom: 0.8rem; width: 100%; height: 150px; border-radius: 0.6rem; overflow: hidden; background: #1a1a1a; display: flex; align-items: center; justify-content: center;"><img src="${article.image_url}" alt="Article image" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 0.6rem;" onerror="this.parentElement.style.display='none'"></div>` : ''}
       <div class="fast-card-meta" style="margin-bottom: 0.6rem;">
         <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.8rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">${article.source_name}</span>
         <span style="color: #b3b3b3; font-size: 0.75rem; margin-left: 0.5rem;">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>

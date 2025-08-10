@@ -4,12 +4,12 @@
 
 ## 🚀 Key Features & Technical Highlights
 
-- **🧠 Smart Content Processing:** Keyword-based classification across 10+ tech domains with intelligent text excerpt generation
+- **🧠 Smart Content Processing:** Keyword-based classification across 7 tech domains with intelligent text excerpt generation
 - **🏗️ Production Architecture:** Flask REST API, PostgreSQL, Docker containerization, comprehensive test coverage (9 modules, 95%+ coverage)
 - **💡 Resource-Conscious Design:** Redis fallback system with graceful degradation for free-tier compatibility
 - **🔒 Enterprise Security:** TOTP two-factor authentication, XSS prevention, input sanitization, bcrypt password hashing
 - **📊 Real-Time Performance:** Sub-second response times with database optimization, connection pooling, and caching strategies
-- **🎯 Enhanced UX:** Fast view optimization with improved pagination and interactive heart button functionality
+- **🎯 Enhanced UX:** Accessibility compliance with semantic HTML structure, ARIA labels for interactive elements, keyboard navigation support, focus indicators, and comprehensive accessibility testing suite ensuring inclusive user experience
 
 ## 🛠️ Technical Stack
 
@@ -81,7 +81,6 @@ python -c "from src.database.connection import create_tables; create_tables()"
 docker-compose up --build  # or python src/app.py
 ```
 
-**Live Demo:** [TechPulse on Render](https://personalized-tech-news-digest.onrender.com)  
 **Local Access:** http://localhost:5000 → Register → Click "Refresh" to load articles
 
 ## 🔧 Engineering Challenges, Solutions & Future Enhancement

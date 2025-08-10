@@ -19,8 +19,7 @@ from .user_service import get_user_topics
 from typing import List, Optional, Dict, Any, Union
 from psycopg2 import errors as pg_errors
 from datetime import datetime
-from datetime import datetime
-from datetime import datetime
+import re
 
 # Import caching utility
 try:
@@ -304,6 +303,26 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
         'nude', 'naked', 'strip', 'escort', 'prostitution', 'xxx',
         
+        # Promotional/Sales/Marketing content
+        'lifetime subscription', 'lifetime access', 'limited time offer', 'special deal',
+        'discount', 'sale price', 'reg. price', 'half off', 'save money', 'cheap price',
+        'bargain', 'promotion', 'promo code', 'coupon', 'deal of the day', 'flash sale',
+        'subscription service', 'streaming service', 'membership deal', 'annual plan',
+        'get it now', 'buy now', 'order today', 'free trial', 'trial offer',
+        'documentary subscription', 'movie subscription', 'tv subscription',
+        'binge-watching', 'binge watch', 'entertainment subscription',
+        'curiosity stream', 'netflix', 'hulu', 'disney plus', 'amazon prime',
+        
+        # Government/Policy/Housing/Real Estate
+        'government policy', 'housing policy', 'public housing', 'income ceiling',
+        'eligibility criteria', 'bto', 'built to order', 'hdb', 'housing board',
+        'minister', 'ministry', 'parliament', 'senator', 'congressman', 'mp',
+        'national development', 'urban planning', 'housing scheme', 'property prices',
+        'housing supply', 'housing demand', 'affordable housing', 'subsidized housing',
+        'residential property', 'property market', 'real estate market', 'home ownership',
+        'first-time buyers', 'housing grants', 'housing loan', 'mortgage rates',
+        'singles scheme', 'flat application', 'ballot results', 'housing queue',
+        
         # Sports & Recreation
         'sports', 'football', 'basketball', 'baseball', 'soccer', 'golf', 'tennis',
         'hockey', 'rugby', 'cricket', 'swimming', 'racing', 'olympics', 'fifa',
@@ -330,7 +349,7 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'jewelry', 'accessories', 'cosmetics', 'perfume', 'hair', 'salon',
         'designer', 'brand', 'luxury', 'boutique', 'shopping',
         
-        # Politics & Government
+        # Politics & Government (general)
         'politics', 'election', 'government', 'president', 'senator', 'congress',
         'parliament', 'democracy', 'republican', 'democrat', 'vote', 'ballot',
         'campaign', 'policy', 'legislation', 'law', 'court', 'justice', 'legal',
@@ -345,15 +364,17 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'destination', 'cruise', 'resort', 'trip', 'journey', 'adventure',
         'passport', 'visa', 'booking', 'accommodation', 'sightseeing',
         
-        # Real Estate & Finance (non-fintech)
+        # Finance (non-fintech) & Insurance
         'real estate', 'property', 'mortgage', 'insurance', 'loan', 'debt',
         'credit card', 'bank account', 'savings', 'retirement', 'pension',
         'broker', 'realtor', 'apartment', 'house', 'rent', 'lease',
+        'investment advice', 'stock tips', 'forex trading', 'commodity trading',
         
         # Entertainment (non-tech)
         'celebrity', 'entertainment', 'movie', 'film', 'music', 'concert', 'album',
         'actor', 'actress', 'singer', 'musician', 'band', 'tv show', 'series',
         'drama', 'comedy', 'horror', 'romance', 'documentary', 'theater',
+        'streaming content', 'video content', 'television', 'cable tv',
         
         # Traditional Education (non-edtech)
         'school', 'teacher', 'student', 'university', 'college', 'classroom',
@@ -394,19 +415,97 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         
         # Shopping and consumer advice
         'shopping addiction', 'fake store', 'consumer advice', 'buying guide',
-        'product review', 'best deals', 'shopping tips', 'retail therapy'
+        'product review', 'best deals', 'shopping tips', 'retail therapy',
+        
+        # News/Current Events (non-tech)
+        'breaking news', 'latest news', 'current events', 'local news', 'world news',
+        'crime news', 'police report', 'court case', 'lawsuit', 'legal battle',
+        'scandal', 'controversy', 'investigation', 'arrest', 'charges filed',
+        
+        # Social Issues (non-tech)
+        'social issues', 'community problems', 'social welfare', 'poverty',
+        'homelessness', 'unemployment', 'social services', 'charity', 'donation',
+        'volunteer work', 'social activism', 'protest', 'demonstration',
+        
+        # Content that's clearly promotional or spam-like
+        'tl;dr', 'tldr', 'elevate your', 'get access to', 'exclusive access',
+        'limited offer', 'act now', 'dont miss out', "don't miss out",
+        'while supplies last', 'hurry up', 'last chance', 'final days',
+        'expires soon', 'time sensitive', 'urgent', 'important notice'
     ]
     
     # Count tech vs non-tech indicators
     tech_score = sum(1 for keyword in tech_keywords if keyword in text)
     reject_score = sum(1 for keyword in reject_keywords if keyword in text)
     
-    # STRICTER filtering: Require at least 2 tech keywords AND no reject keywords
-    if reject_score > 0:
-        print(f"REJECTED: Non-tech content detected in '{title[:50]}...'")
+    # Additional pattern-based rejection (regex patterns for common non-tech content)
+    import re
+    
+    # Promotional patterns
+    promotional_patterns = [
+        r'get .* for \$\d+',  # "get a lifetime of documentaries for $200"
+        r'lifetime .* for \$\d+',  # "lifetime subscription for $99"
+        r'reg\. \$\d+',  # "reg. $399.99"
+        r'now \$\d+.*reg\. \$\d+',  # "now $199.99 (reg. $399.99)"
+        r'half off.*price',  # "half off the regular price"
+        r'tl;?dr:.*subscription',  # "TL;DR: ... subscription"
+        r'\$\d+.*reg\. \$\d+',  # "$199.99 (reg. $399.99)"
+        r'subscription.*plan.*off',  # "subscription to ... plan, now half off"
+        r'save \$\d+',  # "save $200"
+        r'discount.*\$\d+',  # "discount of $100"
+        r'special.*offer.*\$\d+',  # "special offer for $99"
+    ]
+    
+    # Government/policy patterns
+    policy_patterns = [
+        r'minister.*says?',  # "minister says"
+        r'government.*policy',  # "government policy"
+        r'policy.*review',  # "policy under review"
+        r'eligibility.*age.*review',  # "eligibility age for singles under review"
+        r'income.*ceiling.*review',  # "income ceilings under review"
+        r'public.*housing.*policy',  # "public housing policies"
+        r'national.*development.*minister',  # "National Development Minister"
+        r'housing.*supply.*demand',  # "housing supply and demand"
+        r'appropriate.*time.*depending',  # "appropriate time depending on supply and demand"
+    ]
+    
+    # Check for promotional patterns
+    promotional_matches = sum(1 for pattern in promotional_patterns if re.search(pattern, text, re.IGNORECASE))
+    
+    # Check for policy patterns  
+    policy_matches = sum(1 for pattern in policy_patterns if re.search(pattern, text, re.IGNORECASE))
+    
+    # Enhanced rejection logic
+    total_rejection_signals = reject_score + promotional_matches + policy_matches
+    
+    # STRICTER filtering: Reject if ANY rejection signals are found
+    if total_rejection_signals > 0:
+        print(f"REJECTED: Non-tech content detected in '{title[:50]}...' (keyword_score: {reject_score}, promotional: {promotional_matches}, policy: {policy_matches})")
         return None
-        
-    if tech_score < 2:  # Require at least 2 tech keywords for better filtering
+    
+    # Additional checks for edge cases
+    # Check if title/summary contains mostly price/promotional information
+    price_mentions = len(re.findall(r'\$\d+', text))
+    percentage_mentions = len(re.findall(r'\d+%\s*off', text))
+    
+    if price_mentions >= 2 or percentage_mentions >= 1:
+        print(f"REJECTED: Promotional content detected (prices: {price_mentions}, percentages: {percentage_mentions}) in '{title[:50]}...'")
+        return None
+    
+    # Check for subscription service names that are typically entertainment
+    entertainment_services = [
+        'curiosity stream', 'netflix', 'hulu', 'disney plus', 'amazon prime video',
+        'paramount plus', 'hbo max', 'apple tv', 'peacock', 'discovery plus',
+        'crunchyroll', 'funimation', 'showtime', 'starz', 'epix'
+    ]
+    
+    for service in entertainment_services:
+        if service in text:
+            print(f"REJECTED: Entertainment service content detected ('{service}') in '{title[:50]}...'")
+            return None
+    
+    # Require at least 2 tech keywords for acceptance
+    if tech_score < 2:
         print(f"REJECTED: Insufficient tech keywords ({tech_score}) in '{title[:50]}...'")
         return None
     
@@ -1049,7 +1148,7 @@ def cleanup_irrelevant_articles():
         for article_id, title, summary, url in articles_to_check:
             combined_text = f"{title} {summary}".lower()
             
-            # Use the same rejection keywords as in assign_topic function
+            # Use the same comprehensive rejection logic as in assign_topic function
             reject_keywords = [
                 # Non-tech content
                 'welding', 'wedding', 'puzzle', 'crossword', 'sudoku', 'chess', 'poker', 'gambling',
@@ -1076,15 +1175,108 @@ def cleanup_irrelevant_articles():
                 'education', 'school', 'university', 'student', 'teacher',
                 'job', 'career', 'employment', 'resume', 'interview',
                 'baby', 'child', 'parent', 'family', 'pregnancy',
-                'pet', 'dog', 'cat', 'animal', 'veterinary'
+                'pet', 'dog', 'cat', 'animal', 'veterinary',
+                
+                # Enhanced promotional and sales content rejection
+                'lifetime access', 'limited time', 'exclusive offer', 'get now', 'buy now',
+                'save money', 'best deal', 'cheapest', 'lowest price', 'free shipping',
+                'order now', 'click here', 'don\'t miss', 'hurry up', 'act fast',
+                'special price', 'mega sale', 'clearance', 'liquidation', 'closeout',
+                'promotional', 'advertisement', 'sponsored', 'affiliate',
+                'subscription', 'membership', 'premium plan', 'upgrade now',
+                'trial period', 'money back', 'guarantee', 'refund',
+                'documentary collection', 'streaming service', 'entertainment bundle',
+                'video library', 'movie collection', 'tv shows', 'series',
+                'bundle deal', 'package offer', 'combo deal', 'all-in-one',
+                'register now', 'sign up', 'join today', 'enroll',
+                'promo code', 'discount code', 'voucher', 'cashback',
+                
+                # Government and policy content  
+                'minister says', 'government announces', 'policy review', 'regulation',
+                'eligibility criteria', 'income ceiling', 'housing policy', 'bto',
+                'hdb', 'public housing', 'affordable housing', 'social housing',
+                'singles scheme', 'married couples', 'family nucleus', 'balloting',
+                'flat allocation', 'resale market', 'property cooling measures',
+                'stamp duty', 'additional buyer stamp duty', 'absd',
+                'citizenship requirement', 'permanent resident', 'foreigner',
+                'age requirement', 'household income', 'cpf', 'medisave',
+                'parliamentary', 'legislation', 'bill passed', 'amendment',
+                'public consultation', 'feedback exercise', 'committee',
+                'taskforce', 'working group', 'advisory panel',
+                
+                # Social and cultural issues
+                'racial harmony', 'religious freedom', 'multicultural', 'diversity',
+                'social cohesion', 'community integration', 'ethnic group',
+                'cultural sensitivity', 'interfaith', 'secular',
+                'human rights', 'civil liberties', 'freedom of speech',
+                'demonstration', 'protest', 'rally', 'activism',
+                'social justice', 'inequality', 'discrimination', 'prejudice',
+                'mental wellness', 'suicide prevention', 'counselling services',
+                'family violence', 'domestic abuse', 'child protection',
+                'eldercare', 'aging population', 'silver generation',
+                
+                # Entertainment and lifestyle
+                'netflix', 'disney+', 'streaming platform', 'subscription service',
+                'entertainment package', 'premium content', 'exclusive shows',
+                'binge watching', 'tv series', 'drama series', 'reality show',
+                'game show', 'talk show', 'variety show', 'comedy',
+                'romance', 'thriller', 'horror', 'action movie',
+                'documentary film', 'nature documentary', 'history channel',
+                'discovery channel', 'national geographic', 'animal planet',
+                'lifestyle magazine', 'fashion week', 'celebrity news',
+                'gossip', 'scandal', 'paparazzi', 'red carpet',
+                'awards ceremony', 'oscar', 'emmy', 'golden globe'
             ]
             
-            # Check if article contains rejection keywords
+            # Pattern-based rejection (same as assign_topic)
+            promotional_patterns = [
+                r'get .* for \$\d+',
+                r'save \d+%',
+                r'only \$\d+',
+                r'reg\. \$\d+',
+                r'was \$\d+',
+                r'now \$\d+',
+                r'limited time',
+                r'expires .* \d+',
+                r'order within',
+                r'click to .* now',
+                r'don\'t wait',
+                r'lifetime .* for',
+                r'get .* lifetime',
+                r'bundle .* \$\d+'
+            ]
+            
+            policy_patterns = [
+                r'minister .* says',
+                r'government .* announces',
+                r'eligibility .* age .* review',
+                r'income ceiling .* raised',
+                r'policy .* under review',
+                r'criteria .* updated',
+                r'scheme .* enhanced',
+                r'measures .* implemented',
+                r'framework .* revised',
+                r'guidelines .* issued'
+            ]
+            
+            # Check for rejection keywords
             reject_score = sum(1 for keyword in reject_keywords if keyword in combined_text)
             
-            if reject_score > 0:
+            # Check for promotional patterns
+            promotional_matches = sum(1 for pattern in promotional_patterns 
+                                    if re.search(pattern, combined_text, re.IGNORECASE))
+            
+            # Check for policy patterns  
+            policy_matches = sum(1 for pattern in policy_patterns 
+                               if re.search(pattern, combined_text, re.IGNORECASE))
+            
+            # Multi-signal rejection (same threshold as assign_topic)
+            total_rejection_signals = reject_score + promotional_matches + policy_matches
+            
+            if total_rejection_signals > 0:
                 articles_to_remove.append(article_id)
-                print(f"[cleanup_irrelevant_articles] Marking for removal: {title[:50]}... (reject score: {reject_score})")
+                print(f"[cleanup_irrelevant_articles] Marking for removal: {title[:50]}... "
+                      f"(reject: {reject_score}, promo: {promotional_matches}, policy: {policy_matches})")
         
         # Remove irrelevant articles
         if articles_to_remove:

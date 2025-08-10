@@ -342,7 +342,24 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         
         # Arts & Crafts
         'painting', 'drawing', 'sculpture', 'pottery', 'knitting', 'sewing',
-        'craft', 'art gallery', 'museum', 'exhibition', 'artist', 'canvas'
+        'craft', 'art gallery', 'museum', 'exhibition', 'artist', 'canvas',
+        
+        # Non-tech DIY and making
+        'welding', 'aluminum welding', 'metalworking', 'woodworking', 'carpentry',
+        'construction', 'building materials', 'diy project', 'handmade', 'crafting',
+        'workshop', 'tools', 'hammer', 'drill', 'saw', 'materials',
+        
+        # Games and puzzles (non-tech)
+        'wordle', 'crossword', 'puzzle', 'game hints', 'game answers', 'strands',
+        'connections', 'nyt games', 'word games', 'brain games', 'sudoku',
+        
+        # Internet services (non-tech business)
+        'internet provider', 'internet service', 'broadband', 'cable', 'fiber internet',
+        'isp', 'home internet', 'wifi plan', 'internet speed', 'internet deals',
+        
+        # Shopping and consumer advice
+        'shopping addiction', 'fake store', 'consumer advice', 'buying guide',
+        'product review', 'best deals', 'shopping tips', 'retail therapy'
     ]
     
     # Count tech vs non-tech indicators

@@ -1,6 +1,6 @@
 # TechPulse: Personalized Tech News Platform
 
-**Production-ready full-stack web application with intelligent content curation, optimized for memory-constrained environments. Demonstrates practical engineering solutions within real-world hosting limitations.**
+**Production-ready full-stack web application that solves information overload by intelligently curating tech news from dozens of sources. Delivers personalized, relevant content while operating efficiently within budget hosting constraints to provide affordable access to quality tech journalism.**
 
 ## 🚀 Key Features & Technical Highlights
 

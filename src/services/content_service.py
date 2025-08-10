@@ -26,6 +26,9 @@ CLOUD_DEVOPS_TOPIC = "Cloud Computing & DevOps"
 SOFTWARE_DEV_TOPIC = "Software Development & Web Technologies"
 DATA_SCIENCE_TOPIC = "Data Science & Analytics"
 EMERGING_TECH_TOPIC = "Emerging Technologies"
+BIG_TECH_TOPIC = "Big Tech & Industry Trends"
+TECH_CULTURE_TOPIC = "Tech Culture & Work"
+OPEN_SOURCE_TOPIC = "Open Source"
 
 # Define topic labels for zero-shot classification (removed "Other" to force tech categorization)
 TOPIC_LABELS = [
@@ -35,9 +38,9 @@ TOPIC_LABELS = [
     SOFTWARE_DEV_TOPIC,
     DATA_SCIENCE_TOPIC,
     EMERGING_TECH_TOPIC,
-    "Big Tech & Industry Trends",
-    "Tech Culture & Work",
-    "Open Source"
+    BIG_TECH_TOPIC,
+    TECH_CULTURE_TOPIC,
+    OPEN_SOURCE_TOPIC
 ]
 
 # Load zero-shot classifier lazily (only when needed)
@@ -107,34 +110,68 @@ def build_simple_article_dict(row):
 
 def classify_topic_by_keywords(text: str, title: str) -> str:
     """
-    Simple keyword-based topic classification to avoid loading AI models.
+    Enhanced keyword-based topic classification with comprehensive coverage.
     Memory optimization for 512MB hosting environments.
     """
     combined_text = (title + " " + text).lower()
     
-    # AI & ML keywords
+    # Open Source keywords
+    opensource_keywords = ["open source", "github", "gitlab", "linux", "ubuntu", "debian",
+                          "apache", "mozilla", "gnu", "copyleft", "mit license", "gpl",
+                          "fork", "pull request", "contributor", "maintainer", "foss"]
+    
+    # Big Tech & Industry keywords
+    bigtech_keywords = ["google", "microsoft", "apple", "amazon", "meta", "facebook", 
+                       "twitter", "tesla", "nvidia", "startup", "venture capital", "vc", 
+                       "funding", "investment", "ipo", "acquisition", "merger", 
+                       "silicon valley", "entrepreneur", "business model", "revenue", 
+                       "unicorn", "series a", "series b", "industry", "market", "stock"]
+    
+    # Tech Culture & Work keywords  
+    culture_keywords = ["remote work", "work from home", "developer survey", "salary",
+                       "job", "career", "hiring", "interview", "workplace", "team",
+                       "culture", "burnout", "productivity", "diversity", "inclusion",
+                       "tech workers", "engineers", "engineering", "stackoverflow",
+                       "stack overflow", "survey", "trends", "skills"]
+    
+    # AI & ML keywords (enhanced)
     ai_keywords = ["ai", "artificial intelligence", "machine learning", "ml", "neural network", 
                    "deep learning", "nlp", "computer vision", "tensorflow", "pytorch", "chatgpt", 
-                   "llm", "gpt", "bert", "transformer", "openai", "anthropic"]
+                   "llm", "gpt", "bert", "transformer", "openai", "anthropic", "claude",
+                   "gemini", "copilot", "chatbot", "automation", "robotics", "algorithm"]
     
-    # Cybersecurity keywords  
+    # Cybersecurity keywords (enhanced)
     security_keywords = ["security", "cybersecurity", "hack", "breach", "vulnerability", 
-                        "encryption", "privacy", "malware", "ransomware", "phishing"]
+                        "encryption", "privacy", "malware", "ransomware", "phishing",
+                        "zero-day", "firewall", "antivirus", "vpn", "authentication",
+                        "password", "biometric", "two-factor", "ssl", "tls"]
     
-    # Cloud & DevOps keywords
+    # Cloud & DevOps keywords (enhanced)
     cloud_keywords = ["cloud", "aws", "azure", "gcp", "docker", "kubernetes", "devops", 
-                     "ci/cd", "deployment", "infrastructure", "serverless"]
+                     "ci/cd", "deployment", "infrastructure", "serverless", "microservices",
+                     "containerization", "orchestration", "scalability", "load balancing"]
     
-    # Software Development keywords
+    # Software Development keywords (enhanced)
     dev_keywords = ["programming", "coding", "developer", "software", "web development", 
-                   "javascript", "python", "react", "node.js", "framework", "api"]
+                   "javascript", "python", "react", "node.js", "framework", "api",
+                   "frontend", "backend", "fullstack", "typescript", "angular", "vue",
+                   "php", "ruby", "java", "c++", "rust", "go", "scala", "kotlin",
+                   "mobile", "app", "application", "ios", "android", "smartphone"]
     
-    # Data Science keywords
+    # Data Science keywords (enhanced)
     data_keywords = ["data science", "analytics", "big data", "database", "sql", 
-                    "visualization", "statistics", "analysis"]
+                    "visualization", "statistics", "analysis", "pandas", "numpy",
+                    "matplotlib", "tableau", "power bi", "data mining", "etl",
+                    "data warehouse", "nosql", "mongodb", "postgresql", "mysql"]
     
-    # Check for keyword matches (prioritize AI/ML as it's most popular)
-    if any(keyword in combined_text for keyword in ai_keywords):
+    # Check for keyword matches with proper prioritization
+    if any(keyword in combined_text for keyword in opensource_keywords):
+        return OPEN_SOURCE_TOPIC
+    elif any(keyword in combined_text for keyword in bigtech_keywords):
+        return BIG_TECH_TOPIC
+    elif any(keyword in combined_text for keyword in culture_keywords):
+        return TECH_CULTURE_TOPIC
+    elif any(keyword in combined_text for keyword in ai_keywords):
         return AI_ML_TOPIC
     elif any(keyword in combined_text for keyword in security_keywords):
         return CYBERSECURITY_TOPIC
@@ -222,7 +259,8 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'python', 'javascript', 'java', 'react', 'node', 'typescript', 'rust', 'go',
         'kubernetes', 'docker', 'aws', 'azure', 'gcp', 'devops', 'ci/cd', 'agile',
         'scrum', 'bug', 'feature', 'release', 'version', 'update', 'upgrade', 'patch',
-        'chatbot', 'gpt', 'llm', 'neural', 'model', 'training', 'dataset', 'inference'
+        'chatbot', 'gpt', 'llm', 'neural', 'model', 'training', 'dataset', 'inference',
+        'survey', 'stackoverflow', 'stack overflow', 'code', 'engineers', 'engineering'
     ]
     
     # COMPREHENSIVE reject keywords - filter out clearly non-tech content
@@ -291,6 +329,8 @@ def assign_topic(title: str, summary: str) -> Optional[str]:
         'weather', 'rain', 'snow', 'storm', 'hurricane', 'tornado', 'flood',
         'drought', 'temperature', 'climate change', 'global warming', 'pollution',
         'earthquake', 'tsunami', 'volcano', 'wildfire', 'natural disaster',
+        'air quality', 'outdoor air', 'environmental monitoring', 'atmosphere',
+        'air pollution', 'smog', 'particulate matter', 'pm2.5', 'ozone',
         
         # Automotive (non-tech aspects)
         'car accident', 'traffic jam', 'speeding', 'parking', 'gas station',
@@ -657,14 +697,14 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
     topic_order = [
         "Recommended For You",
         AI_ML_TOPIC,
-        "Cybersecurity & Privacy",
-        "Cloud Computing & DevOps",
-        "Software Development & Web Technologies",
-        "Data Science & Analytics",
+        CYBERSECURITY_TOPIC,
+        CLOUD_DEVOPS_TOPIC,
+        SOFTWARE_DEV_TOPIC,
+        DATA_SCIENCE_TOPIC,
         EMERGING_TECH_TOPIC,
-        "Big Tech & Industry Trends",
-        "Tech Culture & Work",
-        "Open Source"
+        BIG_TECH_TOPIC,
+        TECH_CULTURE_TOPIC,
+        OPEN_SOURCE_TOPIC
     ]
     topics_dict = {topic: [] for topic in topic_order}
     topics_dict["Recommended For You"] = recommended_articles[:limit_per_topic]

@@ -1,9 +1,8 @@
-# TechPulse - Simple Dependencies
-# Single file with all required dependencies (no duplicates)
+# TechPulse - Production Dependencies
+# Clean, minimal dependencies for production deployment
 
 # Core Flask Application
 Flask==3.1.1
-Flask-Bcrypt==1.0.1
 python-dotenv==1.1.0
 gunicorn==21.2.0
 
@@ -18,30 +17,17 @@ bleach==6.0.0
 bcrypt==4.3.0
 pyotp==2.9.0
 
-# Flask Dependencies
-blinker==1.9.0
-click==8.2.1
-colorama==0.4.6
-itsdangerous==2.2.0
-Jinja2==3.1.6
-MarkupSafe==3.0.2
-Werkzeug==3.1.3
-
-# Testing
+# Testing (Development)
 pytest>=8.0.0
 pytest-cov>=4.0.0
-pytest-mock>=3.12.0
 pytest-flask>=1.3.0
-coverage>=7.3.0
 
-# Code Quality
+# Code Quality (Development)
 black>=23.12.0
 flake8>=7.0.0
 bandit>=1.7.5
 
-# Optional - Accessibility Testing (install if Chrome available)
-selenium>=4.15.0
-axe-selenium>=2.1.6
-
 # Optional Dependencies (uncomment if needed)
+# selenium>=4.15.0  # For accessibility testing (requires Chrome)
+# axe-selenium>=2.1.6  # For accessibility testing
 # redis>=4.0.0  # For caching (fallback to memory if not available)

@@ -603,7 +603,6 @@ def create_content_item(source_id: int, title: str, summary: str,
     finally:
         close_db_connection(conn)
 
-@cache_result(expiry=60)  # Cache for only 1 minute for faster refreshes
 def get_personalized_digest(user_id: int, limit: int = 20, offset: int = 0,
                              include_read: bool = False) -> List[Dict[str, Any]]:
     """
@@ -838,7 +837,6 @@ def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = Tr
     print(f"[Like/Unlike] update_content_liked result: user_id={user_id}, content_item_id={content_item_id}, is_liked={is_liked}, success={result}")
     return result
 
-@cache_result(expiry=60)  # Cache for only 1 minute for faster refreshes
 def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:
     """
     Get articles grouped by topics for the main page display.

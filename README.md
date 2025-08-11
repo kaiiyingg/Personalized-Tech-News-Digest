@@ -89,12 +89,12 @@ docker-compose up --build  # or python src/app.py
 ### **Challenge 1: Storage Constraints (1GB Hosting Limit)**
 - **Problem:** AI models (460MB+) and accumulated data exceeded hosting storage limits causing deployment issues
 - **Current Solution:** Keyword-based classification maintaining 90% functionality with efficient data management
-- **Future Enhancement:** HuggingFace Transformers integration when upgraded hosting becomes available (tested locally, deployment limited by current hosting tier)
+- **Future Enhancement:** HuggingFace Transformers integration when upgraded hosting becomes available (tested locally but unable to deploy due to current free hosting tier)
 
 ### **Challenge 2: Free-Tier Infrastructure Limitations**
 - **Problem:** No persistent background processes, cron jobs, or advanced caching
 - **Current Solution:** User-driven refresh system with real-time feedback and efficient on-demand processing
-- **Future Enhancement:** Automated scheduling, Redis caching, real-time WebSocket updates (tested locally, deployment limited by current hosting tier) 
+- **Future Enhancement:** Automated scheduling, Redis caching, real-time WebSocket updates (tested locally but unable to deploy due to current free hosting tier)
 
 ### **Challenge 3: Scalability & Advanced Features**
 - **Problem:** Production constraints limit feature implementation despite technical feasibility

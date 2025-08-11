@@ -12,7 +12,6 @@ RSS_SOURCES = [
     {"name": "TechCrunch", "url": "https://techcrunch.com/feed/"},
     {"name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index"},
     {"name": "Hacker News", "url": "https://hnrss.org/frontpage"},
-    {"name": "Wired", "url": "https://www.wired.com/feed/rss"},
     {"name": "TechRadar", "url": "https://www.techradar.com/rss"},
     {"name": "ZDNet", "url": "https://www.zdnet.com/news/rss.xml"},
     {"name": "MIT Technology Review", "url": "https://www.technologyreview.com/feed/"},

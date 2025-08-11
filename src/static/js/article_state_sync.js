@@ -51,11 +51,19 @@ function handleArticleStateChange(data) {
       removeArticleFromFavorites(articleId);
     } else {
       // Add article to favorites page if liked from another page
-      addArticleToFavorites(articleId, data);
+      // Use data.articleData if present, else fallback to minimal info
+      addArticleToFavorites(articleId, data.articleData || data);
     }
-  } else if (window.location.pathname === '/fast' && !isLiked) {
-    // Remove article from fast view if unliked
-    removeArticleFromFast(articleId);
+  } else {
+    // On any other page, if unliked, remove from fast view
+    if (!isLiked && window.location.pathname === '/fast') {
+      removeArticleFromFast(articleId);
+    }
+    // If liked and on discover/fast, broadcast to favorites
+    if (isLiked && (window.location.pathname === '/fast' || window.location.pathname === '/' || window.location.pathname === '/index')) {
+      // If the favorites page is open in another tab, it will handle the add
+      // No-op here, as the broadcast already includes articleData
+    }
   }
 }
 

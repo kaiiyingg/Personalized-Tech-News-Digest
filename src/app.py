@@ -354,14 +354,20 @@ def login():
                 return render_template(LOGIN_TEMPLATE)
         session['user_id'] = user.id
         session['username'] = user.username
-        # --- Auto-ingestion logic ---
+                # --- Auto-ingestion logic ---
         from src.services import content_service
         import datetime
         last_ingest = content_service.get_last_ingestion_time()
         now = datetime.datetime.now(datetime.timezone.utc)
+        
+        # Ensure last_ingest is timezone-aware if it exists
+        if last_ingest is not None and last_ingest.tzinfo is None:
+            last_ingest = last_ingest.replace(tzinfo=datetime.timezone.utc)
+        
         trigger_refresh = True
         if last_ingest and (now - last_ingest).total_seconds() < 2 * 3600:
             trigger_refresh = False
+            
         session['trigger_auto_refresh'] = trigger_refresh
         flash('Welcome back!', 'success')
         return redirect(url_for('index'))

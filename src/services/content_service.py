@@ -156,75 +156,95 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         str: Classified topic category from TOPIC_LABELS
     """
     combined_text = (title + " " + text).lower()
-    
-    # Open Source keywords
-    opensource_keywords = ["open source", "github", "gitlab", "linux", "ubuntu", "debian",
-                          "apache", "mozilla", "gnu", "copyleft", "mit license", "gpl",
-                          "fork", "pull request", "contributor", "maintainer", "foss"]
-    
-    # Big Tech & Industry keywords
-    bigtech_keywords = ["google", "microsoft", "apple", "amazon", "meta", "facebook", 
-                       "twitter", "tesla", "nvidia", "startup", "venture capital", "vc", 
-                       "funding", "investment", "ipo", "acquisition", "merger", 
-                       "silicon valley", "entrepreneur", "business model", "revenue", 
-                       "unicorn", "series a", "series b", "industry", "market", "stock"]
-    
-    # Tech Culture & Work keywords  
-    culture_keywords = ["remote work", "work from home", "developer survey", "salary",
-                       "job", "career", "hiring", "interview", "workplace", "team",
-                       "culture", "burnout", "productivity", "diversity", "inclusion",
-                       "tech workers", "engineers", "engineering", "stackoverflow",
-                       "stack overflow", "survey", "trends", "skills"]
-    
-    # AI & ML keywords (enhanced)
-    ai_keywords = ["ai", "artificial intelligence", "machine learning", "ml", "neural network", 
-                   "deep learning", "nlp", "computer vision", "tensorflow", "pytorch", "chatgpt", 
-                   "llm", "gpt", "bert", "transformer", "openai", "anthropic", "claude",
-                   "gemini", "copilot", "chatbot", "automation", "robotics", "algorithm"]
-    
-    # Cybersecurity keywords (enhanced)
-    security_keywords = ["security", "cybersecurity", "hack", "breach", "vulnerability", 
-                        "encryption", "privacy", "malware", "ransomware", "phishing",
-                        "zero-day", "firewall", "antivirus", "vpn", "authentication",
-                        "password", "biometric", "two-factor", "ssl", "tls"]
-    
-    # Cloud & DevOps keywords (enhanced)
-    cloud_keywords = ["cloud", "aws", "azure", "gcp", "docker", "kubernetes", "devops", 
-                     "ci/cd", "deployment", "infrastructure", "serverless", "microservices",
-                     "containerization", "orchestration", "scalability", "load balancing"]
-    
-    # Software Development keywords (enhanced)
-    dev_keywords = ["programming", "coding", "developer", "software", "web development", 
-                   "javascript", "python", "react", "node.js", "framework", "api",
-                   "frontend", "backend", "fullstack", "typescript", "angular", "vue",
-                   "php", "ruby", "java", "c++", "rust", "go", "scala", "kotlin",
-                   "mobile", "app", "application", "ios", "android", "smartphone"]
-    
-    # Data Science keywords (enhanced)
-    data_keywords = ["data science", "analytics", "big data", "database", "sql", 
-                    "visualization", "statistics", "analysis", "pandas", "numpy",
-                    "matplotlib", "tableau", "power bi", "data mining", "etl",
-                    "data warehouse", "nosql", "mongodb", "postgresql", "mysql"]
-    
-    # Check for keyword matches with proper prioritization
-    if any(keyword in combined_text for keyword in opensource_keywords):
-        return OPEN_SOURCE_TOPIC
-    elif any(keyword in combined_text for keyword in bigtech_keywords):
-        return BIG_TECH_TOPIC
-    elif any(keyword in combined_text for keyword in culture_keywords):
-        return TECH_CULTURE_TOPIC
-    elif any(keyword in combined_text for keyword in ai_keywords):
-        return AI_ML_TOPIC
-    elif any(keyword in combined_text for keyword in security_keywords):
+
+    # Open Source keywords (expanded)
+    opensource_keywords = [
+        "open source", "github", "gitlab", "linux", "ubuntu", "debian", "fedora", "arch linux", "red hat", "centos",
+        "apache", "mozilla", "gnu", "copyleft", "mit license", "gpl", "bsd license", "apache license", "eclipse foundation",
+        "fork", "pull request", "contributor", "maintainer", "foss", "oss", "openstack", "kde", "gnome", "freebsd", "openbsd"
+    ]
+
+    # Big Tech & Industry keywords (expanded)
+    bigtech_keywords = [
+        "google", "microsoft", "apple", "amazon", "meta", "facebook", "twitter", "tesla", "nvidia", "intel", "amd", "samsung",
+        "startup", "venture capital", "vc", "funding", "investment", "ipo", "acquisition", "merger", "spinoff", "spac",
+        "silicon valley", "entrepreneur", "business model", "revenue", "unicorn", "series a", "series b", "industry", "market", "stock",
+        "bytedance", "tiktok", "baidu", "alibaba", "xiaomi", "huawei", "oracle", "ibm", "sap", "salesforce", "adobe", "paypal"
+    ]
+
+    # Tech Culture & Work keywords (expanded)
+    culture_keywords = [
+        "remote work", "work from home", "developer survey", "salary", "job", "career", "hiring", "interview", "workplace", "team",
+        "culture", "burnout", "productivity", "diversity", "inclusion", "tech workers", "engineers", "engineering", "stackoverflow",
+        "stack overflow", "survey", "trends", "skills", "layoff", "fired", "promotion", "onboarding", "exit interview", "work visa"
+    ]
+
+    # AI & ML keywords (expanded)
+    ai_keywords = [
+        "ai", "artificial intelligence", "machine learning", "ml", "neural network", "deep learning", "nlp", "computer vision",
+        "tensorflow", "pytorch", "chatgpt", "llm", "gpt", "bert", "transformer", "openai", "anthropic", "claude", "gemini", "copilot",
+        "chatbot", "automation", "robotics", "algorithm", "mistral", "llama", "llama 2", "llama 3", "sora", "stable diffusion", "midjourney",
+        "dalle", "dall-e", "slm", "small language model", "large language model", "prompt engineering", "vector db", "embedding", "inference"
+    ]
+
+    # Cybersecurity keywords (expanded)
+    security_keywords = [
+        "security", "cybersecurity", "hack", "hacker", "breach", "vulnerability", "exploit", "cve", "encryption", "privacy", "malware",
+        "ransomware", "phishing", "zero-day", "firewall", "antivirus", "vpn", "authentication", "password", "biometric", "two-factor",
+        "ssl", "tls", "pentest", "penetration test", "red team", "blue team", "infosec", "threat", "mitre", "cisa", "nist", "iso 27001",
+        "cryptography", "crypto", "public key", "private key", "certificate", "token", "access control", "siem", "ids", "ips", "forensics",
+        "incident response", "bug bounty", "security audit", "rootkit", "keylogger", "spyware", "trojan", "worm", "backdoor", "botnet",
+        "cyberattack", "cybercrime", "cyberwarfare", "cyber defense", "cyber offense", "zero trust", "mfa", "sso", "xss", "csrf", "sql injection"
+    ]
+
+    # Cloud & DevOps keywords (expanded)
+    cloud_keywords = [
+        "cloud", "aws", "azure", "gcp", "docker", "kubernetes", "devops", "ci/cd", "deployment", "infrastructure", "serverless",
+        "microservices", "containerization", "orchestration", "scalability", "load balancing", "terraform", "ansible", "helm", "istio",
+        "cloudflare", "alb", "elb", "s3", "ec2", "lambda", "cloud run", "cloud function", "cloud storage", "cloud sql", "cloud native",
+        "service mesh", "argo", "argo cd", "prometheus", "grafana", "monitoring", "observability", "opsgenie", "pagerduty"
+    ]
+
+    # Software Development keywords (expanded)
+    dev_keywords = [
+        "programming", "coding", "developer", "software", "web development", "javascript", "python", "react", "node.js", "framework",
+        "api", "frontend", "backend", "fullstack", "typescript", "angular", "vue", "php", "ruby", "java", "c++", "rust", "go", "scala",
+        "kotlin", "mobile", "app", "application", "ios", "android", "smartphone", "swift", "objective-c", "flutter", "dart", "svelte",
+        "next.js", "nuxt.js", "express.js", "django", "flask", "spring", "dotnet", ".net", "c#", "perl", "matlab", "assembly", "shell script"
+    ]
+
+    # Data Science keywords (expanded)
+    data_keywords = [
+        "data science", "analytics", "big data", "database", "sql", "visualization", "statistics", "analysis", "pandas", "numpy",
+        "matplotlib", "tableau", "power bi", "data mining", "etl", "data warehouse", "nosql", "mongodb", "postgresql", "mysql",
+        "data lake", "data pipeline", "data engineer", "data analyst", "feature engineering", "data cleaning", "data wrangling",
+        "jupyter", "notebook", "spark", "hadoop", "presto", "snowflake", "redshift", "bigquery", "superset", "looker"
+    ]
+
+    def has_keyword(keywords):
+        for kw in keywords:
+            if re.search(r'\b' + re.escape(kw) + r'\b', combined_text, re.IGNORECASE):
+                return True
+        return False
+
+    # Prioritize: security > cloud > open source > ai/ml > bigtech > dev > data > culture
+    if has_keyword(security_keywords):
         return CYBERSECURITY_TOPIC
-    elif any(keyword in combined_text for keyword in cloud_keywords):
+    if has_keyword(cloud_keywords):
         return CLOUD_DEVOPS_TOPIC
-    elif any(keyword in combined_text for keyword in dev_keywords):
+    if has_keyword(opensource_keywords):
+        return OPEN_SOURCE_TOPIC
+    if has_keyword(ai_keywords):
+        return AI_ML_TOPIC
+    if has_keyword(bigtech_keywords):
+        return BIG_TECH_TOPIC
+    if has_keyword(dev_keywords):
         return SOFTWARE_DEV_TOPIC
-    elif any(keyword in combined_text for keyword in data_keywords):
+    if has_keyword(data_keywords):
         return DATA_SCIENCE_TOPIC
-    else:
-        return EMERGING_TECH_TOPIC  # Default fallback
+    if has_keyword(culture_keywords):
+        return TECH_CULTURE_TOPIC
+    return EMERGING_TECH_TOPIC  # Default fallback
 
 # --- Get article by ID (regardless of user/read status) ---
 def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
@@ -806,11 +826,17 @@ def mark_content_as_read(user_id: int, content_item_id: int, is_read: bool = Tru
 
 def toggle_content_liked(user_id: int, content_item_id: int, is_liked: bool) -> bool:
     """Toggles the liked (and saved) status of a content item for a specific user."""
-    return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+    print(f"[Like/Unlike] toggle_content_liked called: user_id={user_id}, content_item_id={content_item_id}, is_liked={is_liked}")
+    result = _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+    print(f"[Like/Unlike] toggle_content_liked result: user_id={user_id}, content_item_id={content_item_id}, is_liked={is_liked}, success={result}")
+    return result
 
 def update_content_liked(user_id: int, content_item_id: int, is_liked: bool = True) -> bool:
     """Marks a content item as liked (and saved) for a specific user."""
-    return _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+    print(f"[Like/Unlike] update_content_liked called: user_id={user_id}, content_item_id={content_item_id}, is_liked={is_liked}")
+    result = _upsert_user_content_interaction(user_id, content_item_id, is_liked=is_liked)
+    print(f"[Like/Unlike] update_content_liked result: user_id={user_id}, content_item_id={content_item_id}, is_liked={is_liked}, success={result}")
+    return result
 
 @cache_result(expiry=60)  # Cache for only 1 minute for faster refreshes
 def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str, Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]]:

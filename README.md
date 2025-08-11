@@ -71,7 +71,7 @@ python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run comprehensive tests locally  
-See [TESTING.md](./TESTING.md) for details on running unit tests and the full test suite.  
+See TESTING.md for details on running unit tests and the full test suite.  
 `run_tests.bat`  &nbsp; <sub>(Full test suite with code quality checks)</sub>
 
 # Configure environment and database

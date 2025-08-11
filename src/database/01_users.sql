@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Drop the trigger if it exists (idempotent)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at') THEN
+        EXECUTE 'DROP TRIGGER set_updated_at ON users';
+    END IF;
+END$$;
+
 CREATE TRIGGER set_updated_at
 BEFORE UPDATE ON users
 FOR EACH ROW

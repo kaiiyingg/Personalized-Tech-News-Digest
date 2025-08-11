@@ -78,12 +78,12 @@ def login_required_api(f):
 
 # ------------------- ROUTES -------------------
 
-# --- Home/Discover route: latest summaries, daily digest ---
+# --- Home route: latest summaries, daily digest ---
 @app.route('/', methods=['GET'])
 def index():
     print("[index] Called. session:", dict(session))
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('register'))
     user_id = session['user_id']
     
     # Check if this is a fresh login (auto-refresh trigger)

@@ -12,9 +12,9 @@ PG_HOST = os.getenv('DB_HOST')
 PG_PORT = os.getenv('DB_PORT', 5432)
 
 """
-This module handles database connections and table creation for the TechPulse application.
+This module handles database connections and schema/index creation for the TechPulse application.
 It loads database credentials from environment variables and uses psycopg2 to interact with PostgreSQL.
-Run "python src/database/connection.py" to create tables based on SQL scripts in the same directory.
+Run "python src/database/connection.py" to create tables, indexes, and metadata tables based on SQL scripts in the same directory.
 
 All .sql files in this directory will be executed, including:
     - 01_users.sql
@@ -22,7 +22,9 @@ All .sql files in this directory will be executed, including:
     - 03_content.sql
     - 04_user_content_interactions.sql
     - 05_user_topics.sql (for user personalization)
-Make sure your user_topics table definition is present as 05_user_topics.sql or similar.
+    - 06_indexes.sql (for performance indexes)
+    - 07_ingestion_metadata.sql (for ingestion tracking)
+Make sure your user_topics, indexes, and ingestion_metadata definitions are present as 05_user_topics.sql, 06_indexes.sql, 07_ingestion_metadata.sql or similar.
 """
 
 def get_db_connection():
@@ -43,23 +45,43 @@ def close_db_connection(conn):
 
 def create_tables():
     """
-    Executes all .sql files in the current directory to create tables and other schema objects.
-    Reads each .sql file, executes its content, and commits the changes.
+    Executes all .sql files in the current directory to create tables, indexes, and other schema objects.
+    Reads each .sql file, executes its content (including multiple statements per file), and commits the changes.
     """
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Get all .sql files in the same directory as this script
         sql_dir = os.path.dirname(os.path.abspath(__file__))
         sql_files = [f for f in os.listdir(sql_dir) if f.endswith('.sql')]
-        sql_files.sort()  # Ensure a consistent order (e.g., 01_users.sql, 02_sources.sql, ...)
+        sql_files.sort()
         for sql_file in sql_files:
             file_path = os.path.join(sql_dir, sql_file)
             with open(file_path, 'r', encoding='utf-8') as f:
                 sql = f.read()
-                cursor.execute(sql)
-                print(f"Executed {sql_file}")
+                if 'CREATE INDEX CONCURRENTLY' in sql.upper():
+                    print(f"Executing {sql_file} in autocommit mode (for CONCURRENTLY indexes)...")
+                    # Split into individual statements (naive split on semicolon, but only for CREATE INDEX CONCURRENTLY)
+                    statements = [stmt.strip() for stmt in sql.split(';') if stmt.strip()]
+                    for stmt in statements:
+                        if 'CREATE INDEX CONCURRENTLY' in stmt.upper():
+                            import psycopg2
+                            conn_ac = psycopg2.connect(
+                                dbname=PG_DATABASE,
+                                user=PG_USER,
+                                password=PG_PASSWORD,
+                                host=PG_HOST,
+                                port=PG_PORT
+                            )
+                            conn_ac.autocommit = True
+                            cursor_ac = conn_ac.cursor()
+                            cursor_ac.execute(stmt)
+                            print(f"Executed: {stmt[:60]}...")
+                            cursor_ac.close()
+                            conn_ac.close()
+                else:
+                    cursor.execute(sql)
+                    print(f"Executed {sql_file}")
         conn.commit()
         print("All SQL scripts executed and tables created successfully.")
     except Exception as e:

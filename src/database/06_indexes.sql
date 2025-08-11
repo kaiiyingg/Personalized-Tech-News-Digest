@@ -25,10 +25,7 @@ ON user_topics(user_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_content_source_date 
 ON content(source_id, published_at DESC);
 
--- Partial index for unread articles - optimizes fast view queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_content_unread_recent 
-ON content(published_at DESC) 
-WHERE published_at >= NOW() - INTERVAL '24 hours';
+
 
 -- Index for liked articles - speeds up cleanup operations
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_interactions_liked 

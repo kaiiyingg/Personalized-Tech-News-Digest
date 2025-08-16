@@ -1153,7 +1153,7 @@ def cleanup_irrelevant_articles():
         
         # Get all articles that need to be re-evaluated
         cur.execute("""
-            SELECT id, title, summary, url 
+            SELECT id, title, summary, article_url 
             FROM content 
             WHERE id NOT IN (
                 SELECT DISTINCT content_id 
@@ -1162,7 +1162,7 @@ def cleanup_irrelevant_articles():
             )
             ORDER BY published_at DESC
         """)
-        
+
         articles_to_check = cur.fetchall()
         articles_to_remove = []
         

@@ -18,7 +18,7 @@ import os
 import sys
 import threading
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
 # Import service modules directly for better maintainability
@@ -41,6 +41,9 @@ DANGER_CATEGORY = 'danger'
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
+# Set session timeout to 30 minutes
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+
 # Global refresh operation management
 refresh_lock = threading.Lock()
 refresh_in_progress = False
@@ -55,6 +58,10 @@ else:
 # Redis configuration for caching
 if not os.getenv('REDIS_URL'):
     os.environ['REDIS_URL'] = 'redis://redis:6379/0'
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 # ===== AUTHENTICATION DECORATORS =====
 

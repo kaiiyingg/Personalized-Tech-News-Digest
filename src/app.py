@@ -226,11 +226,17 @@ def verify_code():
             flash('Code is required.', 'danger')
             return render_template('verify_code.html')
 
-        # Fetch email directly from the database using the code
-        user = user_service.find_user_by_code(code)
+        # Fetch user from session or context
+        user_id = session.get('user_id')
+        if not user_id:
+            print("[verify_code] No user in session.")
+            flash('Session expired. Please try again.', 'danger')
+            return redirect(url_for('login'))
+
+        user = user_service.find_user_by_id(user_id)
         if not user:
-            print("[verify_code] No user found for the provided code.")
-            flash('Invalid or expired code. Please try again.', 'danger')
+            print("[verify_code] No user found for ID.")
+            flash('No account found for verification.', 'danger')
             return render_template('verify_code.html')
 
         totp = pyotp.TOTP(user.totp_secret)
@@ -248,44 +254,44 @@ def verify_code():
 @app.route('/reset_username', methods=['GET', 'POST'])
 def reset_username():
     print("[reset_username] Called. session:", dict(session))
-    if 'user_id' not in session:
-        print("[reset_username] No user_id in session. Redirecting to login.")
-        flash('You must be logged in to change your username.', 'danger')
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    user = user_service.find_user_by_id(user_id)
-    print(f"[reset_username] user_id: {user_id}, user: {user}")
-    if not user:
-        print("[reset_username] User not found. Redirecting to login.")
-        flash(USER_NOT_FOUND_MSG, DANGER_CATEGORY)
-        return redirect(url_for('login'))
     if request.method == 'POST':
+        email = request.form.get('email', '').strip()
         new_username = request.form.get('new_username', '').strip()
         password = request.form.get('password', '').strip()
-        print(f"[reset_username] POST new_username: {new_username}, password: {'*' * len(password)}")
+
+        print(f"[reset_username] POST email: {email}, new_username: {new_username}, password: {'*' * len(password)}")
+
+        if not email or not new_username or not password:
+            print("[reset_username] Missing fields.")
+            flash('All fields are required.', 'danger')
+            return render_template(RESET_USERNAME_TEMPLATE)
+
+        user = user_service.find_user_by_email(email)
+        if not user:
+            print("[reset_username] No user found for email.")
+            flash('No account found with that email.', 'danger')
+            return render_template(RESET_USERNAME_TEMPLATE)
+
         if not user_service.check_password(user, password):
             print("[reset_username] Incorrect password.")
             flash('Incorrect password.', 'danger')
             return render_template(RESET_USERNAME_TEMPLATE)
-        if not new_username or new_username == user.username:
-            print("[reset_username] Invalid or same username.")
-            flash('Please enter a new username.', 'danger')
-            return render_template(RESET_USERNAME_TEMPLATE)
+
         if user_service.find_user_by_username(new_username):
             print("[reset_username] Username already taken.")
-            flash('Username already taken.', 'danger')
+            flash('Username already taken. Please try a different one.', 'danger')
             return render_template(RESET_USERNAME_TEMPLATE)
-        updated = user_service.update_user_username(user_id, new_username)
+
+        updated = user_service.update_user_username(user.id, new_username)
         print(f"[reset_username] update_user_username result: {updated}")
         if updated:
-            session['username'] = new_username
-            print("[reset_username] Username updated. Redirecting to profile.")
+            print("[reset_username] Username updated successfully.")
             flash('Username updated successfully.', 'success')
-            return redirect(url_for('profile'))
+            return redirect(url_for('login'))
         else:
             print("[reset_username] Failed to update username.")
-            flash('Failed to update username. Try again.', 'danger')
-            return render_template(RESET_USERNAME_TEMPLATE)
+            flash('Failed to update username. Please try again.', 'danger')
+
     return render_template(RESET_USERNAME_TEMPLATE)
 
 # --- Article Interaction Routes for Dashboard Forms ---

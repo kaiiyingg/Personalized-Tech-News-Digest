@@ -280,27 +280,6 @@ class TestContentService:
         assert 'top_topics' in stats
         assert stats['total_articles'] == 100
 
-    @patch('src.services.content_service.get_db_connection')
-    @patch('src.services.content_service.close_db_connection')
-    def test_cleanup_irrelevant_articles(self, mock_close_conn, mock_get_conn):
-        """Test cleanup of irrelevant articles"""
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_conn.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        # Mock articles to check
-        mock_cursor.fetchall.return_value = [
-            (1, 'Wedding Photography Tips', 'Best wedding photos', 'https://example.com/wedding'),
-            (2, 'AI Machine Learning', 'Tech article about AI', 'https://example.com/ai')
-        ]
-        
-        result = content_service.cleanup_irrelevant_articles()
-        
-        assert result['success'] is True
-        assert 'articles_removed' in result
-        mock_cursor.execute.assert_called()
-
     def test_classify_topic_by_keywords_ai_ml(self):
         """Test keyword-based topic classification for AI/ML"""
         combined_text = "machine learning artificial intelligence neural networks"

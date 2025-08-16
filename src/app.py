@@ -185,31 +185,62 @@ def change_email():
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     print("[reset_password] Called. session:", dict(session))
+    if 'verified_email' not in session:
+        print("[reset_password] No verified email in session. Redirecting to verify code.")
+        flash('Please verify your code first.', 'danger')
+        return redirect(url_for('verify_code'))
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        code = request.form.get('code', '').strip()
         new_password = request.form.get('new_password', '').strip()
-        print(f"[reset_password] POST email: {email}, code: {code}, new_password: {'*' * len(new_password)}")
-        if not email or not code or not new_password:
+        confirm_password = request.form.get('confirm_password', '').strip()
+        print(f"[reset_password] POST new_password: {'*' * len(new_password)}, confirm_password: {'*' * len(confirm_password)}")
+        if not new_password or not confirm_password:
             print("[reset_password] Missing fields.")
             flash('All fields are required.', 'danger')
             return render_template(RESET_PASSWORD_TEMPLATE)
+        if new_password != confirm_password:
+            print("[reset_password] Passwords do not match.")
+            flash('Passwords do not match.', 'danger')
+            return render_template(RESET_PASSWORD_TEMPLATE)
+        email = session.pop('verified_email', None)
         user = user_service.find_user_by_email(email)
         print(f"[reset_password] user: {user}")
         if not user:
             print("[reset_password] No user found for email.")
             flash('No account found for password reset.', 'danger')
             return render_template(RESET_PASSWORD_TEMPLATE)
-        totp = pyotp.TOTP(user.totp_secret)
-        if not totp.verify(code):
-            print("[reset_password] Invalid TOTP code.")
-            flash('Invalid code. Please try again.', 'danger')
-            return render_template(RESET_PASSWORD_TEMPLATE)
         user_service.update_user_password(user.id, new_password)
         print("[reset_password] Password updated. Redirecting to login.")
         flash('Password reset successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template(RESET_PASSWORD_TEMPLATE)
+
+# --- Verify Code Page ---
+@app.route('/verify_code', methods=['GET', 'POST'])
+def verify_code():
+    print("[verify_code] Called. session:", dict(session))
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        code = request.form.get('auth_code', '').strip()
+        print(f"[verify_code] POST email: {email}, code: {code}")
+        if not email or not code:
+            print("[verify_code] Missing fields.")
+            flash('All fields are required.', 'danger')
+            return render_template('verify_code.html')
+        user = user_service.find_user_by_email(email)
+        print(f"[verify_code] user: {user}")
+        if not user:
+            print("[verify_code] No user found for email.")
+            flash('No account found for verification.', 'danger')
+            return render_template('verify_code.html')
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code):
+            print("[verify_code] Invalid TOTP code.")
+            flash('Invalid code. Please try again.', 'danger')
+            return render_template('verify_code.html')
+        session['verified_email'] = email
+        print("[verify_code] Code verified. Redirecting to reset password.")
+        return redirect(url_for('reset_password'))
+    return render_template('verify_code.html')
 
 # --- Reset Username Page ---
 @app.route('/reset_username', methods=['GET', 'POST'])

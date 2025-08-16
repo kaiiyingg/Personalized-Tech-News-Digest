@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Password - TechPulse</title>
+  <title>Verify Code - TechPulse</title>
   <link rel="icon" href="{{ url_for('static', filename='imgs/TechPulseLogo.jpg') }}" type="image/jpeg">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script defer src="{{ url_for('static', filename='js/flash_messages.js') }}"></script>
@@ -18,18 +18,12 @@
       </ul>
     {% endif %}
   {% endwith %}
-  <form class="form" method="POST" action="{{ url_for('reset_password') }}" autocomplete="off">
+  <form class="form" method="POST" action="{{ url_for('verify_code') }}" autocomplete="off">
     <div class="control">
-      <h1>Reset Password</h1>
+      <h1>Verify Code</h1>
     </div>
     <div class="control block-cube block-input">
-      <input type="password" id="new_password" name="new_password" placeholder="New Password" required />
-      <div class="bg-top"><div class="bg-inner"></div></div>
-      <div class="bg-right"><div class="bg-inner"></div></div>
-      <div class="bg"><div class="bg-inner"></div></div>
-    </div>
-    <div class="control block-cube block-input">
-      <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm New Password" required />
+      <input type="text" id="auth_code" name="auth_code" placeholder="6-digit Code" required pattern="\d{6}" title="Enter a valid 6-digit code" />
       <div class="bg-top"><div class="bg-inner"></div></div>
       <div class="bg-right"><div class="bg-inner"></div></div>
       <div class="bg"><div class="bg-inner"></div></div>
@@ -38,7 +32,7 @@
       <div class="bg-top"><div class="bg-inner"></div></div>
       <div class="bg-right"><div class="bg-inner"></div></div>
       <div class="bg"><div class="bg-inner"></div></div>
-      <span class="text">Reset Password</span>
+      <span class="text">Verify</span>
     </button>
     <div style="text-align:center; margin-top:1.5em;">
       <a href="{{ url_for('login') }}" class="btn block-cube block-cube-hover" style="font-size:1.1rem; padding:0.7em 2.2em; margin-top:0.2em;">Back to Login</a>

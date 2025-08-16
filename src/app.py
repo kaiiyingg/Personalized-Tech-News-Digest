@@ -219,13 +219,17 @@ def reset_password():
 def verify_code():
     print("[verify_code] Called. session:", dict(session))
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
         code = request.form.get('auth_code', '').strip()
-        print(f"[verify_code] POST email: {email}, code: {code}")
-        if not email or not code:
+        print(f"[verify_code] POST code: {code}")
+        if not code:
             print("[verify_code] Missing fields.")
-            flash('All fields are required.', 'danger')
+            flash('Code is required.', 'danger')
             return render_template('verify_code.html')
+        email = session.get('email')
+        if not email:
+            print("[verify_code] No email in session.")
+            flash('Session expired. Please try again.', 'danger')
+            return redirect(url_for('forgot_password'))
         user = user_service.find_user_by_email(email)
         print(f"[verify_code] user: {user}")
         if not user:

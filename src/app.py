@@ -117,6 +117,13 @@ def discover():
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     print("[forgot_password] Called. session:", dict(session))
+
+    # Ensure user_id is in session
+    if 'user_id' not in session:
+        print("[forgot_password] Session expired or user not logged in.")
+        flash('Session expired. Please log in again.', 'danger')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         code = request.form.get('auth_code', '').strip()
         print(f"[forgot_password] POST code: {code}")
@@ -125,13 +132,7 @@ def forgot_password():
             flash('Code is required.', 'danger')
             return render_template('reset_password.html')
 
-        # Fetch user from session or context
         user_id = session.get('user_id')
-        if not user_id:
-            print("[forgot_password] No user in session.")
-            flash('Session expired. Please try again.', 'danger')
-            return redirect(url_for('login'))
-
         user = user_service.find_user_by_id(user_id)
         if not user:
             print("[forgot_password] No user found for ID.")
@@ -421,21 +422,24 @@ def login():
                 return render_template(LOGIN_TEMPLATE)
         session['user_id'] = user.id
         session['username'] = user.username
-                # --- Auto-ingestion logic ---
+        print(f"[login] Session initialized: user_id={session['user_id']}, username={session['username']}")
+
+        # --- Auto-ingestion logic ---
         from src.services import content_service
         import datetime
         last_ingest = content_service.get_last_ingestion_time()
         now = datetime.datetime.now(datetime.timezone.utc)
-        
+
         # Ensure last_ingest is timezone-aware if it exists
         if last_ingest is not None and last_ingest.tzinfo is None:
             last_ingest = last_ingest.replace(tzinfo=datetime.timezone.utc)
-        
+
         trigger_refresh = True
         if last_ingest and (now - last_ingest).total_seconds() < 2 * 3600:
             trigger_refresh = False
-            
+
         session['trigger_auto_refresh'] = trigger_refresh
+        print(f"[login] Auto-refresh trigger set: {trigger_refresh}")
         flash('Welcome back!', 'success')
         return redirect(url_for('index'))
     return render_template(LOGIN_TEMPLATE)

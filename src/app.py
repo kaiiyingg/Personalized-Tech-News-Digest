@@ -225,23 +225,21 @@ def verify_code():
             print("[verify_code] Missing fields.")
             flash('Code is required.', 'danger')
             return render_template('verify_code.html')
-        email = session.get('email')
-        if not email:
-            print("[verify_code] No email in session.")
-            flash('Session expired. Please try again.', 'danger')
-            return redirect(url_for('forgot_password'))
-        user = user_service.find_user_by_email(email)
-        print(f"[verify_code] user: {user}")
+
+        # Fetch email directly from the database using the code
+        user = user_service.find_user_by_code(code)
         if not user:
-            print("[verify_code] No user found for email.")
-            flash('No account found for verification.', 'danger')
+            print("[verify_code] No user found for the provided code.")
+            flash('Invalid or expired code. Please try again.', 'danger')
             return render_template('verify_code.html')
+
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(code):
             print("[verify_code] Invalid TOTP code.")
             flash('Invalid code. Please try again.', 'danger')
             return render_template('verify_code.html')
-        session['verified_email'] = email
+
+        session['verified_email'] = user.email
         print("[verify_code] Code verified. Redirecting to reset password.")
         return redirect(url_for('reset_password'))
     return render_template('verify_code.html')

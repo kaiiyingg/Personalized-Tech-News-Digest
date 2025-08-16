@@ -6,43 +6,36 @@
   <title>Verify Code - TechPulse</title>
   <link rel="icon" href="{{ url_for('static', filename='imgs/TechPulseLogo.jpg') }}" type="image/jpeg">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <script defer src="{{ url_for('static', filename='js/flash_messages.js') }}"></script>
 </head>
 <body>
-  <header>
-    <h1>Verify Code</h1>
-  </header>
-  <main>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes" role="alert">
-          {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    <form class="form" method="POST" action="{{ url_for('verify_code') }}" autocomplete="off" aria-labelledby="verify-code-form">
-      <fieldset>
-        <legend id="verify-code-form">Enter Verification Code</legend>
-        <div class="control block-cube block-input">
-          <label for="auth_code">6-digit Code</label>
-          <input type="text" id="auth_code" name="auth_code" placeholder="6-digit Code" required pattern="\d{6}" title="Enter a valid 6-digit code" />
-          <div class="bg-top"><div class="bg-inner"></div></div>
-          <div class="bg-right"><div class="bg-inner"></div></div>
-          <div class="bg"><div class="bg-inner"></div></div>
-        </div>
-        <button class="btn block-cube block-cube-hover" type="submit">
-          <div class="bg-top"><div class="bg-inner"></div></div>
-          <div class="bg-right"><div class="bg-inner"></div></div>
-          <div class="bg"><div class="bg-inner"></div></div>
-          <span class="text">Verify</span>
-        </button>
-      </fieldset>
-    </form>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+  <form class="form" method="POST" action="{{ url_for('verify_code') }}" autocomplete="off">
+    <div class="control">
+      <h1>Verify Code</h1>
+    </div>
+    <div class="control block-cube block-input">
+      <input type="text" id="auth_code" name="auth_code" placeholder="6-digit Code" required pattern="\d{6}" title="Enter a valid 6-digit code" />
+      <div class="bg-top"><div class="bg-inner"></div></div>
+      <div class="bg-right"><div class="bg-inner"></div></div>
+      <div class="bg"><div class="bg-inner"></div></div>
+    </div>
+    <button class="btn block-cube block-cube-hover" type="submit">
+      <div class="bg-top"><div class="bg-inner"></div></div>
+      <div class="bg-right"><div class="bg-inner"></div></div>
+      <div class="bg"><div class="bg-inner"></div></div>
+      <span class="text">Verify</span>
+    </button>
     <div style="text-align:center; margin-top:1.5em;">
       <a href="{{ url_for('login') }}" class="btn block-cube block-cube-hover" style="font-size:1.1rem; padding:0.7em 2.2em; margin-top:0.2em;">Back to Login</a>
     </div>
-</main>
+  </form>
 </body>
 </html>

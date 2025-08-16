@@ -118,13 +118,34 @@ def discover():
 def forgot_password():
     print("[forgot_password] Called. session:", dict(session))
     if request.method == 'POST':
-        email = request.form['email']
-        user = user_service.find_user_by_email(email)
-        if not user:
-            flash('No account found with that email.', 'danger')
+        code = request.form.get('auth_code', '').strip()
+        print(f"[forgot_password] POST code: {code}")
+        if not code:
+            print("[forgot_password] Missing fields.")
+            flash('Code is required.', 'danger')
             return render_template('reset_password.html')
-        session['reset_email'] = email
-        flash('Enter the 6-digit code from your authenticator app and your new password.', 'info')
+
+        # Fetch user from session or context
+        user_id = session.get('user_id')
+        if not user_id:
+            print("[forgot_password] No user in session.")
+            flash('Session expired. Please try again.', 'danger')
+            return redirect(url_for('login'))
+
+        user = user_service.find_user_by_id(user_id)
+        if not user:
+            print("[forgot_password] No user found for ID.")
+            flash('No account found for verification.', 'danger')
+            return render_template('reset_password.html')
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code):
+            print("[forgot_password] Invalid TOTP code.")
+            flash('Invalid code. Please try again.', 'danger')
+            return render_template('reset_password.html')
+
+        session['verified_email'] = user.email
+        print("[forgot_password] Code verified. Redirecting to reset password.")
         return redirect(url_for('reset_password'))
     return render_template('reset_password.html')
 

@@ -115,11 +115,11 @@ def forgot_password():
         user = user_service.find_user_by_email(email)
         if not user:
             flash('No account found with that email.', 'danger')
-            return render_template('forgot_password.html')
+            return render_template('reset_password.html')
         session['reset_email'] = email
         flash('Enter the 6-digit code from your authenticator app and your new password.', 'info')
         return redirect(url_for('reset_password'))
-    return render_template('forgot_password.html')
+    return render_template('reset_password.html')
 
 # --- Profile Page ---
 @app.route('/profile', methods=['GET', 'POST'])

@@ -2556,7 +2556,7 @@ a:hover {
   letter-spacing: -0.02em;
   margin-bottom: 0.75rem;
   margin-top: 0;
-  background: linear-gradient(135deg, #8B5CF6, #A855F7, #C084FC);
+  background: linear-gradient(135deg, #A855F7, #C084FC, #E879F9);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2631,20 +2631,19 @@ a:hover {
   padding: 0.875rem 1.25rem;
   font-size: 1rem;
   background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.3);
   border-radius: 0.75rem;
   color: #fff;
   transition: all 0.3s ease;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(168, 85, 247, 0.1);
 }
 
 .profile-input:focus {
   outline: none;
-  border-color: #8B5CF6;
+  border-color: #A855F7;
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 4px 12px rgba(139, 92, 246, 0.2);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3), 0 4px 12px rgba(168, 85, 247, 0.2);
 }
 
 .profile-input::placeholder {

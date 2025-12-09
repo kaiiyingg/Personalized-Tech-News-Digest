@@ -28,7 +28,6 @@ import src.services.content_service as content_service
 # ===== APPLICATION CONSTANTS =====
 
 LOGIN_TEMPLATE = 'login.html'
-CHANGE_EMAIL_TEMPLATE = 'change_email.html'
 RESET_PASSWORD_TEMPLATE = 'reset_password.html'
 USER_NOT_FOUND_MSG = 'User not found.'
 LOGIN_REQUIRED_MSG = 'You must be logged in to perform this action.'
@@ -176,54 +175,34 @@ def profile():
     if not user:
         flash(USER_NOT_FOUND_MSG, DANGER_CATEGORY)
         return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        new_username = request.form.get('username') or ''
-        if new_username and new_username != user.username:
-            if user_service.update_user_username(user_id, new_username):
-                session['username'] = new_username
-                flash('Username updated successfully.', 'success')
-                return redirect(url_for('profile'))
-            else:
-                flash('Failed to update username. Try a different one.', 'danger')
+        action = request.form.get('action')
+        
+        # Handle username update
+        if action == 'update_username':
+            new_username = request.form.get('username') or ''
+            if new_username and new_username != user.username:
+                if user_service.update_user_username(user_id, new_username):
+                    session['username'] = new_username
+                    flash('Username updated successfully.', 'success')
+                    return redirect(url_for('profile'))
+                else:
+                    flash('Failed to update username. Try a different one.', 'danger')
+        
+        # Handle email update
+        elif action == 'update_email':
+            new_email = request.form.get('email') or ''
+            if new_email and new_email != user.email:
+                if user_service.update_user_email(user_id, new_email):
+                    flash('Email updated successfully.', 'success')
+                    return redirect(url_for('profile'))
+                else:
+                    flash('Failed to update email. Email may already be in use.', 'danger')
+    
     return render_template('profile.html', current_user=user, username=session.get('username'), current_year=datetime.now().year)
 
 # --- Change Email ---
-@app.route('/change_email', methods=['GET', 'POST'])
-def change_email():
-    print("[change_email] Called. session:", dict(session))
-    if 'user_id' not in session:
-        print("[change_email] No user_id in session. Redirecting to login.")
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    user = user_service.find_user_by_id(user_id)
-    print(f"[change_email] user_id: {user_id}, user: {user}")
-    if not user:
-        print("[change_email] User not found. Redirecting to login.")
-        flash(USER_NOT_FOUND_MSG, DANGER_CATEGORY)
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        new_email = request.form.get('new_email', '').strip()
-        print(f"[change_email] POST new_email: {new_email}")
-        if not new_email:
-            print("[change_email] No new_email provided.")
-            flash('Please enter a new email.', 'danger')
-            return render_template(CHANGE_EMAIL_TEMPLATE)
-        if new_email == user.email:
-            print("[change_email] New email is same as current email.")
-            flash('New email is the same as current email.', 'danger')
-            return render_template(CHANGE_EMAIL_TEMPLATE)
-        updated = user_service.update_user_email(user_id, new_email)
-        print(f"[change_email] update_user_email result: {updated}")
-        if updated:
-            session['setup_email'] = new_email
-            print("[change_email] Email updated successfully.")
-            flash('Email updated successfully.', 'success')
-            return redirect(url_for('profile'))
-        else:
-            print("[change_email] Failed to update email.")
-            flash('Failed to update email. Try a different one.', 'danger')
-    return render_template(CHANGE_EMAIL_TEMPLATE)
-
 # --- Reset Password API ---
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():

@@ -1,32 +1,85 @@
 {% extends 'base.html' %}
 {% block title %}Profile{% endblock %}
+
 {% block content %}
-<div style="width: 100vw; min-height: 90vh; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-  <h1 style="font-size: 3.2rem; font-weight: 900; margin-bottom: 2.5rem; letter-spacing: 0.01em; text-align: center;">Profile</h1>
+<div class="profile-container">
+  <!-- Background Effects -->
+  <div class="gradient-orb-1"></div>
+  <div class="gradient-orb-2"></div>
+  <div class="gradient-orb-center"></div>
+  <div class="grid-pattern"></div>
+  
+  <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <ul class="flashes" style="font-size: 1.3rem;">
+      <ul class="flashes">
         {% for category, message in messages %}
           <li class="{{ category }}">{{ message }}</li>
         {% endfor %}
       </ul>
     {% endif %}
   {% endwith %}
-  <div style="width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.5rem; align-items: center;">
-    <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
-      <div>Username: <span style="color: #8B5CF6;">{{ current_user.username }}</span></div>
-      <form method="POST" action="{{ url_for('profile') }}" style="display: flex; flex-direction: column; align-items: center; gap: 0.5em;">
-        <input type="text" name="username" placeholder="New username" style="padding: 0.5em; font-size: 1.2rem; border: 1px solid #8B5CF6; border-radius: 4px;">
-        <button type="submit" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em;">Change Username</button>
-      </form>
+  
+  <!-- Content -->
+  <div class="profile-content">
+    <!-- Header -->
+    <div class="profile-header">
+      <h1 class="profile-title">Profile</h1>
+      <p class="profile-subtitle">Manage your account settings</p>
     </div>
-    <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
-      <div>Email: <span style="color: #8B5CF6;">{{ current_user.email }}</span></div>
-      <a href="{{ url_for('change_email') }}" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em; margin-top: 0.2em;">Change Email</a>
-    </div>
-    <div style="display: flex; justify-content: center; width: 100%;">
-      <a href="{{ url_for('reset_password') }}" class="btn block-cube block-cube-hover" style="font-size: 1.4rem; padding: 1em 3em; font-weight: 900; background: #8B5CF6; color: #fff;">Reset Password</a>
+    
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <!-- Username Section -->
+      <div class="profile-section">
+        <div class="profile-label">Username</div>
+        <div class="profile-value">
+          <span>{{ current_user.username }}</span>
+        </div>
+        <form method="POST" action="{{ url_for('profile') }}">
+          <input 
+            type="text" 
+            name="username" 
+            placeholder="Enter new username" 
+            class="profile-input"
+            required
+          >
+          <button type="submit" name="action" value="update_username" class="profile-btn profile-btn-secondary">
+            Change Username
+          </button>
+        </form>
+      </div>
+      
+      <!-- Email Section -->
+      <div class="profile-section">
+        <div class="profile-label">Email Address</div>
+        <div class="profile-value">
+          <span>{{ current_user.email }}</span>
+        </div>
+        <form method="POST" action="{{ url_for('profile') }}">
+          <input 
+            type="email" 
+            name="email" 
+            placeholder="Enter new email" 
+            class="profile-input"
+            required
+          >
+          <button type="submit" name="action" value="update_email" class="profile-btn profile-btn-secondary">
+            Change Email
+          </button>
+        </form>
+      </div>
+      
+      <!-- Password Section -->
+      <div class="profile-section">
+        <div class="profile-label">Security</div>
+        <a href="{{ url_for('reset_password') }}" class="profile-btn">
+          Reset Password
+        </a>
+      </div>
     </div>
   </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/flash_messages.js') }}"></script>
 {% endblock %}

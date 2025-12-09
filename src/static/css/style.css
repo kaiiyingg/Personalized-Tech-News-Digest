@@ -424,22 +424,6 @@
   margin-bottom: 1.2rem;
   flex-wrap: wrap;
 }
-.profile-input {
-  flex: 1 1 180px;
-  padding: 0.7rem 1rem;
-  border-radius: 0.7rem;
-  border: none;
-  background: #23272f;
-  color: #fff;
-  font-size: 1.1rem;
-  margin-right: 0.5rem;
-  box-sizing: border-box;
-  transition: outline 0.2s;
-}
-.profile-input:focus {
-  outline: 2px solid #8B5CF6;
-  background: #23272f;
-}
 .profile-btn {
   background: linear-gradient(90deg, #7C3AED 0%, #8B5CF6 100%);
   color: #fff;
@@ -463,7 +447,7 @@
 }
 .profile-btn-secondary {
   background: #181a1b;
-  color: #8B5CF6;
+  color: #fff;
   border: 1.5px solid #8B5CF6;
   font-weight: 500;
   padding: 0.6rem 1.1rem;
@@ -491,90 +475,7 @@
 .profile-actions-row {
   gap: 1rem;
 }
-/* Profile Card and Change Email Page Styles */
-.profile-card {
-  max-width: 520px;
-  margin: 2.5rem auto;
-  background: linear-gradient(135deg, #232526 0%, #414345 100%);
-  border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  padding: 2.5rem 2.2rem 2rem 2.2rem;
-  color: #fff;
-}
 
-.profile-card-header {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  margin-bottom: 2.2rem;
-}
-.email-icon {
-  font-size: 2.2rem;
-  color: #8B5CF6;
-}
-.profile-card-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #fff;
-}
-.profile-card-desc {
-  font-size: 1rem;
-  color: #b8bcc3;
-}
-.profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-.form-group {
-  width: 100%;
-}
-.form-label {
-  font-size: 1rem;
-  color: #b8bcc3;
-  margin-bottom: 0.2rem;
-  display: block;
-}
-.form-input {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  border-radius: 0.7rem;
-  border: none;
-  background: #23272f;
-  color: #fff;
-  font-size: 1.1rem;
-  margin-top: 0.2rem;
-  box-sizing: border-box;
-  transition: outline 0.2s;
-}
-.form-input:focus {
-  outline: 2px solid #8B5CF6;
-  background: #23272f;
-}
-.form-submit {
-  background: #8B5CF6;
-  color: #fff;
-  border: none;
-  border-radius: 0.7rem;
-  padding: 0.7rem 1.5rem;
-  font-size: 1.08em;
-  font-weight: 600;
-  margin-top: 0.5rem;
-  transition: background 0.2s;
-  cursor: pointer;
-}
-.form-submit:hover {
-  background: #7C3AED;
-}
-.profile-card-footer {
-  margin-top: 1.5rem;
-  text-align: right;
-}
-.profile-link {
-  color: #8B5CF6;
-  text-decoration: underline;
-  font-size: 1em;
-}
 /*
   Super Button: Modern animated button for forms (used on My Interests page)
   Accessible visually-hidden class for screen readers
@@ -2621,4 +2522,266 @@ a:hover {
   background: linear-gradient(transparent, rgba(23, 23, 23, 0.8));
   padding-top: 1rem;
   z-index: 10;
+}
+
+/* ====================
+   PROFILE PAGE STYLES
+   ==================== */
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    opacity: 0.2; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.3; 
+    transform: scale(1.05); 
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Container */
+.profile-container {
+  min-height: 90vh;
+  background: #000;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+/* Background gradient orbs */
+.gradient-orb-1 {
+  position: absolute;
+  top: 25%;
+  left: -8rem;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.2);
+  filter: blur(120px);
+  animation: pulse-glow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.gradient-orb-2 {
+  position: absolute;
+  bottom: 25%;
+  right: -8rem;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.2);
+  filter: blur(120px);
+  animation: pulse-glow 6s ease-in-out infinite;
+  animation-delay: 1s;
+  pointer-events: none;
+}
+
+.gradient-orb-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 37.5rem;
+  height: 37.5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Grid pattern */
+.grid-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: 
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* Content */
+.profile-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 48rem;
+}
+
+/* Header */
+.profile-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-title {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+  background: linear-gradient(135deg, #8B5CF6, #A855F7, #C084FC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  width: 100%;
+}
+
+.profile-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+}
+
+/* Card */
+.profile-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow: 
+    0 0 0 1px rgba(139, 92, 246, 0.1),
+    0 10px 40px -10px rgba(139, 92, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Sections */
+.profile-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.profile-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.profile-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.profile-value span {
+  background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Form Elements */
+.profile-input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 0.75rem;
+  color: #fff;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(139, 92, 246, 0.1);
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #8B5CF6;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 4px 12px rgba(139, 92, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.profile-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Buttons */
+.profile-btn {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.profile-btn:hover {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+}
+
+.profile-btn-secondary {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.3));
+  border: 2px solid rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+  transition: all 0.3s ease;
+  color: #fff !important;
+}
+
+.profile-btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(168, 85, 247, 0.45));
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  color: #fff !important;
+}
+
+/* Profile Page Responsive */
+@media (max-width: 640px) {
+  .profile-card {
+    padding: 1.5rem;
+  }
+  
+  .profile-title {
+    font-size: 2.5rem;
+  }
 }

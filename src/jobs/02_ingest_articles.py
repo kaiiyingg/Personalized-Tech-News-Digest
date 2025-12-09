@@ -32,12 +32,12 @@ HTML_TAG_PATTERN = r'<[^>]+>'
 HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 
 # Configuration for FAST refresh performance
-MAX_ARTICLES_PER_FEED = 3  # Reduced from 10 to 3 for faster refresh
-FAST_REFRESH_MODE = True   # Enable speed optimizations
-CONCURRENT_FEEDS = 5       # Process feeds in parallel batches
+MAX_ARTICLES_PER_FEED = 10  # Commercial standard: 10 articles per feed
+FAST_REFRESH_MODE = True    # Enable speed optimizations
+CONCURRENT_FEEDS = 8        # Increased parallel processing for efficiency
 
 # Memory optimization: Disable AI processing for 512MB memory limit
-USE_AI_PROCESSING = False  # Set to False to avoid memory issues on free tier
+USE_AI_PROCESSING = False   # Set to False to avoid memory issues on free tier
 
 def cleanup_old_articles(days_to_keep=30):
     """Remove articles older than specified days to keep database manageable"""

@@ -19,9 +19,9 @@ from src.services.content_service import create_content_item
 from src.services.source_service import get_all_sources
 
 # FAST MODE CONFIGURATION
-FAST_MODE_ARTICLES = 2  # Only 2 newest articles per feed
-CONCURRENT_FEEDS = 8    # Process 8 feeds simultaneously
-REQUEST_TIMEOUT = 5     # 5 second timeout per feed
+FAST_MODE_ARTICLES = 5 
+CONCURRENT_FEEDS = 10   
+REQUEST_TIMEOUT = 5    
 SKIP_URL_VALIDATION = True  # Skip reachability checks for speed
 
 def fetch_feed_fast(source):

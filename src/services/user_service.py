@@ -363,21 +363,21 @@ def generate_reset_code(user_id: int) -> Optional[str]:
     Returns:
         Optional[str]: The 6-digit code if successful, "EXISTS" if code already exists, None if failed
     """
-    logger.info(f"🔵 Attempting to generate reset code for user_id: {user_id}")
+    logger.info(f"Attempting to generate reset code for user_id: {user_id}")
     
     # Check if user already has a valid code
     if has_valid_reset_code(user_id):
-        logger.info(f"⚠️ User {user_id} already has a valid reset code")
+        logger.info(f"User {user_id} already has a valid reset code")
         return "EXISTS"
     
     conn = None
     try:
         # Generate 6-digit code
         code = f"{random.randint(100000, 999999)}"
-        logger.info(f"🔵 Generated code: {code}")
+        logger.info(f"Generated code: {code}")
         
         conn = get_db_connection()
-        logger.info("🔵 Database connection established")
+        logger.info("Database connection established")
         cur = conn.cursor()
         
         # Invalidate any existing reset codes for this user
@@ -393,14 +393,14 @@ def generate_reset_code(user_id: int) -> Optional[str]:
         )
         
         conn.commit()
-        logger.info(f"✅ Reset code generated successfully for user_id: {user_id}")
+        logger.info(f"Reset code generated successfully for user_id: {user_id}")
         return code
         
     except Exception as e:
-        logger.error(f"🔴 Error generating reset code for user_id {user_id}: {e}")
-        logger.error(f"🔴 Error type: {type(e).__name__}")
+        logger.error(f"Error generating reset code for user_id {user_id}: {e}")
+        logger.error(f"Error type: {type(e).__name__}")
         if hasattr(e, 'pgcode'):
-            logger.error(f"🔴 PostgreSQL error code: {e.pgcode}")
+            logger.error(f"PostgreSQL error code: {e.pgcode}")
         if conn:
             conn.rollback()
         return None
@@ -524,11 +524,11 @@ TechPulse Support
         sg = SendGridAPIClient(api_key=sendgrid_api_key)
         response = sg.send(message)
         
-        logger.info(f"✅ Password reset code sent to {user_email} (Status: {response.status_code})")
+        logger.info(f"Password reset code sent to {user_email} (Status: {response.status_code})")
         return True
         
     except Exception as e:
-        logger.error(f"❌ Failed to send reset code: {e}")
+        logger.error(f"Failed to send reset code: {e}")
         return False
 
 

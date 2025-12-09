@@ -15,7 +15,10 @@
   <div style="width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.5rem; align-items: center;">
     <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
       <div>Username: <span style="color: #8B5CF6;">{{ current_user.username }}</span></div>
-      <a href="{{ url_for('reset_username') }}" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em; margin-top: 0.2em;">Change Username</a>
+      <form method="POST" action="{{ url_for('profile') }}" style="display: flex; flex-direction: column; align-items: center; gap: 0.5em;">
+        <input type="text" name="username" placeholder="New username" style="padding: 0.5em; font-size: 1.2rem; border: 1px solid #8B5CF6; border-radius: 4px;">
+        <button type="submit" class="btn block-cube block-cube-hover" style="font-size: 1.3rem; padding: 0.7em 2.2em;">Change Username</button>
+      </form>
     </div>
     <div style="font-size: 2.1rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 0.7em;">
       <div>Email: <span style="color: #8B5CF6;">{{ current_user.email }}</span></div>

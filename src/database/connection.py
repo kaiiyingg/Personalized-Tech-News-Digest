@@ -17,14 +17,6 @@ It loads database credentials from environment variables and uses psycopg2 to in
 Run "python src/database/connection.py" to create tables, indexes, and metadata tables based on SQL scripts in the same directory.
 
 All .sql files in this directory will be executed, including:
-    - 01_users.sql
-    - 02_sources.sql
-    - 03_content.sql
-    - 04_user_content_interactions.sql
-    - 05_user_topics.sql (for user personalization)
-    - 06_indexes.sql (for performance indexes)
-    - 07_ingestion_metadata.sql (for ingestion tracking)
-Make sure your user_topics, indexes, and ingestion_metadata definitions are present as 05_user_topics.sql, 06_indexes.sql, 07_ingestion_metadata.sql or similar.
 """
 
 def get_db_connection():

@@ -25,6 +25,10 @@ services:
       PYTHONPATH: /app/src
       # Redis configuration
       REDIS_URL: redis://redis:6379/0
+      # SendGrid Email Configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      FROM_EMAIL: ${FROM_EMAIL}
+      FROM_NAME: ${FROM_NAME}
     ports:
       - "8000:8000"
     volumes:

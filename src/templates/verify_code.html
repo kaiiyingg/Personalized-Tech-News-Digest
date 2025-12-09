@@ -19,11 +19,16 @@
   {% endwith %}
   <form class="form" method="POST" action="{{ url_for('verify_code') }}" autocomplete="off">
     <div class="control">
-      <h1>Verify Code</h1>
+      <h1>Verify Email Code</h1>
     </div>
-    <p style="text-align: center; margin-bottom: 1.5em;">
-      Please enter the 6-digit code from your authenticator app which is set up when you registered your account.
+    <p style="text-align: center; margin-bottom: 1.5em; color: #666;">
+      Please enter the 6-digit verification code that was sent to your email address.
     </p>
+    <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; margin-bottom: 20px; border-radius: 5px; text-align: center;">
+      <strong>Check your email!</strong> The verification code should arrive within a few minutes. 
+      <br><strong>⏰ Important:</strong> The code expires in 2 minutes for security.
+      <br>Don't forget to check your spam folder if you don't see it in your inbox.
+    </div>
     <div class="control block-cube block-input">
       <input type="text" id="auth_code" name="auth_code" placeholder="6-digit Code" required pattern="\d{6}" title="Enter a valid 6-digit code" />
       <div class="bg-top"><div class="bg-inner"></div></div>
@@ -37,6 +42,10 @@
       <span class="text">Verify</span>
     </button>
     <div style="text-align:center; margin-top:1.5em;">
+      <p style="color: #666; font-size: 0.9em; margin-bottom: 1em;">
+        Didn't receive the code or it expired?
+      </p>
+      <a href="{{ url_for('forgot_password') }}" style="color: #007bff; text-decoration: none; margin-right: 20px; font-size: 0.9em;">← Request New Code</a>
       <a href="{{ url_for('login') }}" class="btn block-cube block-cube-hover" style="font-size:1.1rem; padding:0.7em 2.2em; margin-top:0.2em;">Back to Login</a>
     </div>
   </form>

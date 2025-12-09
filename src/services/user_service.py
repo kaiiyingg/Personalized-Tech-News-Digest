@@ -4,13 +4,13 @@ User Service Module
 This module provides comprehensive user management functionality including:
 - User authentication and authorization
 - User profile management (username, email, password updates)
-- TOTP (Two-Factor Authentication) support
 - User topic preferences management
+- Password reset via email verification codes
 
 Dependencies:
     - Flask-Bcrypt for secure password hashing
-    - PyOTP for TOTP secret generation
     - PostgreSQL database connection
+    - SendGrid for email delivery
 """
 
 from typing import Optional, List
@@ -18,7 +18,21 @@ from src.models.user import User
 from flask_bcrypt import Bcrypt
 from src.database.connection import get_db_connection, close_db_connection
 from psycopg2 import errors as pg_errors
-import pyotp
+import random
+import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# SendGrid integration
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
 
 bcrypt = Bcrypt()
 
@@ -33,18 +47,13 @@ def find_user_by_id(user_id: int) -> Optional[User]:
         
     Returns:
         Optional[User]: User object if found, None if not found or error occurs
-        
-    Example:
-        >>> user = find_user_by_id(123)
-        >>> if user:
-        >>>     print(f"Found user: {user.username}")
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, username, email, password_hash, totp_secret, created_at, updated_at FROM users WHERE id = %s;",
+            "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE id = %s;",
             (user_id,)
         )
         user_data = cur.fetchone()
@@ -66,18 +75,13 @@ def find_user_by_username(username: str) -> Optional[User]:
         
     Returns:
         Optional[User]: User object if found, None if not found or error occurs
-        
-    Example:
-        >>> user = find_user_by_username("john_doe")
-        >>> if user:
-        >>>     print(f"User ID: {user.id}")
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, username, email, password_hash, totp_secret, created_at, updated_at FROM users WHERE username = %s;",
+            "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = %s;",
             (username,)
         )
         user_data = cur.fetchone()
@@ -99,18 +103,13 @@ def find_user_by_email(email: str) -> Optional[User]:
         
     Returns:
         Optional[User]: User object if found, None if not found or error occurs
-        
-    Example:
-        >>> user = find_user_by_email("john@example.com")
-        >>> if user:
-        >>>     print(f"Found user: {user.username}")
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, username, email, password_hash, totp_secret, created_at, updated_at FROM users WHERE email = %s;",
+            "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE email = %s;",
             (email,)
         )
         user_data = cur.fetchone()
@@ -124,11 +123,10 @@ def find_user_by_email(email: str) -> Optional[User]:
         close_db_connection(conn)
 
 # ===== USER CREATION AND AUTHENTICATION =====
-# ===== USER CREATION AND AUTHENTICATION =====
 
 def create_user(username: str, password: str, email: str) -> Optional[User]:
     """
-    Create a new user account with secure password hashing and TOTP setup.
+    Create a new user account with secure password hashing.
     
     Args:
         username (str): Unique username for the account
@@ -137,27 +135,15 @@ def create_user(username: str, password: str, email: str) -> Optional[User]:
         
     Returns:
         Optional[User]: Created User object if successful, None if creation fails
-        
-    Raises:
-        - UniqueViolation: If username or email already exists
-        - Exception: For other database or validation errors
-        
-    Example:
-        >>> new_user = create_user("john_doe", "secure123", "john@example.com")
-        >>> if new_user:
-        >>>     print(f"User created with ID: {new_user.id}")
-        >>> else:
-        >>>     print("User creation failed")
     """
     conn = None
     try:
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        totp_secret = pyotp.random_base32()
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO users (username, email, password_hash, totp_secret) VALUES (%s, %s, %s, %s) RETURNING id, username, email, password_hash, totp_secret, created_at, updated_at;",
-            (username, email, hashed_password, totp_secret)
+            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id, username, email, password_hash, created_at, updated_at;",
+            (username, email, hashed_password)
         )
         result = cur.fetchone()
         if result is None:
@@ -191,36 +177,10 @@ def check_password(user_obj: User, password: str) -> bool:
         
     Returns:
         bool: True if password matches, False otherwise
-        
-    Security:
-        Uses bcrypt for secure password comparison with timing attack protection
-        
-    Example:
-        >>> user = find_user_by_username("john_doe")
-        >>> if user and check_password(user, "user_input_password"):
-        >>>     print("Login successful")
-        >>> else:
-        >>>     print("Invalid credentials")
     """
     # Bcrypt handles the hashing and comparison securely
     return bcrypt.check_password_hash(user_obj.password_hash, password)
 
-# ===== USER PROFILE UPDATE FUNCTIONS =====
-    conn = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE users SET username = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;",
-            (new_username, user_id)
-        )
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"An error occurred while updating username: {e}")
-        if conn:
-            conn.rollback()
-        return False
 # ===== USER PROFILE UPDATE FUNCTIONS =====
 
 def update_user_username(user_id: int, new_username: str) -> bool:
@@ -233,15 +193,6 @@ def update_user_username(user_id: int, new_username: str) -> bool:
         
     Returns:
         bool: True if update successful, False if failed
-        
-    Note:
-        - Automatically updates the updated_at timestamp
-        - Performs database rollback on error
-        
-    Example:
-        >>> success = update_user_username(123, "new_username")
-        >>> if success:
-        >>>     print("Username updated successfully")
     """
     conn = None
     try:
@@ -271,16 +222,6 @@ def update_user_email(user_id: int, new_email: str) -> bool:
         
     Returns:
         bool: True if update successful, False if failed
-        
-    Note:
-        - Automatically updates the updated_at timestamp
-        - Performs database rollback on error
-        - Email must be unique across all users
-        
-    Example:
-        >>> success = update_user_email(123, "newemail@example.com")
-        >>> if success:
-        >>>     print("Email updated successfully")
     """
     conn = None
     try:
@@ -310,16 +251,6 @@ def update_user_password(user_id: int, new_password: str) -> bool:
         
     Returns:
         bool: True if update successful, False if failed
-        
-    Security:
-        - Password is securely hashed using bcrypt before storage
-        - Automatically updates the updated_at timestamp
-        - Performs database rollback on error
-        
-    Example:
-        >>> success = update_user_password(123, "new_secure_password")
-        >>> if success:
-        >>>     print("Password updated successfully")
     """
     conn = None
     try:
@@ -340,7 +271,6 @@ def update_user_password(user_id: int, new_password: str) -> bool:
     finally:
         close_db_connection(conn)
 
-# ===== USER TOPIC PREFERENCES MANAGEMENT =====
 # ===== USER TOPIC PREFERENCES MANAGEMENT =====
 
 def get_user_topics(user_id: int) -> List[str]:
@@ -373,9 +303,6 @@ def set_user_topics(user_id: int, topics: List[str]) -> None:
     Args:
         user_id (int): The user's unique identifier
         topics (List[str]): New list of topic names to set
-        
-    Note:
-        Removes all existing topics before inserting new ones (atomic operation)
     """
     conn = None
     try:
@@ -391,5 +318,241 @@ def set_user_topics(user_id: int, topics: List[str]) -> None:
         print(f"Error setting user topics: {e}")
         if conn:
             conn.rollback()
+    finally:
+        close_db_connection(conn)
+
+
+# ===== PASSWORD RESET FUNCTIONS =====
+
+def has_valid_reset_code(user_id: int) -> bool:
+    """
+    Check if user already has a valid unexpired reset code.
+    
+    Args:
+        user_id (int): The user's unique identifier
+        
+    Returns:
+        bool: True if valid code exists, False otherwise
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id FROM password_reset_codes 
+            WHERE user_id = %s AND used = FALSE AND expires_at > NOW()
+        """, (user_id,))
+        
+        return cur.fetchone() is not None
+        
+    except Exception as e:
+        logger.error(f"Error checking existing reset code: {e}")
+        return False
+    finally:
+        close_db_connection(conn)
+
+def generate_reset_code(user_id: int) -> Optional[str]:
+    """
+    Generate and store a 6-digit password reset code for a user.
+    Only generates if no valid unexpired code exists.
+    
+    Args:
+        user_id (int): The user's unique identifier
+        
+    Returns:
+        Optional[str]: The 6-digit code if successful, "EXISTS" if code already exists, None if failed
+    """
+    logger.info(f"🔵 Attempting to generate reset code for user_id: {user_id}")
+    
+    # Check if user already has a valid code
+    if has_valid_reset_code(user_id):
+        logger.info(f"⚠️ User {user_id} already has a valid reset code")
+        return "EXISTS"
+    
+    conn = None
+    try:
+        # Generate 6-digit code
+        code = f"{random.randint(100000, 999999)}"
+        logger.info(f"🔵 Generated code: {code}")
+        
+        conn = get_db_connection()
+        logger.info("🔵 Database connection established")
+        cur = conn.cursor()
+        
+        # Invalidate any existing reset codes for this user
+        cur.execute(
+            "UPDATE password_reset_codes SET used = TRUE WHERE user_id = %s AND used = FALSE;",
+            (user_id,)
+        )
+        
+        # Insert new reset code
+        cur.execute(
+            "INSERT INTO password_reset_codes (user_id, code) VALUES (%s, %s);",
+            (user_id, code)
+        )
+        
+        conn.commit()
+        logger.info(f"✅ Reset code generated successfully for user_id: {user_id}")
+        return code
+        
+    except Exception as e:
+        logger.error(f"🔴 Error generating reset code for user_id {user_id}: {e}")
+        logger.error(f"🔴 Error type: {type(e).__name__}")
+        if hasattr(e, 'pgcode'):
+            logger.error(f"🔴 PostgreSQL error code: {e.pgcode}")
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        close_db_connection(conn)
+
+
+def verify_reset_code(user_id: int, code: str) -> bool:
+    """
+    Verify a password reset code for a user.
+    
+    Args:
+        user_id (int): The user's unique identifier
+        code (str): The 6-digit verification code
+        
+    Returns:
+        bool: True if code is valid and not expired, False otherwise
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Find valid, unused, unexpired code
+        cur.execute("""
+            SELECT id FROM password_reset_codes 
+            WHERE user_id = %s AND code = %s AND used = FALSE AND expires_at > NOW()
+        """, (user_id, code))
+        
+        result = cur.fetchone()
+        
+        if result:
+            # Mark code as used
+            cur.execute(
+                "UPDATE password_reset_codes SET used = TRUE WHERE id = %s;",
+                (result[0],)
+            )
+            conn.commit()
+            return True
+        else:
+            return False
+            
+    except Exception as e:
+        print(f"Error verifying reset code: {e}")
+        return False
+    finally:
+        close_db_connection(conn)
+
+
+def send_reset_code_email(user_email: str, code: str, username: str = None) -> bool:
+    """
+    Send password reset code via SendGrid email service.
+    
+    Args:
+        user_email (str): User's email address
+        code (str): The 6-digit verification code
+        username (str, optional): User's username for personalization
+        
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    if not SENDGRID_AVAILABLE:
+        logger.error("SendGrid not available. Install with: pip install sendgrid")
+        return False
+    
+    # Get configuration
+    sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
+    from_email = os.getenv('FROM_EMAIL')
+    from_name = os.getenv('FROM_NAME')
+    
+    if not sendgrid_api_key:
+        logger.error("SENDGRID_API_KEY not configured in .env file")
+        return False
+    
+    # Create email content
+    greeting = f"Hi {username}," if username else "Hello,"
+    
+    try:
+        message = Mail(
+            from_email=(from_email, from_name),
+            to_emails=user_email,
+            subject="Password Reset Code - TechPulse",
+            html_content=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>Password Reset Request</h2>
+                <p>{greeting}</p>
+                <p>You requested a password reset for your TechPulse account.</p>
+                
+                <div style="background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; 
+                           padding: 20px; text-align: center; margin: 20px 0;">
+                    <p>Your verification code is:</p>
+                    <div style="font-size: 32px; font-weight: bold; color: #007bff; letter-spacing: 3px;">
+                        {code}
+                    </div>
+                </div>
+                
+                <p><strong>Important:</strong> This code will expire in 15 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                
+                <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                    Best regards,<br>TechPulse Support
+                </p>
+            </div>
+            """,
+            plain_text_content=f"""
+{greeting}
+
+You requested a password reset for your TechPulse account.
+
+Your verification code is: {code}
+
+This code will expire in 15 minutes for security reasons.
+
+If you didn't request this password reset, please ignore this email.
+
+Best regards,
+TechPulse Support
+            """
+        )
+        
+        sg = SendGridAPIClient(api_key=sendgrid_api_key)
+        response = sg.send(message)
+        
+        logger.info(f"✅ Password reset code sent to {user_email} (Status: {response.status_code})")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to send reset code: {e}")
+        return False
+
+
+def cleanup_expired_reset_codes() -> int:
+    """
+    Remove expired and used password reset codes from database.
+    
+    Returns:
+        int: Number of codes cleaned up
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("DELETE FROM password_reset_codes WHERE expires_at < NOW() OR used = TRUE;")
+        deleted_count = cur.rowcount
+        conn.commit()
+        
+        print(f"Cleaned up {deleted_count} expired/used reset codes")
+        return deleted_count
+        
+    except Exception as e:
+        print(f"Error cleaning up reset codes: {e}")
+        return 0
     finally:
         close_db_connection(conn)

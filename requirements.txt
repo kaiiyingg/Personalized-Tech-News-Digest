@@ -16,7 +16,9 @@ bleach==6.0.0
 
 # Authentication & Security
 bcrypt==4.3.0
-pyotp==2.9.0
+
+# Email Services
+sendgrid==6.9.7
 
 # Testing (Development)
 pytest>=8.0.0

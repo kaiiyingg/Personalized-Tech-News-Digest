@@ -91,9 +91,6 @@ def index():
         return redirect(url_for('register'))
     user_id = session['user_id']
     
-    # Check if this is a fresh login (auto-refresh trigger)
-    auto_refresh = session.pop('trigger_auto_refresh', False)
-    
     # Get articles grouped by topics
     topics_articles = content_service.get_articles_by_topics(user_id, limit_per_topic=8)
 
@@ -103,8 +100,7 @@ def index():
     return render_template('index.html', 
                          topics_articles=topics_articles, 
                          username=username, 
-                         current_year=current_year,
-                         auto_refresh=auto_refresh)
+                         current_year=current_year)
 
 # --- Legacy route for backward compatibility ---
 @app.route('/index', methods=['GET'])
@@ -390,12 +386,6 @@ def login():
         if last_ingest is not None and last_ingest.tzinfo is None:
             last_ingest = last_ingest.replace(tzinfo=datetime.timezone.utc)
 
-        trigger_refresh = True
-        if last_ingest and (now - last_ingest).total_seconds() < 2 * 3600:
-            trigger_refresh = False
-
-        session['trigger_auto_refresh'] = trigger_refresh
-        print(f"[login] Auto-refresh trigger set: {trigger_refresh}")
         flash('Welcome back!', 'success')
         return redirect(url_for('index'))
     return render_template(LOGIN_TEMPLATE)

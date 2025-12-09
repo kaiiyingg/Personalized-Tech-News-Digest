@@ -27,12 +27,7 @@
             <li><a href="{{ url_for('favorites') }}" class="nav-link">
                 <span>Favorites</span>
             </a></li>
-            <li>
-                <a href="#" class="nav-link" id="refreshBtn">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Refresh</span>
-                </a>
-            </li>
+
             <li class="dropdown">
                 <a href="#" class="dropdown-toggle nav-link">
                     <span>Topics</span>
@@ -105,7 +100,6 @@
     <script src="{{ url_for('static', filename='js/topic_navigation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/navbar_glow.js') }}"></script>
     <script src="{{ url_for('static', filename='js/flash_messages.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

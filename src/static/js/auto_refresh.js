@@ -1,6 +1,6 @@
 /**
  * Auto-refresh functionality for TechPulse
- * Handles automatic content refresh on login and manual refresh triggers
+ * Handles automatic content refresh on login triggers
  */
 
 class AutoRefresh {
@@ -14,10 +14,7 @@ class AutoRefresh {
         // Check if auto-refresh should be triggered
         if (window.autoRefreshEnabled) {
             this.triggerAutoRefresh();
-        }
-        
-        // Set up manual refresh button listeners
-        this.setupRefreshButtons();
+        } 
     }
 
     triggerAutoRefresh() {
@@ -29,27 +26,6 @@ class AutoRefresh {
         }, 2000);
     }
 
-    setupRefreshButtons() {
-        // Find all possible refresh buttons
-        const refreshSelectors = [
-            '[data-refresh]',
-            '.refresh-btn', 
-            'button[onclick*="refresh"]',
-            '.nav-refresh-btn',
-            '#refresh-button'
-        ];
-
-        refreshSelectors.forEach(selector => {
-            const buttons = document.querySelectorAll(selector);
-            buttons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.performRefresh();
-                });
-            });
-        });
-    }
-
     performRefresh() {
         if (this.isRefreshing) {
             console.log('Refresh already in progress');
@@ -57,10 +33,7 @@ class AutoRefresh {
         }
 
         this.isRefreshing = true;
-        console.log('Starting content refresh...');
-
-        // Show loading state
-        this.showLoadingState();
+        console.log('Starting automatic content refresh...');
 
         // Check if we're on the fast view page
         const isOnFastView = window.location.pathname === '/fast';
@@ -70,7 +43,6 @@ class AutoRefresh {
             console.log('Refreshing fast view articles...');
             window.refreshFastView();
             this.isRefreshing = false;
-            this.hideLoadingState();
             return;
         }
 
@@ -84,7 +56,7 @@ class AutoRefresh {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Refresh response:', data);
+            console.log('Auto-refresh response:', data);
             if (data.success) {
                 this.showSuccessMessage();
                 // Reload page to show new content
@@ -92,63 +64,24 @@ class AutoRefresh {
                     window.location.reload();
                 }, 1500);
             } else {
-                this.showErrorMessage(data.error || 'Refresh failed');
+                this.showErrorMessage(data.error || 'Auto-refresh failed');
             }
         })
         .catch(error => {
-            console.error('Refresh error:', error);
-            this.showErrorMessage('Network error during refresh');
+            console.error('Auto-refresh error:', error);
+            this.showErrorMessage('Network error during auto-refresh');
         })
         .finally(() => {
             this.isRefreshing = false;
-            this.hideLoadingState();
         });
-    }
-
-    showLoadingState() {
-        // Update refresh buttons to show loading state
-        const refreshButtons = document.querySelectorAll('[data-refresh], .refresh-btn, button[onclick*="refresh"]');
-        refreshButtons.forEach(button => {
-            button.disabled = true;
-            const originalText = button.textContent;
-            button.setAttribute('data-original-text', originalText);
-            button.textContent = 'Refreshing...';
-            button.style.opacity = '0.7';
-        });
-
-        // Show loading indicator if exists
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'block';
-        }
-    }
-
-    hideLoadingState() {
-        // Restore refresh buttons
-        const refreshButtons = document.querySelectorAll('[data-refresh], .refresh-btn, button[onclick*="refresh"]');
-        refreshButtons.forEach(button => {
-            button.disabled = false;
-            const originalText = button.getAttribute('data-original-text');
-            if (originalText) {
-                button.textContent = originalText;
-                button.removeAttribute('data-original-text');
-            }
-            button.style.opacity = '1';
-        });
-
-        // Hide loading indicator
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
     }
 
     showSuccessMessage() {
-        this.showMessage('Content refreshed successfully! Loading new articles...', 'success');
+        this.showMessage('Content automatically refreshed! Loading new articles...', 'success');
     }
 
     showErrorMessage(message) {
-        this.showMessage(`Refresh failed: ${message}`, 'error');
+        this.showMessage(`Auto-refresh failed: ${message}`, 'error');
     }
 
     showMessage(text, type = 'info') {

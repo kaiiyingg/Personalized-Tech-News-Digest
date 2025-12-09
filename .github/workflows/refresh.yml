@@ -1,0 +1,19 @@
+name: Hourly Content Refresh
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  refresh-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Content Refresh
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest || true
+        timeout-minutes: 10

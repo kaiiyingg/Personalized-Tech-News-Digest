@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 PYTHON_MIN_VERSION="3.10"
 RECOMMENDED_PYTHON="3.11"
 
-echo -e "${PURPLE}🛠️  TechPulse Development Environment Setup${NC}"
+echo -e "${PURPLE}TechPulse Development Environment Setup${NC}"
 echo "=============================================="
 
 # Function to print status
@@ -25,23 +25,23 @@ print_status() {
 }
 
 print_success() {
-    echo -e "${GREEN}✅ [SUCCESS]${NC} $1"
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  [WARNING]${NC} $1"
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}❌ [ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 print_step() {
-    echo -e "${PURPLE}🔧 [SETUP]${NC} $1"
+    echo -e "${PURPLE}[SETUP]${NC} $1"
 }
 
 # ==================== SYSTEM CHECKS ====================
-echo -e "\n${BLUE}🔍 SYSTEM REQUIREMENTS CHECK${NC}"
+echo -e "\n${BLUE}SYSTEM REQUIREMENTS CHECK${NC}"
 echo "=============================="
 
 # Check Python version
@@ -91,7 +91,7 @@ else
 fi
 
 # ==================== VIRTUAL ENVIRONMENT SETUP ====================
-echo -e "\n${BLUE}🐍 PYTHON ENVIRONMENT SETUP${NC}"
+echo -e "\n${BLUE}PYTHON ENVIRONMENT SETUP${NC}"
 echo "============================="
 
 # Create virtual environment
@@ -114,7 +114,7 @@ python -m pip install --upgrade pip
 print_success "pip upgraded"
 
 # ==================== DEPENDENCIES INSTALLATION ====================
-echo -e "\n${BLUE}📦 DEPENDENCIES INSTALLATION${NC}"
+echo -e "\n${BLUE}DEPENDENCIES INSTALLATION${NC}"
 echo "=============================="
 
 # Install production dependencies
@@ -130,7 +130,7 @@ if [[ -f "requirements-dev.txt" ]]; then
 fi
 
 # ==================== PRE-COMMIT SETUP ====================
-echo -e "\n${BLUE}🔗 PRE-COMMIT HOOKS SETUP${NC}"
+echo -e "\n${BLUE}PRE-COMMIT HOOKS SETUP${NC}"
 echo "=========================="
 
 # Install pre-commit
@@ -153,7 +153,7 @@ else
 fi
 
 # ==================== DATABASE SETUP ====================
-echo -e "\n${BLUE}🗄️  DATABASE SETUP${NC}"
+echo -e "\n${BLUE}DATABASE SETUP${NC}"
 echo "=================="
 
 # Check PostgreSQL
@@ -189,7 +189,7 @@ else
 fi
 
 # ==================== IDE CONFIGURATION ====================
-echo -e "\n${BLUE}⚙️  IDE CONFIGURATION${NC}"
+echo -e "\n${BLUE}IDE CONFIGURATION${NC}"
 echo "====================="
 
 # Create VS Code settings (if VS Code is used)
@@ -253,7 +253,7 @@ EOF
 print_success "VS Code configuration created"
 
 # ==================== ENVIRONMENT FILES ====================
-echo -e "\n${BLUE}🔐 ENVIRONMENT CONFIGURATION${NC}"
+echo -e "\n${BLUE}ENVIRONMENT CONFIGURATION${NC}"
 echo "============================="
 
 # Create .env template if it doesn't exist
@@ -295,7 +295,7 @@ else
 fi
 
 # ==================== GIT CONFIGURATION ====================
-echo -e "\n${BLUE}📝 GIT CONFIGURATION${NC}"
+echo -e "\n${BLUE}GIT CONFIGURATION${NC}"
 echo "===================="
 
 # Create .gitignore if it doesn't exist
@@ -407,7 +407,7 @@ else
 fi
 
 # ==================== TESTING SETUP ====================
-echo -e "\n${BLUE}🧪 TESTING FRAMEWORK SETUP${NC}"
+echo -e "\n${BLUE}TESTING FRAMEWORK SETUP${NC}"
 echo "============================"
 
 # Create test directories if they don't exist
@@ -426,7 +426,7 @@ else
 fi
 
 # ==================== FINAL STEPS ====================
-echo -e "\n${BLUE}🎯 FINAL SETUP STEPS${NC}"
+echo -e "\n${BLUE}FINAL SETUP STEPS${NC}"
 echo "===================="
 
 # Create development scripts
@@ -437,7 +437,7 @@ chmod +x run_tests.sh
 print_success "Development scripts configured"
 
 # ==================== SUMMARY ====================
-echo -e "\n${GREEN}🎉 DEVELOPMENT ENVIRONMENT SETUP COMPLETE!${NC}"
+echo -e "\n${GREEN}DEVELOPMENT ENVIRONMENT SETUP COMPLETE!${NC}"
 echo "=============================================="
 
 print_success "Your TechPulse development environment is ready!"
@@ -455,4 +455,4 @@ echo "• Lint code: flake8 src/ tests/"
 echo "• Type check: mypy src/"
 echo "• Security scan: bandit -r src/"
 echo ""
-echo "Happy coding! 🚀"
+echo "Happy coding!"

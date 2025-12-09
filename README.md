@@ -63,16 +63,16 @@ TechPulse/
 
 ## ⚡ Quick Start
 
-```bash
+```
 # Clone and setup
 git clone https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git
 cd Personalized-Tech-News-Digest
-python -m venv .venv && .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate  # Linux/Mac
+# python -m venv .venv && .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
 
-# Run comprehensive tests locally  
-See TESTING.md for details on running unit tests and the full test suite.  
-`run_tests.bat`  &nbsp; <sub>(Full test suite with code quality checks)</sub>
+# Run tests
+python run_all_tests.py
 
 # Configure environment and database
 cp .env.template .env  # Edit with your credentials

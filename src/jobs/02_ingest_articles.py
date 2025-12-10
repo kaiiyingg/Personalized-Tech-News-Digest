@@ -60,9 +60,9 @@ def cleanup_old_articles(days_to_keep=30):
             cur.execute("DELETE FROM content WHERE published_at < %s", (cutoff_date,))
             conn.commit()
             
-            print(f"[Cleanup] ✅ Removed {old_count} old articles")
+            print(f"[Cleanup] Removed {old_count} old articles")
         else:
-            print("[Cleanup] ✅ No old articles to remove")
+            print("[Cleanup] No old articles to remove")
             
         # Get total remaining articles
         cur.execute("SELECT COUNT(*) FROM content")
@@ -73,7 +73,7 @@ def cleanup_old_articles(days_to_keep=30):
         return True
         
     except Exception as e:
-        print(f"[Cleanup] ❌ Error during cleanup: {e}")
+        print(f"[Cleanup] Error during cleanup: {e}")
         return False
 
 ## NOTE: RSS_SOURCES is not used for ingestion. The script fetches sources from your database.
@@ -84,7 +84,7 @@ def fetch_and_ingest():
     
     # Step 1: Clean up old articles first
     if not cleanup_old_articles(days_to_keep=30):
-        print("[Ingestion] ⚠️  Cleanup failed, continuing with ingestion...")
+        print("[Ingestion] Cleanup failed, continuing with ingestion...")
     
     try:
         conn = get_db_connection()
@@ -177,7 +177,72 @@ def fetch_and_ingest():
                         image_url = None
                         from bs4.element import Tag
                         def is_valid_img_url(url):
-                            return isinstance(url, str) and url.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+                            """
+                            Validate if URL is likely an image.
+                            
+                            Args:
+                                url: URL to validate
+                            
+                            Returns:
+                                bool: True if likely a valid image URL
+                            """
+                            if not isinstance(url, str) or not url.strip():
+                                return False
+                            
+                            url_lower = url.lower()
+                            
+                            # Direct file extensions
+                            if any(ext in url_lower for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"]):
+                                return True
+                            
+                            # Common CDN patterns and image hosts
+                            cdn_patterns = [
+                                "wp-content/uploads",  # WordPress
+                                "/img/",
+                                "/image/",
+                                "/images/",
+                                "/media/",
+                                "cdn.",
+                                "cloudfront.net",
+                                "imgur.com",
+                                "imagekit.io",
+                                "dam.mediacorp.sg",  # CNA images
+                                "arstechnica.net/wp-content",
+                                "anpoimages.com",
+                                "artificialintelligence-news.com/wp-content",
+                                "/resize/",
+                                "/upload/",
+                                "contentstack.com",
+                                "dev.to/dynamic/image",
+                            ]
+                            
+                            if any(pattern in url_lower for pattern in cdn_patterns):
+                                return True
+                            
+                            # Exclude non-image resources
+                            exclude_patterns = [
+                                "logo",
+                                "icon",
+                                "sprite",
+                                "spacer",
+                                "blank",
+                                "pixel",
+                                "1x1",
+                                "tracking",
+                                ".css",
+                                ".js",
+                                ".xml",
+                                ".json"
+                            ]
+                            
+                            if any(pattern in url_lower for pattern in exclude_patterns):
+                                return False
+                            
+                            # If it starts with http/https and has image-related keywords, accept it
+                            if url_lower.startswith(("http://", "https://")) and len(url) > 20:
+                                return True
+                            
+                            return False
 
                         # 1. media_content
                         if hasattr(entry, "media_content") and entry.media_content:
@@ -208,25 +273,39 @@ def fetch_and_ingest():
 
                         # 5. Extract from summary/content HTML
                         def extract_img_from_html(html):
+                            """
+                            Extract best image from HTML content.
+                            
+                            Args:
+                                html: HTML string to parse
+                            
+                            Returns:
+                                str: Best image URL found, or None
+                            """
                             soup = BeautifulSoup(html, "html.parser")
                             imgs = soup.find_all("img")
                             candidates = []
+                            
                             for img in imgs:
                                 if isinstance(img, Tag) and img.has_attr("src"):
                                     src = img.get("src")
                                     if src and isinstance(src, str) and is_valid_img_url(src):
-                                        if not any(x in src.lower() for x in ["logo", "icon", "sprite", "spacer", "blank", "pixel", "1x1", "tracking"]):
-                                            candidates.append(img)
+                                        candidates.append(img)
+                            
                             if candidates:
                                 def get_area(img):
+                                    """Calculate image area from width/height attributes."""
                                     try:
                                         w = int(img.get("width", 0))
                                         h = int(img.get("height", 0))
                                         return w * h
                                     except Exception:
                                         return 0
+                                
+                                # Prefer larger images (likely article featured images)
                                 candidates.sort(key=get_area, reverse=True)
                                 return candidates[0].get("src")
+                            
                             return None
 
                         if not image_url and summary:
@@ -278,9 +357,16 @@ def fetch_and_ingest():
                             print(f"[Ingestion] Skipping non-tech article: {title}")
                             continue
                         print(f"[Ingestion] Checking for duplicate: {article_url}")
-                        cur.execute("SELECT id FROM content WHERE article_url = %s", (article_url,))
-                        if cur.fetchone():
-                            print(f"[Ingestion] Duplicate found, skipping: {article_url}")
+                        cur.execute("SELECT id, image_url FROM content WHERE article_url = %s", (article_url,))
+                        existing = cur.fetchone()
+                        if existing:
+                            existing_id, existing_image = existing
+                            if not existing_image and image_url:
+                                print(f"[Ingestion] Duplicate found but missing image, updating: {title}")
+                                cur.execute("UPDATE content SET image_url = %s WHERE id = %s", (image_url, existing_id))
+                                print(f"[Ingestion] Updated image for article ID {existing_id}")
+                            else:
+                                print(f"[Ingestion] Duplicate found, skipping: {article_url}")
                             continue
                         # Validate URL before saving
                         if not is_url_reachable(article_url):
@@ -313,7 +399,7 @@ def fetch_and_ingest():
     return {"success": True, "articles_added": new_articles}
 
 if __name__ == "__main__":
-    print("🚀 TechPulse On-Demand Article Ingestion")
+    print("TechPulse On-Demand Article Ingestion")
     print("=" * 50)
     print(" Features:")
     print("   • Strict tech content filtering")
@@ -327,6 +413,6 @@ if __name__ == "__main__":
     result = fetch_and_ingest()
     
     if result.get("success"):
-        print(f"✅ Ingestion completed successfully! Added {result.get('articles_added', 0)} new articles.")
+        print(f"Ingestion completed successfully! Added {result.get('articles_added', 0)} new articles.")
     else:
-        print(f"❌ Ingestion failed: {result.get('error', 'Unknown error')}")
+        print(f"Ingestion failed: {result.get('error', 'Unknown error')}")

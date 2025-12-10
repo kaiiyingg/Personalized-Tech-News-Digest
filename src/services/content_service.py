@@ -42,7 +42,6 @@ AI_ML_SHORT = "AI & ML"
 CYBERSECURITY_TOPIC = "Cybersecurity & Privacy"
 CLOUD_DEVOPS_TOPIC = "Cloud Computing & DevOps"
 SOFTWARE_DEV_TOPIC = "Software Development & Web Technologies"
-DATA_SCIENCE_TOPIC = "Data Science & Analytics"
 EMERGING_TECH_TOPIC = "Emerging Technologies"
 BIG_TECH_TOPIC = "Big Tech & Industry Trends"
 TECH_CULTURE_TOPIC = "Tech Culture & Work"
@@ -50,7 +49,7 @@ OPEN_SOURCE_TOPIC = "Open Source"
 
 TOPIC_LABELS = [
     AI_ML_TOPIC, CYBERSECURITY_TOPIC, CLOUD_DEVOPS_TOPIC, 
-    SOFTWARE_DEV_TOPIC, DATA_SCIENCE_TOPIC, EMERGING_TECH_TOPIC,
+    SOFTWARE_DEV_TOPIC, EMERGING_TECH_TOPIC,
     BIG_TECH_TOPIC, TECH_CULTURE_TOPIC, OPEN_SOURCE_TOPIC
 ]
 
@@ -100,7 +99,7 @@ def call_huggingface_api(text: str, candidate_labels: List[str], max_retries: in
                 HF_API_URL, 
                 headers=headers, 
                 json=payload,
-                timeout=10  # 10 second timeout
+                timeout=40  # 40 second timeout
             )
             
             if response.status_code == 200:
@@ -144,10 +143,13 @@ def call_huggingface_api(text: str, candidate_labels: List[str], max_retries: in
                 return None
                 
         except requests.exceptions.Timeout:
-            print(f"API timeout on attempt {attempt + 1}")
+            print(f"API timeout on attempt {attempt + 1} (waited 30s)")
             if attempt < max_retries:
-                sleep(1)
+                wait_time = 2  # Brief wait before retry
+                print(f"Retrying in {wait_time}s...")
+                sleep(wait_time)
                 continue
+            print("Max retries reached, using keyword fallback")
             return None
             
         except requests.exceptions.RequestException as e:
@@ -357,7 +359,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
                 return True
         return False
 
-    # Prioritize: security > cloud > open source > ai/ml > bigtech > dev > data > culture
+    # Prioritize: security > cloud > open source > ai/ml > bigtech > dev > culture
     if has_keyword(security_keywords):
         return CYBERSECURITY_TOPIC
     if has_keyword(cloud_keywords):
@@ -370,8 +372,6 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         return BIG_TECH_TOPIC
     if has_keyword(dev_keywords):
         return SOFTWARE_DEV_TOPIC
-    if has_keyword(data_keywords):
-        return DATA_SCIENCE_TOPIC
     if has_keyword(culture_keywords):
         return TECH_CULTURE_TOPIC
     return EMERGING_TECH_TOPIC  # Default fallback
@@ -438,13 +438,12 @@ def classify_with_ai(title: str, summary: str) -> Optional[Dict[str, Any]]:
     # Sanitize text before API call (remove PII)
     text = sanitize_text_for_api(f"{title}. {summary}")
     
-    # Use your actual 9 tech topics + rejection category
+    # Use your actual 8 tech topics + rejection category
     classification_labels = [
         AI_ML_TOPIC,                    # "AI & ML"
         CYBERSECURITY_TOPIC,            # "Cybersecurity & Privacy"
         CLOUD_DEVOPS_TOPIC,             # "Cloud Computing & DevOps"
         SOFTWARE_DEV_TOPIC,             # "Software Development & Web Technologies"
-        DATA_SCIENCE_TOPIC,             # "Data Science & Analytics"
         EMERGING_TECH_TOPIC,            # "Emerging Technologies"
         BIG_TECH_TOPIC,                 # "Big Tech & Industry Trends"
         TECH_CULTURE_TOPIC,             # "Tech Culture & Work"
@@ -465,77 +464,50 @@ def classify_with_ai(title: str, summary: str) -> Optional[Dict[str, Any]]:
     
     # Check if classified as "non-tech content" (rejection category)
     if top_label == "non-tech content":
-        if top_score >= HIGH_CONFIDENCE_THRESHOLD:
-            # High confidence it's NOT tech - reject
-            print(f"AI REJECTED: Non-tech content with high confidence ({top_score:.2f})")
+        # Pick the highest confidence TECH topic
+    
+        best_tech_label = None
+        best_tech_score = 0.0
+        
+        for i, label in enumerate(tech_result['labels']):
+            if label != "non-tech content" and tech_result['scores'][i] > best_tech_score:
+                best_tech_label = label
+                best_tech_score = tech_result['scores'][i]
+        
+        if best_tech_label:
+            print(f"AI REDIRECT: Top was non-tech ({top_score:.2f}), using best tech topic '{best_tech_label}' ({best_tech_score:.2f})")
             return {
-                'is_tech': False,
-                'topic': None,
-                'confidence': top_score,
-                'method': 'ai_zero_shot',
-                'reason': f'AI classified as non-tech with {top_score:.2f} confidence'
+                'is_tech': True,
+                'topic': best_tech_label,
+                'confidence': best_tech_score,
+                'method': 'ai_zero_shot_redirect',
+                'reason': f'Redirected from non-tech to {best_tech_label} with {best_tech_score:.2f} confidence'
             }
         else:
-            # Low confidence rejection - let keywords decide
-            print(f"AI UNCERTAIN: Weak non-tech signal ({top_score:.2f}) - using keyword fallback")
+            # Fallback to keywords if no tech topics found
+            print(f"AI UNCERTAIN: Could not find tech alternative, using keyword fallback")
             return {
                 'is_tech': True,
                 'topic': None,
                 'confidence': top_score,
                 'method': 'ai_uncertain',
-                'reason': f'Uncertain non-tech classification, using keywords'
+                'reason': f'No tech alternative found, using keywords'
             }
     
-    # Classified as one of your 9 tech topics
-    if top_score >= HIGH_CONFIDENCE_THRESHOLD:
-        # High confidence tech topic classification
-        print(f"AI ACCEPTED: High confidence '{top_label}' ({top_score:.2f})")
-        return {
-            'is_tech': True,
-            'topic': top_label,
-            'confidence': top_score,
-            'method': 'ai_zero_shot',
-            'reason': f'AI classified with {top_score:.2f} confidence'
-        }
-    elif top_score >= LOW_CONFIDENCE_THRESHOLD:
-        # Medium confidence - accept but log uncertainty
-        print(f"AI ACCEPTED: Medium confidence '{top_label}' ({top_score:.2f})")
-        return {
-            'is_tech': True,
-            'topic': top_label,
-            'confidence': top_score,
-            'method': 'ai_zero_shot',
-            'reason': f'AI classified with {top_score:.2f} confidence (medium)'
-        }
-    else:
-        # Very low confidence - use keyword fallback for topic
-        print(f"AI UNCERTAIN: Very low confidence ({top_score:.2f}) - using keyword fallback")
-        return {
-            'is_tech': True,
-            'topic': None,  # Signal to use keyword classifier for topic
-            'confidence': top_score,
-            'method': 'ai_uncertain',
-            'reason': 'Low confidence, using keyword topic classification'
-        }
+    # Classified as one of your 9 tech topics - always accept the highest score
+    print(f"AI ACCEPTED: '{top_label}' with confidence {top_score:.2f}")
+    return {
+        'is_tech': True,
+        'topic': top_label,
+        'confidence': top_score,
+        'method': 'ai_zero_shot',
+        'reason': f'AI classified with {top_score:.2f} confidence'
+    }
 
 
 def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Union[Optional[str], tuple[Optional[str], Dict[str, Any]]]:
     """
-    HYBRID CLASSIFICATION: Assigns a topic using keyword rules first, then AI for uncertain cases.
-    
-    NEW Pipeline Logic (Less Strict):
-    1. HARD REJECT: Check reject keywords - if strong match (2+ reject keywords), reject immediately
-    2. HARD ACCEPT: Check tech keywords - if very strong match (4+ tech keywords), accept with keyword classification
-    3. UNCERTAIN: Everything else (0-3 tech keywords, 0-1 reject keywords) → Call AI for final decision
-       - AI can ACCEPT (tech content) or REJECT (not tech)
-       - If AI unavailable, use keyword fallback (accept if 1+ tech keyword, reject if 0)
-    4. Store classification metadata for transparency
-    
-    Examples:
-    - Article with "AI, machine learning, python, tensorflow" → HARD ACCEPT (4 tech keywords)
-    - Article with "sale, discount, subscription, promo" → HARD REJECT (4 reject keywords)
-    - Article with "python, code" → UNCERTAIN (2 tech keywords) → Ask AI
-    - Article with "government policy, housing" → UNCERTAIN (2 reject keywords but not 2+) → Ask AI (will likely reject)
+    Assigns a topic using keyword rules first, then AI for uncertain cases.
     
     Args:
         title: Article title
@@ -704,6 +676,17 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
         'homelessness', 'unemployment', 'social services', 'charity', 'donation',
         'volunteer work', 'social activism', 'protest', 'demonstration',
         
+        # Family & Social Services (non-tech)
+        'child abuse', 'child welfare', 'child protection', 'family services',
+        'domestic violence', 'elder abuse', 'social work', 'caseworker',
+        'child safety', 'family support', 'parenting', 'childcare',
+        'adoption', 'foster care', 'custody', 'guardianship',
+        
+        # General News Topics (non-tech)
+        'minister said', 'government said', 'ministry report', 'msf report',
+        'ministry of social', 'social and family development',
+        'high-risk cases', 'abuse cases', 'incident reports',
+        
         # Content that's clearly promotional or spam-like
         'tl;dr', 'tldr', 'elevate your', 'get access to', 'exclusive access',
         'limited offer', 'act now', 'dont miss out', "don't miss out",
@@ -820,29 +803,29 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
     # PATH 4: FALLBACK - AI not available or failed, use keyword thresholds
     print(f"AI UNAVAILABLE: Using keyword fallback logic")
     
-    # Fallback logic when no AI:
-    # - Accept if: tech_score >= 2 AND (reject_score == 0 OR tech_score > reject_score)
+    # Stricter fallback logic when no AI:
+    # - Accept if: tech_score >= 3 AND total_rejection_signals == 0
+    # - Accept if: tech_score >= 4 AND tech_score > (total_rejection_signals * 2)
     # - Reject otherwise
     
-    if tech_score >= 2 and (total_rejection_signals == 0 or tech_score > total_rejection_signals):
+    if tech_score >= 3 and total_rejection_signals == 0:
         topic = classify_topic_by_keywords(text, title)
-        print(f"FALLBACK ACCEPT: tech={tech_score} > reject={total_rejection_signals}, classified as '{topic}'")
+        print(f"FALLBACK ACCEPT: Strong tech signal (tech={tech_score}, reject=0), classified as '{topic}'")
         classification_metadata['method'] = 'keyword_fallback_accept'
-        classification_metadata['confidence'] = tech_score / 10.0
-        classification_metadata['reason'] = f'Fallback: tech={tech_score}, reject={total_rejection_signals}'
+        classification_metadata['confidence'] = min(tech_score / 10.0, 0.7)
+        classification_metadata['reason'] = f'Fallback: tech={tech_score}, reject=0'
         return (topic, classification_metadata) if return_metadata else topic
     
-    elif tech_score >= 1 and total_rejection_signals == 0:
-        # Very lenient: accept single tech keyword if no reject signals
+    elif tech_score >= 4 and tech_score > (total_rejection_signals * 2):
         topic = classify_topic_by_keywords(text, title)
-        print(f"FALLBACK ACCEPT (lenient): Single tech keyword, no reject signals, classified as '{topic}'")
-        classification_metadata['method'] = 'keyword_fallback_lenient'
-        classification_metadata['confidence'] = 0.4
-        classification_metadata['reason'] = f'Lenient fallback: tech={tech_score}, no reject signals'
+        print(f"FALLBACK ACCEPT: Tech dominates (tech={tech_score} >> reject={total_rejection_signals}), classified as '{topic}'")
+        classification_metadata['method'] = 'keyword_fallback_dominant'
+        classification_metadata['confidence'] = min((tech_score - total_rejection_signals) / 10.0, 0.6)
+        classification_metadata['reason'] = f'Fallback: tech={tech_score} >> reject={total_rejection_signals}'
         return (topic, classification_metadata) if return_metadata else topic
     
     else:
-        print(f"FALLBACK REJECT: Insufficient evidence (tech={tech_score}, reject={total_rejection_signals})")
+        print(f"FALLBACK REJECT: Insufficient tech evidence (tech={tech_score}, reject={total_rejection_signals})")
         classification_metadata['method'] = 'keyword_fallback_reject'
         classification_metadata['confidence'] = 0.2
         classification_metadata['reason'] = f'Insufficient evidence: tech={tech_score}, reject={total_rejection_signals}'
@@ -1203,7 +1186,6 @@ def get_articles_by_topics(user_id: int, limit_per_topic: int = 10) -> Dict[str,
         CYBERSECURITY_TOPIC,
         CLOUD_DEVOPS_TOPIC,
         SOFTWARE_DEV_TOPIC,
-        DATA_SCIENCE_TOPIC,
         EMERGING_TECH_TOPIC,
         BIG_TECH_TOPIC,
         TECH_CULTURE_TOPIC,

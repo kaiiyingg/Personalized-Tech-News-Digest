@@ -91,7 +91,7 @@ def index():
     user_id = session['user_id']
     
     # Get articles grouped by topics
-    topics_articles = content_service.get_articles_by_topics(user_id, limit_per_topic=8)
+    topics_articles = content_service.get_articles_by_topics(user_id, limit_per_topic=25)
 
     username = session.get('username')
     current_year = datetime.now().year
@@ -482,7 +482,7 @@ def api_fast_articles():
     
     try:
         offset = int(request.args.get('offset', 0))
-        limit = int(request.args.get('limit', 10))
+        limit = int(request.args.get('limit', 20))
         refresh = request.args.get('refresh', 'false').lower() == 'true'
         print(f"[api_fast_articles] Request params: offset={offset}, limit={limit}, refresh={refresh}")
         

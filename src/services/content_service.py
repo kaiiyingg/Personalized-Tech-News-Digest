@@ -464,8 +464,18 @@ def classify_with_ai(title: str, summary: str) -> Optional[Dict[str, Any]]:
     
     # Check if classified as "non-tech content" (rejection category)
     if top_label == "non-tech content":
-        # Pick the highest confidence TECH topic
-    
+        # If high confidence it's non-tech, reject it
+        if top_score >= 0.60:
+            print(f"AI REJECT: High confidence non-tech ({top_score:.2f})")
+            return {
+                'is_tech': False,
+                'topic': None,
+                'confidence': top_score,
+                'method': 'ai_zero_shot_reject',
+                'reason': f'AI rejected as non-tech with {top_score:.2f} confidence'
+            }
+        
+        # Low confidence non-tech - pick the highest confidence TECH topic
         best_tech_label = None
         best_tech_score = 0.0
         
@@ -475,7 +485,7 @@ def classify_with_ai(title: str, summary: str) -> Optional[Dict[str, Any]]:
                 best_tech_score = tech_result['scores'][i]
         
         if best_tech_label:
-            print(f"AI REDIRECT: Top was non-tech ({top_score:.2f}), using best tech topic '{best_tech_label}' ({best_tech_score:.2f})")
+            print(f"AI REDIRECT: Low confidence non-tech ({top_score:.2f}), using best tech topic '{best_tech_label}' ({best_tech_score:.2f})")
             return {
                 'is_tech': True,
                 'topic': best_tech_label,
@@ -484,14 +494,14 @@ def classify_with_ai(title: str, summary: str) -> Optional[Dict[str, Any]]:
                 'reason': f'Redirected from non-tech to {best_tech_label} with {best_tech_score:.2f} confidence'
             }
         else:
-            # Fallback to keywords if no tech topics found
-            print(f"AI UNCERTAIN: Could not find tech alternative, using keyword fallback")
+            # No tech alternative found - reject
+            print(f"AI REJECT: No tech alternative found")
             return {
-                'is_tech': True,
+                'is_tech': False,
                 'topic': None,
                 'confidence': top_score,
-                'method': 'ai_uncertain',
-                'reason': f'No tech alternative found, using keywords'
+                'method': 'ai_uncertain_reject',
+                'reason': f'No tech alternative found'
             }
     
     # Classified as one of your 9 tech topics - always accept the highest score

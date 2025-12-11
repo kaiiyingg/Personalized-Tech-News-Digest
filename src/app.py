@@ -202,6 +202,39 @@ def profile():
     
     return render_template('profile.html', current_user=user, username=session.get('username'), current_year=datetime.now().year)
 
+# --- Analytics Dashboard ---
+@app.route('/analytics')
+def analytics():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    import src.services.analytics_service as analytics_service
+    import src.services.ai_briefing_service as ai_briefing_service
+    
+    user_id = session['user_id']
+    
+    topic_trends = analytics_service.get_topic_trends(days=7)
+    trending_topics = analytics_service.get_trending_topics(hours=24, limit=5)
+    topic_distribution = analytics_service.get_topic_distribution()
+    ingestion_stats = analytics_service.get_ingestion_stats(days=7)
+    user_stats = analytics_service.get_user_reading_stats(user_id, days=30)
+    
+    trending_articles = ai_briefing_service.get_trending_articles_with_summaries(hours=24, limit=5)
+    briefing = ai_briefing_service.generate_trending_briefing(trending_articles)
+    
+    return render_template(
+        'analytics.html',
+        topic_trends=topic_trends,
+        trending_topics=trending_topics,
+        topic_distribution=topic_distribution,
+        ingestion_stats=ingestion_stats,
+        user_stats=user_stats,
+        trending_articles=trending_articles,
+        briefing=briefing,
+        username=session.get('username'),
+        current_year=datetime.now().year
+    )
+
 # --- Change Email ---
 # --- Reset Password API ---
 @app.route('/reset_password', methods=['GET', 'POST'])

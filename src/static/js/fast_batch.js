@@ -194,7 +194,7 @@ function showNoMoreArticles() {
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: #b3b3b3; text-align: center; padding: 2rem;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">📰</div>
       <h3 style="margin: 0 0 0.5rem 0; color: #fff;">That's all for now!</h3>
-      <p style="margin: 0; color: #b3b3b3;">You've read all available articles. Use the refresh button in the navigation bar to fetch new content.</p>
+      <p style="margin: 0; color: #b3b3b3;">You’re all caught up for today! Come back later for the latest tech updates.</p>
     </div>
   `;
   

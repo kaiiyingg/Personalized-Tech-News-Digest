@@ -8,50 +8,47 @@ import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from src.database.connection import get_db_connection, close_db_connection
+from huggingface_hub import InferenceClient
 
 
-HF_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
 HF_TOKEN = os.getenv('HF_TOKEN', '')
 
 
-def generate_article_summary(title: str, content: str, max_length: int = 130) -> Optional[str]:
+def generate_article_summary(title: str, content: str, max_length: int = 50) -> Optional[str]:
     """
     Generate concise summary using Hugging Face BART model.
     
     Args:
         title: Article title.
         content: Article content or description.
-        max_length: Maximum tokens in output.
+        max_length: Maximum tokens in output (default 50).
     
     Returns:
         Generated summary or None on failure.
     """
     if not HF_TOKEN:
+        print(f"[AI Summary] HF_TOKEN not set - skipping summary generation")
         return None
     
     try:
         text = f"{title}. {content[:800]}"
         
-        headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-        payload = {
-            "inputs": text,
-            "parameters": {
-                "max_length": max_length,
-                "min_length": 30,
-                "do_sample": False
-            }
-        }
+        client = InferenceClient(api_key=HF_TOKEN)
         
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
+        print(f"[AI Summary] Calling HF API for: {title[:50]}...")
+        result = client.summarization(
+            text,
+            model="facebook/bart-large-cnn",
+            max_length=max_length,
+            min_length=20
+        )
         
-        if response.status_code == 200:
-            result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                return result[0].get('summary_text', '').strip()
+        summary = result.get('summary_text', '').strip()
+        print(f"[AI Summary] Generated summary: {summary[:100]}...")
+        return summary
         
-        return None
     except Exception as e:
-        print(f"HF summary error: {e}")
+        print(f"[AI Summary] Exception: {e}")
         return None
 
 

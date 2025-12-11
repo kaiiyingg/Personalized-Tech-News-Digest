@@ -287,14 +287,62 @@ def fetch_and_ingest():
                             candidates = []
                             
                             for img in imgs:
-                                if isinstance(img, Tag) and img.has_attr("src"):
-                                    src = img.get("src")
-                                    if src and isinstance(src, str) and is_valid_img_url(src):
-                                        candidates.append(img)
+                                if isinstance(img, Tag):
+                                    url = None
+                                    
+                                    # Try src first (clean up truncated URLs with ellipsis)
+                                    if img.has_attr("src"):
+                                        src = img.get("src")
+                                        if src and isinstance(src, str):
+                                            # Remove ellipsis and other unicode characters that might truncate URLs
+                                            src = src.replace('…', '')
+                                            if is_valid_img_url(src):
+                                                url = src
+                                    
+                                    # Try srcset (contains multiple sizes, pick largest)
+                                    if not url and img.has_attr("srcset"):
+                                        srcset = img.get("srcset")
+                                        if srcset and isinstance(srcset, str):
+                                            # srcset format: "url1 width1, url2 width2, ..."
+                                            urls = []
+                                            for entry in srcset.split(','):
+                                                parts = entry.strip().split()
+                                                if parts:
+                                                    # Clean URL
+                                                    url_part = parts[0].replace('…', '')
+                                                    if is_valid_img_url(url_part):
+                                                        # Extract width (e.g., "1920w" -> 1920)
+                                                        width = 0
+                                                        if len(parts) > 1 and parts[1].endswith('w'):
+                                                            try:
+                                                                width = int(parts[1][:-1])
+                                                            except ValueError:
+                                                                width = 0
+                                                        urls.append((url_part, width))
+                                            
+                                            # Pick largest image
+                                            if urls:
+                                                urls.sort(key=lambda x: x[1], reverse=True)
+                                                url = urls[0][0]
+                                    
+                                    # Try data-* attributes (common fallbacks)
+                                    if not url:
+                                        for attr in ['data-original-mos', 'data-pin-media', 'data-src', 'data-url']:
+                                            if img.has_attr(attr):
+                                                data_url = img.get(attr)
+                                                if data_url and isinstance(data_url, str):
+                                                    data_url = data_url.replace('…', '')
+                                                    if is_valid_img_url(data_url):
+                                                        url = data_url
+                                                        break
+                                    
+                                    if url:
+                                        candidates.append((img, url))
                             
                             if candidates:
-                                def get_area(img):
+                                def get_area(item):
                                     """Calculate image area from width/height attributes."""
+                                    img, url = item
                                     try:
                                         w = int(img.get("width", 0))
                                         h = int(img.get("height", 0))
@@ -304,7 +352,7 @@ def fetch_and_ingest():
                                 
                                 # Prefer larger images (likely article featured images)
                                 candidates.sort(key=get_area, reverse=True)
-                                return candidates[0].get("src")
+                                return candidates[0][1]  # Return URL from tuple
                             
                             return None
 

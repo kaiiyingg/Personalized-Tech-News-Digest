@@ -23,7 +23,6 @@ RSS_SOURCES = [
     {"name": "IEEE Spectrum", "url": "https://spectrum.ieee.org/rss/fulltext"},
     {"name": "NYT Technology", "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"},
     {"name": "Gizmodo", "url": "https://gizmodo.com/feed"},
-    {"name": "CNA Tech News", "url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416"},
     {"name": "AI News", "url": "https://www.artificialintelligence-news.com/feed/"},
     {"name": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml"},
     {"name": "KrebsOnSecurity", "url": "https://krebsonsecurity.com/feed/"},

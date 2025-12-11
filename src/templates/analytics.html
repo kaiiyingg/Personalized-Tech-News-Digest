@@ -145,6 +145,57 @@
         font-size: 0.95rem;
     }
     
+    .signals-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    @media (max-width: 900px) {
+        .signals-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .company-table {
+        width: 100%;
+    }
+    
+    .company-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #3a3f47;
+    }
+    
+    .company-row:first-child {
+        border-bottom: 2px solid #667eea;
+        font-weight: 600;
+        color: #fff;
+    }
+    
+    .company-row:last-child {
+        border-bottom: none;
+    }
+    
+    .company-name {
+        color: #fff;
+        font-weight: 500;
+    }
+    
+    .company-mentions {
+        color: #b3b3b3;
+        text-align: center;
+    }
+    
+    .company-score {
+        color: #667eea;
+        text-align: right;
+        font-weight: 600;
+    }
+    
     .chart-container {
         background: #2a2e36;
         border-radius: 1rem;
@@ -174,18 +225,16 @@
 <div class="analytics-container">
     <div class="analytics-header">
         <h1>Analytics Dashboard</h1>
-        <p>Insights into tech news trends and your reading habits</p>
+        <p>AI-powered insights from tech news trends</p>
     </div>
-    
-    <section class="section-title">AI Smart Briefing</section>
     
     <div class="briefing-card">
         <h2>Today's Tech Pulse</h2>
         <p>{{ briefing }}</p>
     </div>
-    
+
     {% if trending_articles %}
-    <section class="section-title">Top Trending Articles (Last 24 Hours)</section>
+    <section class="section-title">Trending Articles (Last 24 Hours)</section>
     
     <div class="trending-articles">
         {% for article in trending_articles %}
@@ -206,47 +255,45 @@
     </div>
     {% endif %}
     
-    <section class="section-title">Your Reading Stats</section>
+    <section class="section-title">Trending Topics and Companies</section>
     
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value">{{ user_stats.articles_read }}</div>
-            <div class="stat-label">Articles Read (30 days)</div>
+    <div class="signals-grid">
+        <div class="chart-container">
+            <h3>Trending Topics (Last 24 Hours)</h3>
+            <div class="chart-wrapper">
+                <canvas id="trendingTopicsChart"></canvas>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ user_stats.active_days }}</div>
-            <div class="stat-label">Active Days</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ ingestion_stats.total }}</div>
-            <div class="stat-label">Articles Ingested (7 days)</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ trending_topics|length }}</div>
-            <div class="stat-label">Trending Topics Today</div>
+        
+        <div class="chart-container">
+            <h3>Trending Companies</h3>
+            {% if trending_companies %}
+            <div class="company-table">
+                <div class="company-row">
+                    <div>Company</div>
+                    <div style="text-align: center;">Coverage</div>
+                    <div style="text-align: right;">User Interest</div>
+                </div>
+                {% for company in trending_companies[:8] %}
+                <div class="company-row">
+                    <div class="company-name">{{ company.company }}</div>
+                    <div class="company-mentions">{{ company.mentions }}</div>
+                    <div class="company-score">{{ company.interaction_score }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-data">No company data available</p>
+            {% endif %}
         </div>
     </div>
     
-    <section class="section-title">Topic Trends</section>
+    <section class="section-title">Topic Distribution (Last 7 Days)</section>
     
     <div class="chart-container">
-        <h3>Article Distribution by Topic</h3>
+        <h3>Article Coverage by Topic</h3>
         <div class="chart-wrapper">
-            <canvas id="topicPieChart"></canvas>
-        </div>
-    </div>
-    
-    <div class="chart-container">
-        <h3>Daily Article Ingestion (Last 7 Days)</h3>
-        <div class="chart-wrapper">
-            <canvas id="ingestionLineChart"></canvas>
-        </div>
-    </div>
-    
-    <div class="chart-container">
-        <h3>Trending Topics (Last 24 Hours)</h3>
-        <div class="chart-wrapper">
-            <canvas id="trendingBarChart"></canvas>
+            <canvas id="topicDistributionChart"></canvas>
         </div>
     </div>
 </div>
@@ -261,15 +308,50 @@
         '#43e97b', '#fa709a', '#fee140', '#30cfd0'
     ];
     
+    // Trending Topics Bar Chart
+    {% if trending_topics %}
+    const trendingTopicsCtx = document.getElementById('trendingTopicsChart').getContext('2d');
+    new Chart(trendingTopicsCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ trending_topics | map(attribute='topic') | list | tojson }},
+            datasets: [{
+                label: 'Interactions',
+                data: {{ trending_topics | map(attribute='interaction_count') | list | tojson }},
+                backgroundColor: chartColors,
+                borderRadius: 8,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: '#3a3f47' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+    {% endif %}
+    
     // Topic Distribution Pie Chart
     {% if topic_distribution %}
-    const topicPieCtx = document.getElementById('topicPieChart').getContext('2d');
-    new Chart(topicPieCtx, {
+    const topicDistCtx = document.getElementById('topicDistributionChart').getContext('2d');
+    new Chart(topicDistCtx, {
         type: 'doughnut',
         data: {
             labels: {{ topic_distribution | map(attribute='topic') | list | tojson }},
             datasets: [{
-                data: {{ topic_distribution | map(attribute='total') | list | tojson }},
+                data: {{ topic_distribution | map(attribute='count') | list | tojson }},
                 backgroundColor: chartColors,
                 borderWidth: 2,
                 borderColor: '#1a1d23'
@@ -294,82 +376,6 @@
                             return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
                         }
                     }
-                }
-            }
-        }
-    });
-    {% endif %}
-    
-    // Daily Ingestion Line Chart
-    {% if ingestion_stats.daily %}
-    const ingestionLineCtx = document.getElementById('ingestionLineChart').getContext('2d');
-    new Chart(ingestionLineCtx, {
-        type: 'line',
-        data: {
-            labels: {{ (ingestion_stats.daily | map(attribute='date') | list)[::-1] | tojson }},
-            datasets: [{
-                label: 'Articles Ingested',
-                data: {{ (ingestion_stats.daily | map(attribute='count') | list)[::-1] | tojson }},
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                fill: true,
-                tension: 0.4,
-                borderWidth: 3,
-                pointRadius: 5,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 10 },
-                    grid: { color: '#3a3f47' }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }
-    });
-    {% endif %}
-    
-    // Trending Topics Bar Chart
-    {% if trending_topics %}
-    const trendingBarCtx = document.getElementById('trendingBarChart').getContext('2d');
-    new Chart(trendingBarCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ trending_topics | map(attribute='topic') | list | tojson }},
-            datasets: [{
-                label: 'Article Count',
-                data: {{ trending_topics | map(attribute='count') | list | tojson }},
-                backgroundColor: chartColors,
-                borderRadius: 8,
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 },
-                    grid: { color: '#3a3f47' }
-                },
-                x: {
-                    grid: { display: false }
                 }
             }
         }

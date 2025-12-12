@@ -13,7 +13,7 @@
     {% if articles and articles|length > 0 %}
       <div class="favorites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; padding: 1rem 0;">
         {% for article in articles if article.get('id') %}
-          <div class="topic-article-card" style="background: #21262d; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 480px;">
+          <div class="topic-article-card" style="background: #21262d; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; min-height: 480px; max-height: 600px;">
             <div class="article-image" style="width: 100%; height: 160px; border-radius: 0.8rem; margin-bottom: 1rem; overflow: hidden; background: #3a3e46; display: flex; align-items: center; justify-content: center;">
               {% if article.get('image_url') %}
                 <img src="{{ article.image_url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.8rem;">
@@ -22,17 +22,8 @@
               {% endif %}
             </div>
             
-            <h4 class="article-title" style="font-size: 1.1rem; font-family: 'Merriweather', serif; font-weight: 600; color: #fff; margin-bottom: 0.8rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+            <h4 class="article-title" style="font-size: 1.1rem; font-family: 'Merriweather', serif; font-weight: 600; color: #fff; margin-bottom: 0.8rem; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
               {{ article['title'] }}
-              <style>
-                .article-title {
-                  display: -webkit-box;
-                  -webkit-line-clamp: 2;
-                  -webkit-box-orient: vertical;
-                  overflow: hidden;
-                  line-clamp: 2;
-                }
-              </style>
             </h4>
             
             <div class="article-topic" style="margin-bottom: 0.8rem;">

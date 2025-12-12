@@ -198,6 +198,11 @@ def fetch_and_ingest():
                             # Common CDN patterns and image hosts
                             cdn_patterns = [
                                 "wp-content/uploads",  # WordPress
+                                "wp-content",  # WordPress general
+                                "i0.wp.com",  # WordPress CDN
+                                "i1.wp.com",  # WordPress CDN
+                                "i2.wp.com",  # WordPress CDN
+                                "i3.wp.com",  # WordPress CDN
                                 "/img/",
                                 "/image/",
                                 "/images/",
@@ -207,13 +212,16 @@ def fetch_and_ingest():
                                 "imgur.com",
                                 "imagekit.io",
                                 "dam.mediacorp.sg",  # CNA images
-                                "arstechnica.net/wp-content",
+                                "arstechnica.net",
                                 "anpoimages.com",
-                                "artificialintelligence-news.com/wp-content",
+                                "artificialintelligence-news.com",
+                                "9to5mac.com",  # 9to5Mac
+                                "techcrunch.com",  # TechCrunch
                                 "/resize/",
                                 "/upload/",
                                 "contentstack.com",
                                 "dev.to/dynamic/image",
+                                "sanity.io",  # Sanity CMS CDN
                             ]
                             
                             if any(pattern in url_lower for pattern in cdn_patterns):
@@ -286,58 +294,63 @@ def fetch_and_ingest():
                             imgs = soup.find_all("img")
                             candidates = []
                             
+                            print(f"[Image Extraction] Found {len(imgs)} img tags in HTML")
+                            
                             for img in imgs:
-                                if isinstance(img, Tag):
-                                    url = None
-                                    
-                                    # Try src first (clean up truncated URLs with ellipsis)
-                                    if img.has_attr("src"):
-                                        src = img.get("src")
-                                        if src and isinstance(src, str):
-                                            # Remove ellipsis and other unicode characters that might truncate URLs
-                                            src = src.replace('…', '')
-                                            if is_valid_img_url(src):
-                                                url = src
-                                    
-                                    # Try srcset (contains multiple sizes, pick largest)
-                                    if not url and img.has_attr("srcset"):
-                                        srcset = img.get("srcset")
-                                        if srcset and isinstance(srcset, str):
-                                            # srcset format: "url1 width1, url2 width2, ..."
-                                            urls = []
-                                            for entry in srcset.split(','):
-                                                parts = entry.strip().split()
-                                                if parts:
-                                                    # Clean URL
-                                                    url_part = parts[0].replace('…', '')
-                                                    if is_valid_img_url(url_part):
-                                                        # Extract width (e.g., "1920w" -> 1920)
-                                                        width = 0
-                                                        if len(parts) > 1 and parts[1].endswith('w'):
-                                                            try:
-                                                                width = int(parts[1][:-1])
-                                                            except ValueError:
-                                                                width = 0
-                                                        urls.append((url_part, width))
-                                            
-                                            # Pick largest image
-                                            if urls:
-                                                urls.sort(key=lambda x: x[1], reverse=True)
-                                                url = urls[0][0]
-                                    
-                                    # Try data-* attributes (common fallbacks)
-                                    if not url:
-                                        for attr in ['data-original-mos', 'data-pin-media', 'data-src', 'data-url']:
-                                            if img.has_attr(attr):
-                                                data_url = img.get(attr)
-                                                if data_url and isinstance(data_url, str):
-                                                    data_url = data_url.replace('…', '')
-                                                    if is_valid_img_url(data_url):
-                                                        url = data_url
-                                                        break
-                                    
-                                    if url:
-                                        candidates.append((img, url))
+                                # Don't filter by Tag type - BeautifulSoup always returns Tag objects
+                                url = None
+                                
+                                # Try src first (clean up truncated URLs with ellipsis)
+                                if img.has_attr("src"):
+                                    src = img.get("src")
+                                    if src and isinstance(src, str):
+                                        # Remove ellipsis and other unicode characters that might truncate URLs
+                                        src = src.replace('…', '').strip()
+                                        if is_valid_img_url(src):
+                                            url = src
+                                            print(f"[Image Extraction] Found valid src: {url[:100]}")
+                                
+                                # Try srcset (contains multiple sizes, pick largest)
+                                if not url and img.has_attr("srcset"):
+                                    srcset = img.get("srcset")
+                                    if srcset and isinstance(srcset, str):
+                                        # srcset format: "url1 width1, url2 width2, ..."
+                                        urls = []
+                                        for entry in srcset.split(','):
+                                            parts = entry.strip().split()
+                                            if parts:
+                                                # Clean URL
+                                                url_part = parts[0].replace('…', '').strip()
+                                                if is_valid_img_url(url_part):
+                                                    # Extract width (e.g., "1920w" -> 1920)
+                                                    width = 0
+                                                    if len(parts) > 1 and parts[1].endswith('w'):
+                                                        try:
+                                                            width = int(parts[1][:-1])
+                                                        except ValueError:
+                                                            width = 0
+                                                    urls.append((url_part, width))
+                                        
+                                        # Pick largest image
+                                        if urls:
+                                            urls.sort(key=lambda x: x[1], reverse=True)
+                                            url = urls[0][0]
+                                            print(f"[Image Extraction] Found valid srcset: {url[:100]}")
+                                
+                                # Try data-* attributes (common fallbacks)
+                                if not url:
+                                    for attr in ['data-original-mos', 'data-pin-media', 'data-src', 'data-url', 'data-lazy-src']:
+                                        if img.has_attr(attr):
+                                            data_url = img.get(attr)
+                                            if data_url and isinstance(data_url, str):
+                                                data_url = data_url.replace('…', '').strip()
+                                                if is_valid_img_url(data_url):
+                                                    url = data_url
+                                                    print(f"[Image Extraction] Found valid {attr}: {url[:100]}")
+                                                    break
+                                
+                                if url:
+                                    candidates.append((img, url))
                             
                             if candidates:
                                 def get_area(item):

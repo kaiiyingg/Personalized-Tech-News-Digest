@@ -63,7 +63,7 @@
             {% for article in articles %}
               <article class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" 
                        aria-labelledby="article-{{ article['id'] }}-title"
-                       style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.1rem 1.1rem 1.2rem 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 400px; min-height: 0;">
+                       style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.1rem 1.1rem 1.2rem 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; min-height: 400px; max-height: 500px;">
                 {% set topic_emoji = {
                   'AI & ML': '🤖',
                   'Cybersecurity & Privacy': '🛡️',
@@ -95,7 +95,7 @@
                     </span>
                   {% endif %}
                 </figure>
-                <h3 id="article-{{ article['id'] }}-title" class="article-title-full" style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 1rem; line-height: 1.3; flex-grow: 1; overflow: hidden; word-wrap: break-word; hyphens: auto;">
+                <h3 id="article-{{ article['id'] }}-title" class="article-title-full" style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 1rem; line-height: 1.3; flex-grow: 1; word-wrap: break-word; hyphens: auto; overflow-wrap: break-word;">
                   {{ article['title'] }}
                 </h3>
                 <footer style="margin-top: auto;">

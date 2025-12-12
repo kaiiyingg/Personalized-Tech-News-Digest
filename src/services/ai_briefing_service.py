@@ -1,55 +1,56 @@
 """
-AI-powered briefing service using Hugging Face API.
-Generates summaries for trending articles using free models.
+Content processing service for trending articles.
+Cleans article content and provides data for client-side Chrome AI Summarizer.
 """
 
 import os
-import requests
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from src.database.connection import get_db_connection, close_db_connection
-from huggingface_hub import InferenceClient
 
 
-HF_TOKEN = os.getenv('HF_TOKEN', '')
-
-
-def generate_article_summary(title: str, content: str, max_length: int = 50) -> Optional[str]:
+def clean_article_content(content: str) -> str:
     """
-    Generate concise summary using Hugging Face BART model.
+    Clean article content by removing URLs, metadata, and formatting issues.
     
     Args:
-        title: Article title.
-        content: Article content or description.
-        max_length: Maximum tokens in output (default 50).
-    
+        content: Raw article content
+        
     Returns:
-        Generated summary or None on failure.
+        Cleaned content suitable for display
     """
-    if not HF_TOKEN:
-        print(f"[AI Summary] HF_TOKEN not set - skipping summary generation")
-        return None
+    if not content:
+        return "No summary available."
     
-    try:
-        text = f"{title}. {content[:800]}"
-        
-        client = InferenceClient(api_key=HF_TOKEN)
-        
-        print(f"[AI Summary] Calling HF API for: {title[:50]}...")
-        result = client.summarization(
-            text,
-            model="facebook/bart-large-cnn",
-            max_length=max_length,
-            min_length=20
-        )
-        
-        summary = result.get('summary_text', '').strip()
-        print(f"[AI Summary] Generated summary: {summary[:100]}...")
-        return summary
-        
-    except Exception as e:
-        print(f"[AI Summary] Exception: {e}")
-        return None
+    # Remove URLs (http/https links)
+    content = re.sub(r'https?://[^\s,]+', '', content)
+    
+    # Remove "Comments URL:" and similar metadata
+    content = re.sub(r'Comments URL:\s*', '', content)
+    content = re.sub(r'URL:\s*', '', content)
+    content = re.sub(r'Source:\s*', '', content)
+    
+    # Remove "See also:" patterns
+    content = re.sub(r'See also:\s*', '', content)
+    
+    # Remove standalone commas and clean up spacing
+    content = re.sub(r'\s*,\s*,\s*', ', ', content)
+    content = re.sub(r'^,\s*', '', content)
+    content = re.sub(r'\s*,$', '', content)
+    
+    # Clean up multiple spaces and newlines
+    content = re.sub(r'\s+', ' ', content)
+    content = content.strip()
+    
+    # If content is too short or just punctuation, return a generic message
+    if len(content) < 20 or re.match(r'^[^\w]*$', content):
+        return "Article summary not available."
+    
+    return content
+
+
+
 
 
 def generate_trending_briefing(articles: List[Dict]) -> str:
@@ -127,14 +128,14 @@ def get_user_top_articles(user_id: int, limit: int = 5) -> List[Dict]:
 
 def get_trending_articles_with_summaries(hours: int = 24, limit: int = 5) -> List[Dict]:
     """
-    Get trending articles and generate AI summaries for them.
+    Get trending articles with cleaned content for display.
     
     Args:
         hours: Timeframe in hours.
         limit: Maximum articles to return.
     
     Returns:
-        List of articles with AI-generated summaries.
+        List of articles with cleaned summaries for Chrome AI processing.
     """
     conn = get_db_connection()
     cur = conn.cursor()
@@ -157,20 +158,18 @@ def get_trending_articles_with_summaries(hours: int = 24, limit: int = 5) -> Lis
         articles = []
         
         for row in rows:
+            # Clean the article summary content
+            cleaned_summary = clean_article_content(row[2])
+            
             article = {
                 'id': row[0],
                 'title': row[1],
-                'summary': row[2],
+                'summary': cleaned_summary,
                 'topic': row[3],
                 'url': row[4],
                 'image_url': row[5],
-                'interactions': row[6],
-                'ai_summary': None
+                'interactions': row[6]
             }
-            
-            ai_summary = generate_article_summary(row[1], row[2])
-            if ai_summary:
-                article['ai_summary'] = ai_summary
             
             articles.append(article)
         

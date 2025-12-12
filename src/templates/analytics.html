@@ -220,6 +220,230 @@
         padding: 2rem;
         font-style: italic;
     }
+    
+    /* Trending Articles AI Integration Styles */
+    .article-actions {
+        margin: 1rem 0;
+        padding-top: 1rem;
+        border-top: 1px solid #3a3f47;
+    }
+    
+    .summarize-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .summarize-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .summarize-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .summarize-btn.ai-disabled {
+        background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+        opacity: 1;
+        cursor: pointer;
+    }
+    
+    .summarize-btn.ai-disabled:hover {
+        background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+    }
+    
+    .summarize-btn.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        margin: -8px 0 0 -8px;
+        border: 2px solid transparent;
+        border-top: 2px solid rgba(255,255,255,0.6);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .ai-summary-container {
+        margin: 1rem 0;
+        background: #1a1d23;
+        border-radius: 0.75rem;
+        border: 1px solid #3a3f47;
+        overflow: hidden;
+    }
+    
+    .ai-summary-content {
+        padding: 1.25rem;
+        position: relative;
+    }
+    
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #667eea;
+        color: #fff;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+    }
+    
+    .ai-icon {
+        font-size: 0.9rem;
+    }
+    
+    .summary-text {
+        color: #e0e0e0;
+        line-height: 1.6;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    .close-summary-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: #b3b3b3;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 16px;
+        line-height: 1;
+    }
+    
+    .close-summary-btn:hover {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+    
+    .ai-summary-loading {
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #b3b3b3;
+        font-size: 0.9rem;
+    }
+    
+    .loading-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #3a3f47;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .ai-summary-error {
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #ff6b6b;
+        font-size: 0.9rem;
+        background: rgba(255, 107, 107, 0.1);
+        border-left: 3px solid #ff6b6b;
+    }
+    
+    .error-icon {
+        font-size: 1.1rem;
+    }
+    
+    .ai-summary-fallback {
+        padding: 1.25rem;
+        text-align: center;
+        color: #b3b3b3;
+        background: rgba(255, 193, 7, 0.1);
+        border-left: 3px solid #ffc107;
+        position: relative;
+    }
+    
+    .ai-summary-fallback h4 {
+        color: #fff;
+        margin: 0.5rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .ai-summary-fallback p {
+        margin: 0.75rem 0;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    .ai-summary-fallback code {
+        background: rgba(255,255,255,0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.8rem;
+        color: #ffc107;
+    }
+    
+    .ai-summary-fallback ul {
+        color: #e0e0e0;
+        padding-left: 1.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .ai-summary-fallback ul li {
+        margin: 0.25rem 0;
+    }
+    
+    .fallback-icon {
+        display: block;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+        .summarize-btn {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 0.85rem;
+        }
+        
+        .ai-summary-content,
+        .ai-summary-loading,
+        .ai-summary-error,
+        .ai-summary-fallback {
+            padding: 1rem;
+        }
+        
+        .close-summary-btn {
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+    }
 </style>
 
 <div class="analytics-container">
@@ -238,14 +462,20 @@
     
     <div class="trending-articles">
         {% for article in trending_articles %}
-        <div class="trending-article-card">
+        <div class="trending-article-card" data-article-id="{{ article.id }}">
             <span class="topic-badge">{{ article.topic }}</span>
-            <h3>{{ article.title }}</h3>
-            {% if article.ai_summary %}
-            <p class="ai-summary"><strong>AI Summary:</strong> {{ article.ai_summary }}</p>
-            {% else %}
-            <p class="ai-summary">{{ article.summary[:200] }}...</p>
-            {% endif %}
+            <h3 class="article-title">{{ article.title }}</h3>
+            <p class="article-snippet">{{ article.summary[:200] }}{% if article.summary|length > 200 %}...{% endif %}</p>
+            
+            <!-- AI Summary Container -->
+            <div id="summary-{{ article.id }}" class="ai-summary-container" style="display: none;"></div>
+            
+            <div class="article-actions">
+                <button class="summarize-btn" data-article-id="{{ article.id }}">
+                    AI Summarize
+                </button>
+            </div>
+            
             <div class="meta">
                 <span>{{ article.interactions }} interactions</span>
                 <a href="{{ article.url }}" target="_blank" rel="noopener">Read more →</a>
@@ -382,4 +612,6 @@
     });
     {% endif %}
 </script>
+
+<script src="{{ url_for('static', filename='js/trending-articles.js') }}"></script>
 {% endblock %}

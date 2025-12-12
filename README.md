@@ -1,135 +1,128 @@
-# TechPulse: Personalized Tech News Platform
+# TechPulse — Personalized Tech News Digest
 
-**Production-ready full-stack web application delivering personalized tech news with enterprise-level reliability. Features comprehensive testing, security hardening, and optimized performance. Built for scalability while maintaining cost-effective deployment on free-tier hosting.**
+AI-powered, privacy-conscious tech news platform with personalized feeds, quick AI summaries, automated ingestion and analytics for readers.
 
-## 🚀 Key Features & Technical Highlights
+## Overview
+TechPulse is a full-stack web application that delivers a personalized digest of technology news. It solves information overload by combining topic-based personalization with AI summarization so users can quickly absorb important updates.
 
-- **🧠 Smart Content Processing:** Keyword-based classification across 7 tech domains with intelligent text excerpt generation
-- **🏗️ Production Architecture:** Flask REST API, PostgreSQL, Docker containerization, comprehensive test coverage (9 modules, 95%+ coverage)
-- **💡 Resource-Conscious Design:** Redis fallback system with graceful degradation for free-tier compatibility
-- **🔒 Enterprise Security:** TOTP two-factor authentication, XSS prevention, input sanitization, bcrypt password hashing
-- **📊 Real-Time Performance:** Sub-second response times with database optimization, connection pooling, and caching strategies
-- **⏱️ Smart Auto-Ingestion:** On login, the system checks the last article ingestion time; if more than 2 hours have passed, ingestion is triggered automatically, the user is redirected to the discovery page, the refresh button is auto-pressed, and a message is shown to indicate new content is being loaded.
-- **🎯 Enhanced UX:** Accessibility compliance with semantic HTML structure, ARIA labels for interactive elements, keyboard navigation support, focus indicators, and comprehensive accessibility testing suite ensuring inclusive user experience
+## Key Features
+- Personalized discovery feed with topic grouping and image-rich article cards
+- Automatic topic assignment via hybrid classification (fast keyword rules + Hugging Face zero-shot AI classification). See `src/services/content_service.py` and `HYBRID_CLASSIFICATION.md`.
+- AI Article Summarizer: one-click summaries powered by a Chrome AI summarizer integration (supports TLDR or Key Points)
+- Fast View: quick flashcard-style browsing with articles under user's topic of interest.
+- Analytics Dashboard: real-time insights into trending topics, popular companies, article engagement, and weekly topic distributions—designed to surface what readers care about most.
+- Scheduled article ingestion: scheduled source sync and article updates every 6h via GitHub Actions workflow.
+- Secure user management: registration, email verification, login, password reset via 6-digit email code and profile setting.
+- Favorites & Read Tracking: like articles and mark-as-read to tailor recommendations
+- Accessibility and UX: semantic HTML, ARIA attributes, keyboard navigation support, and automated accessibility tests
 
-## 🛠️ Technical Stack
+## Demo
+Demo video link:
 
-### **Backend**
-- **Framework:** Flask REST API with modular service architecture
-- **Database:** PostgreSQL with optimized schemas, indexes, and connection pooling
-- **Processing:** Keyword-based topic classification with intelligent content filtering
-- **Security:** TOTP two-factor authentication, bcrypt password hashing, input sanitization
-- **Caching:** Redis with memory fallback for production reliability
-- **Testing:** Comprehensive pytest suite with 95%+ coverage across all modules
+## Technology Stack
+- Backend: Python, Flask
+- Frontend: HTML, CSS, and JavaScript with Jinja2 templates
+- Database: PostgreSQL (via Supabase)
+- Caching/Queue: Redis
+- Containerization: Docker, Docker Compose
+- Testing: pytest
+- Other: Bcrypt for passwords, email-sending for password reset
+ - External APIs / Integrations:
+	 - Chrome AI Summarizer integration
+	 - Email provider for sending 6-digit reset codes (configurable: SendGrid)
+	 - News ingestion: RSS feeds
+	 - Automated ingestion: GitHub Actions workflow (runs every 6 hours)
 
-### **Frontend**
-- **Design:** Responsive mobile-first CSS with semantic HTML5 structure and accessibility compliance
-- **Interactions:** Asynchronous JavaScript with real-time feedback and optimized pagination
-- **UX:** Fast article browsing, interactive heart buttons, seamless user experience
+## Installation & Local Setup
+Prerequisites: Python 3.11+, Docker (optional), PostgreSQL, Redis
 
-### **DevOps & Quality**
-- **Testing:** Comprehensive pytest suite (9 modules) with unit, integration, performance, security, and accessibility tests
-- **Code Quality:** Black formatting, Flake8 linting, Bandit security scanning with automated test runner
-- **Containerization:** Docker multi-stage builds with environment-specific configuration
+1. Clone repo
 
-## 📁 Project Structure
-
-```
-TechPulse/
-├── src/                          # Core application code
-│   ├── models/                   # Data models (User, Content, Source, Interactions)
-│   ├── services/                 # Business logic with comprehensive error handling
-│   ├── utils/                    # Caching, HTML cleaning, security utilities
-│   ├── database/                 # Schema migrations and optimized connections
-│   ├── templates/                # Responsive Jinja2 templates
-│   ├── static/                   # Optimized CSS, JavaScript, and assets
-│   └── app.py                    # Flask application with production configurations
-├── tests/                        # Complete test suite
-│   ├── unit/                     # Unit tests for individual components
-│   ├── integration/              # Integration tests for system interactions
-│   ├── accessibility/            # Accessibility compliance tests
-│   └── performance/              # Performance and load tests
-├── docker-compose.yml            # Multi-environment orchestration
-├── requirements.txt              # Pinned dependencies with security updates
-├── run_tests.bat                 # Local test runner and code quality checks
-├── start_app.bat                 # Windows app launcher
-├── setup_dev_environment.sh      # Development environment setup script (Linux/Mac)
-├── .pre-commit-config.yaml       # Pre-commit hooks configuration
-├── .flake8                       # Flake8 linting configuration
-├── pytest.ini                    # Pytest configuration (minimal, optional)
-├── TESTING.md                    # Detailed testing guide
-└── README.md                     # Project overview and documentation
-```
-
-## ⚡ Quick Start
-
-```
-# Clone and setup
+```bash
 git clone https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git
 cd Personalized-Tech-News-Digest
-python -m venv .venv && source .venv/bin/activate  # Linux/Mac
-# python -m venv .venv && .venv\Scripts\activate   # Windows
-pip install -r requirements.txt
-
-# Run tests
-python run_all_tests.py
-
-# Configure environment and database
-cp .env.template .env  # Edit with your credentials
-python -c "from src.database.connection import create_tables; create_tables()"
-
-# Run application
-docker-compose up --build  # or python src/app.py
 ```
 
-**Local Access:** http://localhost:5000 → Register → Click "Refresh" to load articles
+- 2. Create and activate virtualenv
 
-## 🔧 Engineering Challenges, Solutions & Future Enhancement
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
-### **Challenge 1: Storage Constraints (1GB Hosting Limit)**
-- **Problem:** AI models (460MB+) and accumulated data exceeded hosting storage limits causing deployment issues
-- **Current Solution:** Keyword-based classification maintaining 90% functionality with efficient data management
-- **Future Enhancement:** HuggingFace Transformers integration when upgraded hosting becomes available (tested locally but unable to deploy due to current free hosting tier)
+3. Install dependencies
 
-### **Challenge 2: Free-Tier Infrastructure Limitations**
-- **Problem:** No persistent background processes, cron jobs, or advanced caching
-- **Current Solution:** User-driven refresh system with real-time feedback and efficient on-demand processing
-- **Future Enhancement:** Automated scheduling, Redis caching, real-time WebSocket updates (tested locally but unable to deploy due to current free hosting tier)
+```bash
+pip install -r requirements.txt
+```
 
-### **Challenge 3: Scalability & Advanced Features**
-- **Problem:** Production constraints limit feature implementation despite technical feasibility
-- **Current Solution:** Environment-specific configuration with graceful degradation strategies
-- **Future Enhancement:** Advanced search, team collaboration, analytics dashboard, progressive web app
+4. Configure environment
 
-## 🧮 Algorithm Update: Auto-Ingestion Logic
+Copy the example environment file and fill in secrets. A template is provided as `.env.template`.
 
-- **Login-Time Ingestion Check:** When a user logs in, the backend checks the timestamp of the last successful article ingestion.
-- **Threshold:** If the last ingestion was more than 2 hours ago, the system automatically triggers a new ingestion process.
-- **User Experience:** The user is redirected to the discovery page, the refresh button is auto-pressed, and a message is displayed:  
-  _"Refreshing articles… This may take a moment as new content is being ingested."_
-- **Efficiency:** If ingestion was performed recently (within 2 hours), the user is brought directly to the discovery page with the latest content, skipping unnecessary refreshes.
-- **Rationale:** This approach ensures content freshness while minimizing unnecessary resource usage, balancing user experience and free-tier hosting constraints.
+```bash
+cp .env.template .env
+```
 
-## 🤝 Contact & Skills Demonstrated
+Open `.env` and set values for:
+- `FLASK_SECRET_KEY` (random string)
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- `REDIS_URL` (e.g. `redis://localhost:6379/0` or `redis://redis:6379/0` for docker)
+- Optional AI: `HF_TOKEN` (Hugging Face) to enable zero-shot classification
+- Email: `SENDGRID_API_KEY`, `FROM_EMAIL`, `FROM_NAME` 
 
-**Chong Kai Ying**
+5. Initialize database
 
-- **Email:** [chongkaiying578@gmail.com](mailto:chongkaiying578@gmail.com)
-- **LinkedIn:** [linkedin.com/in/kai-ying-907bb6178](https://linkedin.com/in/kai-ying-907bb6178)
-- **GitHub:** [github.com/kaiiyingg](https://github.com/kaiiyingg)
+```bash
+python -c "from src.database.connection import create_tables; create_tables()"
+```
 
-### **Technical Expertise Demonstrated**
-✅ **Full-Stack Development:** Modern web architecture, REST APIs, responsive frontend with semantic HTML5  
-✅ **Database Engineering:** PostgreSQL optimization, connection pooling, performance tuning  
-✅ **Testing & Quality:** 95%+ test coverage across 9 modules, performance testing, security validation  
-✅ **Production Engineering:** Error handling, Redis fallback systems, resource optimization  
-✅ **Security Implementation:** TOTP authentication, XSS prevention, input sanitization  
-✅ **Problem-Solving:** Graceful degradation, fallback systems, constraint-based solutions
+6. Run the app 
+
+Local:
+
+```bash
+docker-compose up --build
+# the app will be available at http://localhost:5000
+```
+
+Deploy to Render:
+
+1. Create a new Web Service on Render and connect your GitHub repo.
+2. Choose Docker as the environment (or use the provided `Dockerfile`).
+3. Set the required environment variables in Render's dashboard (use `.env.template` as reference): `FLASK_SECRET_KEY`, DB connection details, `REDIS_URL`, `SENDGRID_API_KEY` (or SMTP), and optional `HF_TOKEN`.
+4. Enable automatic deploys from the main branch. The project includes a GitHub Actions workflow for scheduled ingestion (every 6 hours) that you can keep or disable depending on your hosting setup.
+
+## Usage
+- Register and set your topics of interest
+- Use the Discover feed to browse articles grouped by topic
+- Click "AI Summarize" on any article to generate a concise TL;DR or bullet key-points
+- Fast View provides flashcard-style browsing and supports scrollable AI summaries
+- Use the Analytics dashboard to view article-level metrics and summaries
+- Forgot password? Request a 6-digit code sent by email, enter it to reset your password
+
+## Contributing
+Contributions welcome. Please open issues for bugs or feature requests. For code contributions, fork, create a feature branch, add tests, and submit a pull request.
+
+## Future Work 
+
+1. Collaborative Discussion Hub
+	- Add article-level discussion threads to enable reader conversations. Ensure the space is safe and respectful by adding moderation features: content filtering, user reporting, warning/ban mechanisms, and admin tools for manual moderation.
+
+2. Personalized Recommendation Engine (ML-based)
+	- Replace rule-based topic selection with embeddings + similarity search (e.g., FAISS/pgvector) for real-time, personalized article suggestions.
+
+3. Advanced Analytics Dashboard
+	- Extend analytics to include cohort retention, user topic trends, and scroll-depth tracking for more product-focused metrics.
+
+4. Lightweight Q&A Chatbot 
+	- Build a context-aware assistant that can answer article-specific questions, surface related articles, and produce short clarifications.
+
+## Contact
+Chong Kai Ying — chongkaiying578@gmail.com
+LinkedIn: https://linkedin.com/in/kai-ying-907bb6178
+GitHub: https://github.com/kaiiyingg
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for complete terms and conditions.
-
----
-
-**MIT Licensed** | **Production-Ready Codebase** | **Scalable Architecture**

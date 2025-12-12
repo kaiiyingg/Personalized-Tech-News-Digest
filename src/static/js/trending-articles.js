@@ -105,10 +105,21 @@ class TrendingArticles {
         
         // Summarize button event listeners
         const summarizeButtons = document.querySelectorAll('.summarize-btn');
+        console.log(`[TrendingArticles] Found ${summarizeButtons.length} summarize buttons`);
+        
+        // Debug: Check what article cards exist
+        const allArticleCards = document.querySelectorAll('[data-article-id]');
+        console.log(`[TrendingArticles] Found ${allArticleCards.length} article cards with data-article-id:`);
+        allArticleCards.forEach(card => {
+            console.log(`[TrendingArticles] Card ID: ${card.dataset.articleId}, element:`, card.tagName, card.className);
+        });
+        
         summarizeButtons.forEach(button => {
+            console.log(`[TrendingArticles] Setting up listener for button with article ID: ${button.dataset.articleId}`);
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const articleId = button.dataset.articleId;
+                console.log(`[TrendingArticles] Summarize button clicked for article ${articleId}`);
                 this.handleSummarizeClick(articleId, button);
             });
         });
@@ -425,18 +436,68 @@ class TrendingArticles {
      * @returns {string|null} Article content for summarization
      */
     getArticleContent(articleId) {
+        console.log(`[TrendingArticles] Getting content for article ${articleId}`);
         const articleCard = document.querySelector(`[data-article-id="${articleId}"]`);
-        if (!articleCard) return null;
+        if (!articleCard) {
+            console.log(`[TrendingArticles] No article card found for ID ${articleId}`);
+            // Try alternative selectors for different page types
+            const allCards = document.querySelectorAll('[data-article-id]');
+            console.log(`[TrendingArticles] Found ${allCards.length} cards with data-article-id`);
+            return null;
+        }
 
-        const title = articleCard.querySelector('.article-title')?.textContent || '';
-        const snippet = articleCard.querySelector('.article-snippet')?.textContent || '';
+        // Try different title selectors for different pages
+        let title = '';
+        const titleSelectors = ['.article-title', '.article-title-full', '.fast-card-title'];
+        for (const selector of titleSelectors) {
+            const titleElement = articleCard.querySelector(selector);
+            console.log(`[TrendingArticles] Trying selector ${selector}:`, titleElement);
+            if (titleElement) {
+                title = titleElement.textContent || '';
+                console.log(`[TrendingArticles] Found title using selector ${selector}: "${title.substring(0, 50)}..."`);
+                break;
+            }
+        }
+        
+        if (!title) {
+            console.log(`[TrendingArticles] No title found, trying all h3 elements in card:`, articleCard.querySelectorAll('h3'));
+        }
+
+        // Try different snippet selectors for different pages
+        let snippet = '';
+        const snippetSelectors = ['.article-snippet', '.fast-card-summary'];
+        for (const selector of snippetSelectors) {
+            const snippetElement = articleCard.querySelector(selector);
+            if (snippetElement) {
+                snippet = snippetElement.textContent || '';
+                console.log(`[TrendingArticles] Found snippet using selector ${selector}: "${snippet.substring(0, 50)}..."`);
+                break;
+            }
+        }
+        
+        if (!snippet) {
+            console.log(`[TrendingArticles] No snippet found for article ${articleId}`);
+        }
         
         const cleanTitle = title.trim();
         const cleanSnippet = snippet.trim().replace(/\.\.\.$/, '');
         
-        const fullContent = `${cleanTitle}. ${cleanSnippet}`;
+        // If we have both title and snippet, combine them
+        let fullContent;
+        if (cleanSnippet && cleanSnippet.length > 0) {
+            fullContent = `${cleanTitle}. ${cleanSnippet}`;
+        } else {
+            // For discover page articles that only have titles, use just the title
+            fullContent = cleanTitle;
+        }
         
-        if (fullContent.length < 50) {
+        // Lower the threshold for title-only content (discover page)
+        const minLength = cleanSnippet ? 50 : 15; // Allow shorter content for title-only articles
+        
+        console.log(`[TrendingArticles] Final content for article ${articleId} (${fullContent.length} chars): "${fullContent.substring(0, 100)}..."`);
+        
+        if (fullContent.length < minLength) {
+            console.log(`[TrendingArticles] Content too short (${fullContent.length} < ${minLength})`);
             throw new Error('Insufficient content for summarization');
         }
         

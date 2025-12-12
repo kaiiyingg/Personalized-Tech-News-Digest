@@ -85,9 +85,9 @@
   position: relative !important;
   overflow: visible !important;
   box-sizing: border-box !important;
-  width: 300px !important;
-  min-width: 300px !important;
-  max-width: 300px !important;
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
 }
 
 .topic-article-card > * {
@@ -105,8 +105,8 @@
 }
 
 .topic-articles .topic-article-card {
-  flex: 0 0 300px !important;
-  min-height: auto !important;
+  flex: 0 0 320px !important;
+  min-height: fit-content !important;
   max-height: none !important;
 }
 
@@ -127,9 +127,25 @@
   line-height: 1.6;
 }
 
-/* Optional: Prevent cards from becoming unreasonably large */
+/* Compact layout for cards without AI summary */
 .topic-article-card {
   max-height: 80vh; /* Limit to 80% of viewport height */
+  min-height: fit-content; /* Minimize empty space */
+}
+
+/* Ensure buttons stay on the same line with proper spacing */
+.topic-article-card .article-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  flex-wrap: nowrap !important; /* Keep buttons on same line */
+  margin-top: 1rem !important; /* Reduce top margin for more compact layout */
+  padding-top: 0.5rem !important; /* Reduce padding for more compact layout */
+}
+
+/* Ensure heart button fits properly on the same line */
+.topic-article-card .article-actions .heart-button {
+  flex-shrink: 0 !important; /* Don't shrink the heart button */
 }
 
 /* If content exceeds viewport, allow page-level scrolling */
@@ -2404,6 +2420,39 @@ a:hover {
   box-shadow: 0 6px 20px rgba(0,0,0,0.25) !important;
 }
 
+/* Fast View Scrollable Content */
+#fast-view-container .fast-horizontal-card {
+  scrollbar-width: thin;
+  scrollbar-color: #8B5CF6 #2a2e36;
+}
+
+#fast-view-container .fast-horizontal-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+#fast-view-container .fast-horizontal-card::-webkit-scrollbar-track {
+  background: rgba(42, 46, 54, 0.5);
+  border-radius: 4px;
+}
+
+#fast-view-container .fast-horizontal-card::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #8B5CF6, #667eea);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+#fast-view-container .fast-horizontal-card::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #9333ea, #7c3aed);
+}
+
+/* Ensure AI summary content is properly contained */
+#fast-view-container .ai-summary-container {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 /* Mobile optimizations for Fast View */
 @media (max-width: 768px) {
   #fast-view-container {
@@ -2416,6 +2465,8 @@ a:hover {
     max-height: 60vh !important;
     padding: 1.2rem 1.4rem !important;
     margin: 0 0.5rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
   
   .fast-card-title {

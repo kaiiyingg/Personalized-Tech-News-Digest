@@ -556,3 +556,80 @@ def cleanup_expired_reset_codes() -> int:
         return 0
     finally:
         close_db_connection(conn)
+
+# ===== SUMMARY PREFERENCES FUNCTIONS =====
+
+def get_summary_preferences(user_id: int) -> dict:
+    """
+    Get user's summary preferences (type and length).
+    
+    Args:
+        user_id (int): The unique identifier for the user
+        
+    Returns:
+        dict: Dictionary with 'type' and 'length' keys, defaults if not found
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT summary_type, summary_length 
+            FROM users 
+            WHERE id = %s
+        """, (user_id,))
+        
+        result = cur.fetchone()
+        if result:
+            return {
+                'type': result[0] or 'tldr',
+                'length': result[1] or 'short'
+            }
+        else:
+            # Return defaults if user not found
+            return {'type': 'tldr', 'length': 'short'}
+            
+    except Exception as e:
+        logger.error(f"Error getting summary preferences for user {user_id}: {e}")
+        return {'type': 'tldr', 'length': 'short'}
+    finally:
+        close_db_connection(conn)
+
+def update_summary_preferences(user_id: int, summary_type: str, summary_length: str) -> bool:
+    """
+    Update user's summary preferences.
+    
+    Args:
+        user_id (int): The unique identifier for the user
+        summary_type (str): Type of summary ('tldr' or 'key-points')
+        summary_length (str): Length of summary ('short', 'medium', or 'long')
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE users 
+            SET summary_type = %s, summary_length = %s
+            WHERE id = %s
+        """, (summary_type, summary_length, user_id))
+        
+        conn.commit()
+        
+        if cur.rowcount > 0:
+            logger.info(f"Updated summary preferences for user {user_id}: {summary_type}/{summary_length}")
+            return True
+        else:
+            logger.warning(f"No user found with id {user_id} to update preferences")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error updating summary preferences for user {user_id}: {e}")
+        return False
+    finally:
+        close_db_connection(conn)

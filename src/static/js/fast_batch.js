@@ -79,10 +79,17 @@ function renderFlashcard(article) {
         <span style="color: #b3b3b3; font-size: 0.75rem; margin-left: 0.5rem;">${article.published_at ? article.published_at.slice(0,10) : 'No date'}</span>
       </div>
       <div class="fast-card-summary" style="font-size: 0.95rem; color: #e0e0e0; margin-bottom: 1rem; line-height: 1.4; max-height: 6em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; flex-grow: 1; word-wrap: break-word; word-break: break-word; white-space: normal; width: 100%;">${cleanSummary}</div>
-      <div class="fast-card-actions" style="margin-top: auto; display: flex; align-items: center; gap: 0.8rem;">
+
+      <!-- AI Summary Container -->
+      <div id="summary-${article.id}" class="ai-summary-container" style="display: none;"></div>
+
+      <div class="fast-card-actions" style="margin-top: auto; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
         <a href="${article.article_url}" target="_blank" class="fast-read-more-btn" style="background: #8B5CF6; color: white; padding: 0.4rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: background 0.2s;">
           Read More <i class="ph ph-arrow-up-right"></i>
         </a>
+        <button class="summarize-btn" data-article-id="${article.id}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 0.4rem 1rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+          AI Summarize
+        </button>
         <button type="button" id="heart-${article.id}" class="heart-button${article.is_liked ? ' active' : ''}" data-article-id="${article.id}" title="${article.is_liked ? 'Unlike' : 'Like'}"><div class="heart-animation"></div></button>
       </div>
     </div>
@@ -114,7 +121,7 @@ function showFlashcard(idx) {
   }
 }
 
-// Heart button functionality for fast view
+// Heart button and AI summarize button functionality for fast view
 function attachHeartButtonListener(article) {
   const heartButton = document.getElementById(`heart-${article.id}`);
   if (heartButton) {
@@ -184,6 +191,15 @@ function attachHeartButtonListener(article) {
         
         alert('Failed to update favorite status. Please try again.');
       });
+    });
+  }
+
+  // Attach AI Summarize button functionality
+  const summarizeButton = document.querySelector(`[data-article-id="${article.id}"] .summarize-btn`);
+  if (summarizeButton && window.trendingArticles) {
+    summarizeButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.trendingArticles.handleSummarizeClick(article.id, summarizeButton);
     });
   }
 }

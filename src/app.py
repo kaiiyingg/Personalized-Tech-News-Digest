@@ -480,6 +480,47 @@ def unlike_content_api(content_id):
         print(f"Error in unlike_content_api: {e}")
         return jsonify({'error': 'Internal server error.'}), 500
 
+# --- Summary Preferences API ---
+@app.route('/api/summary_preferences', methods=['GET'])
+@login_required_api
+def get_summary_preferences():
+    """Get user's current summary preferences"""
+    try:
+        user_id = session['user_id']
+        preferences = user_service.get_summary_preferences(user_id)
+        return jsonify(preferences), 200
+    except Exception as e:
+        print(f"Error getting summary preferences: {e}")
+        return jsonify({'error': 'Failed to get preferences'}), 500
+
+@app.route('/api/summary_preferences', methods=['POST'])
+@login_required_api
+def save_summary_preferences():
+    """Save user's summary preferences"""
+    try:
+        user_id = session['user_id']
+        data = request.get_json()
+        
+        summary_type = data.get('type', 'tldr')
+        summary_length = data.get('length', 'short')
+        
+        # Validate values
+        if summary_type not in ['tldr', 'key-points']:
+            return jsonify({'error': 'Invalid summary type'}), 400
+        if summary_length not in ['short', 'medium', 'long']:
+            return jsonify({'error': 'Invalid summary length'}), 400
+        
+        success = user_service.update_summary_preferences(user_id, summary_type, summary_length)
+        
+        if success:
+            return jsonify({'message': 'Preferences saved successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to save preferences'}), 500
+            
+    except Exception as e:
+        print(f"Error saving summary preferences: {e}")
+        return jsonify({'error': 'Failed to save preferences'}), 500
+
 # --- Fast Flashcard View ---
 @app.route('/fast', methods=['GET'])
 @login_required_api

@@ -16,6 +16,49 @@
           Browse the latest articles from top tech sources and manage your interests to personalize your flash card feed with news tailored to your selected topics!
         </p>
       </aside>
+
+      <!-- AI Summarizer Preferences -->
+      <section class="ai-preferences-section" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 12px; padding: 1.5rem; margin: 2rem auto; max-width: 600px;">
+        <header style="text-align: center; margin-bottom: 1.5rem;">
+          <h2 style="color: #667eea; font-size: 1.2rem; margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            AI Summarizer Preferences
+          </h2>
+          <p style="color: #b3b3b3; font-size: 0.9rem; line-height: 1.4; margin: 0;">
+            Set your preferred summary type and length once. Your choices will be saved and automatically applied when you click "AI Summarize" on any article.
+          </p>
+        </header>
+        
+        <div class="global-ai-preferences" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="preference-group">
+            <label for="global-summary-type" style="display: block; font-size: 0.9rem; font-weight: 600; color: #667eea; margin-bottom: 0.5rem;">Summary Type:</label>
+            <select id="global-summary-type" class="global-summary-type-selector" style="width: 100%; padding: 0.6rem 0.8rem; font-size: 0.9rem; border: 1px solid #667eea; border-radius: 0.5rem; background: #2a2e36; color: #fff;">
+              <option value="tldr" selected>TLDR (Sentences)</option>
+              <option value="key-points">Key Points (Bullets)</option>
+            </select>
+          </div>
+          
+          <div class="preference-group">
+            <label for="global-summary-length" style="display: block; font-size: 0.9rem; font-weight: 600; color: #667eea; margin-bottom: 0.5rem;">Summary Length:</label>
+            <select id="global-summary-length" class="global-summary-length-selector" style="width: 100%; padding: 0.6rem 0.8rem; font-size: 0.9rem; border: 1px solid #667eea; border-radius: 0.5rem; background: #2a2e36; color: #fff;">
+              <option value="short" selected>Short (1 sentence / 3 bullets)</option>
+              <option value="medium">Medium (3 sentences / 5 bullets)</option>
+              <option value="long">Long (5 sentences / 7 bullets)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="preference-info" style="text-align: center; padding: 0.8rem; background: rgba(102, 126, 234, 0.1); border-radius: 0.5rem; border: 1px solid rgba(102, 126, 234, 0.2);">
+          <span id="global-summary-info" class="global-summary-info" style="font-size: 0.85rem; color: #e3e3e3; font-weight: 500;">
+            Current setting: TLDR, 1 sentence
+          </span>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 1rem;">
+          <button id="save-preferences-btn" class="save-preferences-btn" style="background: linear-gradient(135deg, #667eea 0%, #8B5CF6 100%); color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
+            Save
+          </button>
+        </div>
+      </section>
     </header>
 
     <!-- Topics Section -->
@@ -63,7 +106,7 @@
             {% for article in articles %}
               <article class="topic-article-card {% if article['is_read'] %}article-read{% endif %}" 
                        aria-labelledby="article-{{ article['id'] }}-title"
-                       style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.1rem 1.1rem 1.2rem 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; min-height: 400px; max-height: 500px;">
+                       style="flex: 0 0 300px; background: #2a2e36; border-radius: 1rem; padding: 1.1rem 1.1rem 1.2rem 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease, height 0.3s ease; display: flex; flex-direction: column;">
                 {% set topic_emoji = {
                   'AI & ML': '🤖',
                   'Cybersecurity & Privacy': '🛡️',
@@ -112,10 +155,16 @@
                     <span style="background: linear-gradient(135deg, #9333ea, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 0.85rem; font-weight: 700; text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);">{{ article['source_name'] }}</span>
                     <time datetime="{{ article['published_at'] if article['published_at'] else '' }}" style="color: #b3b3b3; font-size: 0.8rem; margin-left: 0.5rem;">{{ article['published_at'][:10] if article['published_at'] else 'No date' }}</time>
                   </div>
-                  <div class="article-actions" style="display: flex; align-items: center; justify-content: flex-start; gap: 0.75rem;">
-                    <a href="{{ url_for('read_article', article_id=article['id']) }}" target="_blank" rel="noopener" class="read-more-btn" aria-label="Read full article: {{ article['title'] }}" style="background: #8B5CF6; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
+                  <!-- AI Summary Container -->
+                  <div id="summary-{{ article.id }}" class="ai-summary-container" style="display: none;"></div>
+
+                  <div class="article-actions" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1rem;">
+                    <a href="{{ url_for('read_article', article_id=article['id']) }}" target="_blank" rel="noopener" class="read-more-btn" aria-label="Read full article: {{ article['title'] }}" style="background: #8B5CF6; color: white; padding: 0.4rem 0.9rem; border-radius: 0.4rem; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: all 0.2s ease;">
                       Read More
                     </a>
+                    <button class="summarize-btn" data-article-id="{{ article.id }}" aria-label="Generate AI summary for: {{ article['title'] }}" style="background: linear-gradient(135deg, #8B5CF6 0%, #667eea 100%); color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 0.4rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                      AI Summarize
+                    </button>
                     <button 
                       type="button" 
                       id="heart-{{ article['id'] }}" 
@@ -146,4 +195,6 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/topic_url_handler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/trending-articles.js') }}"></script>
+
 {% endblock %}

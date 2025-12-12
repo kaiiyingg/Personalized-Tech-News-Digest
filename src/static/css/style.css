@@ -54,9 +54,9 @@
 /* Discover page article image styling */
 .topic-article-card .article-image {
   width: 100% !important;
-  height: 140px !important;
+  height: 180px !important;
   border-radius: 0.8rem !important;
-  margin-bottom: 1rem !important;
+  margin-bottom: 1.5rem !important;
   overflow: hidden !important;
   display: flex !important;
   align-items: center !important;
@@ -83,7 +83,7 @@
 /* Ensure topic article cards maintain proper structure */
 .topic-article-card {
   position: relative !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   box-sizing: border-box !important;
   width: 300px !important;
   min-width: 300px !important;
@@ -106,9 +106,39 @@
 
 .topic-articles .topic-article-card {
   flex: 0 0 300px !important;
-  height: 400px !important;
-  min-height: 400px !important;
-  max-height: 400px !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* When AI summary is displayed, allow card to expand */
+.topic-article-card.has-ai-summary {
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Content expansion handling for article cards */
+.topic-article-card .ai-summary-content,
+.topic-article-card .ai-summary-fallback {
+  /* Allow content to expand naturally */
+  max-height: none;
+  overflow: visible;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.6;
+}
+
+/* Optional: Prevent cards from becoming unreasonably large */
+.topic-article-card {
+  max-height: 80vh; /* Limit to 80% of viewport height */
+}
+
+/* If content exceeds viewport, allow page-level scrolling */
+.topic-article-card .ai-summary-content,
+.topic-article-card .ai-summary-fallback {
+  /* Very long content will extend the card, and users scroll the page */
+  max-height: 60vh; /* Reasonable limit while allowing expansion */
+  overflow-y: auto; /* Fallback for extremely long content */
+  overflow-x: hidden;
 }
 
 /* Fast view image styling - make images taller and prevent stretching */
@@ -2703,4 +2733,573 @@ button.profile-btn-secondary:hover {
   .profile-title {
     font-size: 2.5rem;
   }
+}
+
+/* ========================================
+   AI SUMMARIZATION STYLES - Shared across all templates
+   ======================================== */
+
+/* Article actions container */
+.article-actions {
+    margin: 1rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid #3a3f47;
+}
+
+/* Main summarize button - Updated with purple gradient */
+.summarize-btn {
+    background: linear-gradient(135deg, #8B5CF6 0%, #667eea 100%);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.summarize-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.summarize-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.summarize-btn.ai-disabled {
+    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+    opacity: 1;
+    cursor: pointer;
+}
+
+.summarize-btn.ai-disabled:hover {
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.summarize-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* AI Summary container */
+.ai-summary-container {
+    margin: 1rem 0;
+    background: #1a1d23;
+    border-radius: 0.75rem;
+    border: 1px solid #3a3f47;
+    overflow: hidden;
+}
+
+.ai-summary-content {
+    padding: 1.25rem;
+    position: relative;
+}
+
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #667eea;
+    color: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+.ai-icon {
+    font-size: 0.9rem;
+}
+
+.summary-text {
+    color: #e0e0e0;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.close-summary-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #b3b3b3;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.close-summary-btn:hover {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+}
+
+/* Loading state */
+.ai-summary-loading {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #b3b3b3;
+    font-size: 0.9rem;
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #3a3f47;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-spinner-circular {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(102, 126, 234, 0.2);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+}
+
+/* Error state */
+.ai-summary-error {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    background: rgba(255, 107, 107, 0.1);
+    border-left: 3px solid #ff6b6b;
+}
+
+.error-icon {
+    font-size: 1.1rem;
+}
+
+/* Fallback state */
+.ai-summary-fallback {
+    padding: 1.25rem;
+    text-align: center;
+    color: #b3b3b3;
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #ffc107;
+    position: relative;
+}
+
+.ai-summary-fallback h4 {
+    color: #fff;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.ai-summary-fallback p {
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.ai-summary-fallback code {
+    background: rgba(255,255,255,0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.8rem;
+    color: #ffc107;
+}
+
+.ai-summary-fallback ul {
+    color: #e0e0e0;
+    padding-left: 1.5rem;
+    font-size: 0.85rem;
+}
+
+.ai-summary-fallback ul li {
+    margin: 0.25rem 0;
+}
+
+.fallback-icon {
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Save preferences button */
+.save-preferences-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.save-preferences-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.save-preferences-btn.saved {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.save-preferences-btn.saved:hover {
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Responsive adjustments for AI Summarizer */
+@media (max-width: 600px) {
+    .summarize-btn {
+        width: 100%;
+        padding: 0.875rem;
+        font-size: 0.85rem;
+    }
+    
+    .ai-summary-content,
+    .ai-summary-loading,
+    .ai-summary-error,
+    .ai-summary-fallback {
+        padding: 1rem;
+    }
+    
+    .close-summary-btn {
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+}
+
+/* =================================================
+   ANALYTICS DASHBOARD STYLES
+   ================================================= */
+
+.analytics-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.analytics-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.analytics-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.analytics-header p {
+    color: #b3b3b3;
+    font-size: 1.1rem;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 2rem 0 1.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3a3f47;
+}
+
+.briefing-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.briefing-card h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.briefing-card p {
+    color: #f0f0f0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.trending-articles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.trending-article-card {
+    background: #2a2e36;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid #667eea;
+}
+
+.trending-article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.trending-article-card .topic-badge {
+    display: inline-block;
+    background: #667eea;
+    color: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.trending-article-card h3 {
+    color: #fff;
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.trending-article-card .ai-summary {
+    color: #b3b3b3;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.trending-article-card .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.trending-article-card a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.trending-article-card a:hover {
+    text-decoration: underline;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    background: #2a2e36;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 3px solid #667eea;
+}
+
+.stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-label {
+    color: #b3b3b3;
+    font-size: 0.95rem;
+}
+
+.signals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+@media (max-width: 900px) {
+    .signals-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.company-table {
+    width: 100%;
+}
+
+.company-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #3a3f47;
+}
+
+.company-row:first-child {
+    border-bottom: 2px solid #667eea;
+    font-weight: 600;
+    color: #fff;
+}
+
+.company-row:last-child {
+    border-bottom: none;
+}
+
+.company-name {
+    color: #fff;
+    font-weight: 500;
+}
+
+.company-mentions {
+    color: #b3b3b3;
+    text-align: center;
+}
+
+.company-score {
+    color: #667eea;
+    text-align: right;
+    font-weight: 600;
+}
+
+.chart-container {
+    background: #2a2e36;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.chart-container h3 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+}
+
+.no-data {
+    text-align: center;
+    color: #888;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Analytics Article Actions */
+.analytics-container .article-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #3a3f47;
+}
+
+.analytics-container .read-more-btn {
+    background: #8B5CF6;
+    color: white;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.analytics-container .read-more-btn:hover {
+    background: #7C3AED;
+    transform: translateY(-1px);
+}
+
+.analytics-container .summarize-btn {
+    background: linear-gradient(135deg, #8B5CF6 0%, #667eea 100%);
+    color: #fff;
+    border: none;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.analytics-container .summarize-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.analytics-container .summarize-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.analytics-container .summarize-btn.ai-disabled {
+    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+    opacity: 1;
+    cursor: pointer;
+}
+
+.analytics-container .summarize-btn.ai-disabled:hover {
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.analytics-container .summarize-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Analytics responsive adjustments */
+@media (max-width: 600px) {
+    .analytics-container .article-actions {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .analytics-container .read-more-btn,
+    .analytics-container .summarize-btn {
+        width: 100%;
+        padding: 0.6rem;
+        text-align: center;
+        justify-content: center;
+    }
 }

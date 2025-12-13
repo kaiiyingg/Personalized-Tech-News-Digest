@@ -122,7 +122,3 @@ Contributions welcome. Please open issues for bugs or feature requests. For code
 Chong Kai Ying — chongkaiying578@gmail.com
 LinkedIn: https://linkedin.com/in/kai-ying-907bb6178
 GitHub: https://github.com/kaiiyingg
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for complete terms and conditions.

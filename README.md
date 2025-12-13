@@ -3,7 +3,7 @@
 AI-powered, privacy-conscious tech news platform with hybrid topic classification (AI + keyword rules), personalized feeds, fast AI summaries, automated ingestion, and analytics.
 
 ## Overview
-TechPulse is a full-stack, privacy-conscious tech news platform that delivers a personalized digest of technology updates. It reduces information overload through hybrid topic classification (AI + keyword rules), tailored feeds, and fast on-demand AI summaries, enabling users to absorb key developments quickly. The system is supported by automated ingestion pipelines and an analytics dashboard that surfaces trending articles, topics and companies determined by user engagement and topic distribution over the week.
+TechPulse is a full-stack, privacy-conscious tech news platform that delivers a personalized digest of technology updates. It reduces information overload through hybrid topic classification (AI + keyword rules), tailored feeds, and fast on-demand AI summaries, enabling users to absorb key developments quickly. The system is supported by automated article ingestion pipelines and an analytics dashboard that surfaces trending articles, topics and companies determined by user engagement and topic distribution over the week.
 
 ## Key Features
 - Personalized discovery feed with topic grouping and image-rich article cards

@@ -1,18 +1,18 @@
 # TechPulse — Personalized Tech News Digest
 
-AI-powered, privacy-conscious tech news platform with personalized feeds, quick AI summaries, automated ingestion and analytics for readers.
+AI-powered, privacy-conscious tech news platform with hybrid topic classification (AI + keyword rules), personalized feeds, fast AI summaries, automated ingestion, and analytics.
 
 ## Overview
-TechPulse is a full-stack web application that delivers a personalized digest of technology news. It solves information overload by combining topic-based personalization with AI summarization so users can quickly absorb important updates.
+TechPulse is a full-stack, privacy-conscious tech news platform that delivers a personalized digest of technology updates. It reduces information overload through hybrid topic classification (AI + keyword rules), tailored feeds, and fast on-demand AI summaries, enabling users to absorb key developments quickly. The system is supported by automated ingestion pipelines and an analytics dashboard that surfaces trending articles, topics and companies determined by user engagement and topic distribution over the week.
 
 ## Key Features
 - Personalized discovery feed with topic grouping and image-rich article cards
 - Automatic topic assignment via hybrid classification (fast keyword rules + Hugging Face zero-shot AI classification). See `src/services/content_service.py` and `HYBRID_CLASSIFICATION.md`.
 - AI Article Summarizer: one-click summaries powered by a Chrome AI summarizer integration (supports TLDR or Key Points)
 - Fast View: quick flashcard-style browsing with articles under user's topic of interest.
-- Analytics Dashboard: real-time insights into trending topics, popular companies, article engagement, and weekly topic distributions—designed to surface what readers care about most.
+- Analytics Dashboard: real-time insights into trending topics, popular tech companies, article engagement, and weekly topic distributions—designed to surface what readers care about most.
 - Scheduled article ingestion: scheduled source sync and article updates every 6h via GitHub Actions workflow.
-- Secure user management: registration, email verification, login, password reset via 6-digit email code and profile setting.
+- Secure user management: registration, email verification, login, password reset via 6-digit email code and profile setting to change username and password.
 - Favorites & Read Tracking: like articles and mark-as-read to tailor recommendations
 - Accessibility and UX: semantic HTML, ARIA attributes, keyboard navigation support, and automated accessibility tests
 
@@ -21,7 +21,7 @@ Demo video link:
 
 ## Technology Stack
 - Backend: Python, Flask
-- Frontend: HTML, CSS, and JavaScript with Jinja2 templates
+- Frontend: HTML, CSS, and JavaScript
 - Database: PostgreSQL (via Supabase)
 - Caching/Queue: Redis
 - Containerization: Docker, Docker Compose

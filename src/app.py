@@ -111,17 +111,6 @@ def discover():
 def forgot_password():
     print("[forgot_password] Called. session:", dict(session))
     
-    # Check if user already has a pending reset code
-    if 'reset_user_id' in session:
-        reset_user_id = session['reset_user_id']
-        if user_service.has_valid_reset_code(reset_user_id):
-            print(f"[forgot_password] User {reset_user_id} already has valid code, redirecting to verify")
-            flash('You already have a pending verification code. Please check your email and enter the code.', 'info')
-            return redirect(url_for('verify_code'))
-        else:
-            # Code expired or used, clear session
-            session.pop('reset_user_id', None)
-    
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         print(f"[forgot_password] POST email: {email}")
@@ -136,21 +125,15 @@ def forgot_password():
             flash('If an account with that email exists, a verification code will be sent to your email.', 'info')
             return render_template('forgot_password.html')
 
-        # Generate and send reset code
+        # Generate and send reset code (allows immediate resend)
         reset_code = user_service.generate_reset_code(user.id)
-        if reset_code == "EXISTS":
-            # User already has a valid code
-            session['reset_user_id'] = user.id
-            print(f"[forgot_password] User {user.id} already has valid code, redirecting to verify")
-            flash('A verification code was already sent to your email address. Please check your email and enter the code. The code expires in 2 minutes.', 'info')
-            return redirect(url_for('verify_code'))
-        elif reset_code:
+        if reset_code:
             email_sent = user_service.send_reset_code_email(user.email, reset_code, user.username)
             if email_sent:
                 # Store user ID in session for verification
                 session['reset_user_id'] = user.id
                 print(f"[forgot_password] Reset code sent to {user.email}, stored reset_user_id: {user.id}")
-                flash(f'A verification code has been sent to your email address. The code expires in 2 minutes.', 'success')
+                flash(f'A verification code has been sent to your email address. The code expires in 1 minute.', 'success')
                 return redirect(url_for('verify_code'))
             else:
                 print("[forgot_password] Failed to send reset code email.")

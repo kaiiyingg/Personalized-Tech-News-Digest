@@ -1,12 +1,12 @@
 -- Create password reset codes table
 -- This table stores temporary verification codes sent via email for password resets
--- Codes should expire after a reasonable time (e.g., 15 minutes)
+-- Codes expire after 1 minute for security
 
 CREATE TABLE IF NOT EXISTS password_reset_codes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     code VARCHAR(6) NOT NULL,
-    expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '2 minutes'),
+    expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '1 minute'),
     used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

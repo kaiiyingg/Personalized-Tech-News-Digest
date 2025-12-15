@@ -355,20 +355,15 @@ def has_valid_reset_code(user_id: int) -> bool:
 def generate_reset_code(user_id: int) -> Optional[str]:
     """
     Generate and store a 6-digit password reset code for a user.
-    Only generates if no valid unexpired code exists.
+    Allows immediate resend - invalidates any existing codes and creates a new one.
     
     Args:
         user_id (int): The user's unique identifier
         
     Returns:
-        Optional[str]: The 6-digit code if successful, "EXISTS" if code already exists, None if failed
+        Optional[str]: The 6-digit code if successful, None if failed
     """
     logger.info(f"Attempting to generate reset code for user_id: {user_id}")
-    
-    # Check if user already has a valid code
-    if has_valid_reset_code(user_id):
-        logger.info(f"User {user_id} already has a valid reset code")
-        return "EXISTS"
     
     conn = None
     try:
@@ -380,13 +375,13 @@ def generate_reset_code(user_id: int) -> Optional[str]:
         logger.info("Database connection established")
         cur = conn.cursor()
         
-        # Invalidate any existing reset codes for this user
+        # Invalidate any existing reset codes for this user (allows immediate resend)
         cur.execute(
             "UPDATE password_reset_codes SET used = TRUE WHERE user_id = %s AND used = FALSE;",
             (user_id,)
         )
         
-        # Insert new reset code
+        # Insert new reset code (expires in 1 minute)
         cur.execute(
             "INSERT INTO password_reset_codes (user_id, code) VALUES (%s, %s);",
             (user_id, code)
@@ -411,6 +406,7 @@ def generate_reset_code(user_id: int) -> Optional[str]:
 def verify_reset_code(user_id: int, code: str) -> bool:
     """
     Verify a password reset code for a user.
+    Only accepts the LATEST code sent to prevent old codes from being used.
     
     Args:
         user_id (int): The user's unique identifier
@@ -424,19 +420,22 @@ def verify_reset_code(user_id: int, code: str) -> bool:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Find valid, unused, unexpired code
+        # Find the MOST RECENT valid, unused, unexpired code
+        # This ensures only the latest code works (important when allowing immediate resend)
         cur.execute("""
             SELECT id FROM password_reset_codes 
             WHERE user_id = %s AND code = %s AND used = FALSE AND expires_at > NOW()
+            ORDER BY created_at DESC
+            LIMIT 1
         """, (user_id, code))
         
         result = cur.fetchone()
         
         if result:
-            # Mark code as used
+            # Mark ALL codes for this user as used (invalidate all old codes)
             cur.execute(
-                "UPDATE password_reset_codes SET used = TRUE WHERE id = %s;",
-                (result[0],)
+                "UPDATE password_reset_codes SET used = TRUE WHERE user_id = %s AND used = FALSE;",
+                (user_id,)
             )
             conn.commit()
             return True
@@ -497,7 +496,7 @@ def send_reset_code_email(user_email: str, code: str, username: str = None) -> b
                     </div>
                 </div>
                 
-                <p><strong>Important:</strong> This code will expire in 15 minutes.</p>
+                <p><strong>Important:</strong> This code will expire in 1 minute.</p>
                 <p>If you didn't request this, please ignore this email.</p>
                 
                 <p style="color: #666; font-size: 14px; margin-top: 30px;">
@@ -512,7 +511,7 @@ You requested a password reset for your TechPulse account.
 
 Your verification code is: {code}
 
-This code will expire in 15 minutes for security reasons.
+This code will expire in 1 minute for security reasons.
 
 If you didn't request this password reset, please ignore this email.
 

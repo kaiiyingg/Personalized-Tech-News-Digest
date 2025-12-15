@@ -119,7 +119,7 @@ Contributions welcome. Please open issues for bugs or feature requests. For code
 	- Build a context-aware assistant that can answer article-specific questions, surface related articles, and produce short clarifications.
 
 ## Contact
-Chong Kai Ying — chongkaiying578@gmail.com
+Gmail: chongkaiying578@gmail.com
 
 
 LinkedIn: https://linkedin.com/in/kai-ying-907bb6178

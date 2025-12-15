@@ -120,5 +120,9 @@ Contributions welcome. Please open issues for bugs or feature requests. For code
 
 ## Contact
 Chong Kai Ying — chongkaiying578@gmail.com
+
+
 LinkedIn: https://linkedin.com/in/kai-ying-907bb6178
+
+
 GitHub: https://github.com/kaiiyingg

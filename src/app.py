@@ -199,6 +199,23 @@ def profile():
                     return redirect(url_for('profile'))
                 else:
                     flash('Failed to update email. Email may already be in use.', 'danger')
+        
+        # Handle password change
+        elif action == 'change_password':
+            current_password = request.form.get('current_password', '').strip()
+            new_password = request.form.get('new_password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
+            
+            if not current_password or not new_password or not confirm_password:
+                flash('All password fields are required.', 'danger')
+            elif new_password != confirm_password:
+                flash('New passwords do not match.', 'danger')
+            elif not user_service.check_password(user, current_password):
+                flash('Current password is incorrect.', 'danger')
+            else:
+                user_service.update_user_password(user_id, new_password)
+                flash('Password changed successfully!', 'success')
+                return redirect(url_for('profile'))
     
     return render_template('profile.html', current_user=user, username=session.get('username'), current_year=datetime.now().year)
 

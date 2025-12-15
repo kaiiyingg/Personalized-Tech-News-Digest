@@ -72,10 +72,33 @@
       
       <!-- Password Section -->
       <div class="profile-section">
-        <div class="profile-label">Security</div>
-        <a href="{{ url_for('reset_password') }}" class="profile-btn">
-          Reset Password
-        </a>
+        <div class="profile-label">Change Password</div>
+        <form method="POST" action="{{ url_for('profile') }}">
+          <input 
+            type="password" 
+            name="current_password" 
+            placeholder="Current password" 
+            class="profile-input"
+            required
+          >
+          <input 
+            type="password" 
+            name="new_password" 
+            placeholder="New password" 
+            class="profile-input"
+            required
+          >
+          <input 
+            type="password" 
+            name="confirm_password" 
+            placeholder="Confirm new password" 
+            class="profile-input"
+            required
+          >
+          <button type="submit" name="action" value="change_password" class="profile-btn">
+            Change Password
+          </button>
+        </form>
       </div>
     </div>
   </div>

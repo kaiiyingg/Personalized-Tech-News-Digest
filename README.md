@@ -17,7 +17,7 @@ TechPulse is a full-stack, privacy-conscious tech news platform that delivers a 
 - Accessibility and UX: semantic HTML, ARIA attributes, keyboard navigation support, and automated accessibility tests
 
 ## Demo
-Demo video link:
+Demo video link: https://youtu.be/FGcOdSm-eeU?si=LwKrmJKRzK2rQ-Sp
 
 ## Technology Stack
 - Backend: Python, Flask

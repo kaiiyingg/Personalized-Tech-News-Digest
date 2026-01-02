@@ -59,11 +59,6 @@ HF_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-la
 HF_TOKEN = os.environ.get('HF_TOKEN', '')
 HF_ENABLED = bool(HF_TOKEN)  # Only use AI if token is configured
 
-# Confidence thresholds for hybrid classification
-HIGH_CONFIDENCE_THRESHOLD = 0.75  # Accept if AI confidence >= 75%
-LOW_CONFIDENCE_THRESHOLD = 0.30   # Reject if AI confidence <= 30%
-# Between 30-75%: borderline cases that may need review (but we'll accept for now)
-
 # Rate limiting for API calls
 API_CALL_DELAY = 0.5  # seconds between calls to avoid rate limits
 MAX_RETRIES = 2
@@ -536,7 +531,6 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
         'reason': None
     }
     
-    # OPTIMIZED tech keyword requirements - relaxed for speed and accuracy
     tech_keywords = [
         'technology', 'tech', 'software', 'hardware', 'artificial intelligence', 'ai',
         'machine learning', 'ml', 'programming', 'coding', 'developer', 'development',
@@ -556,7 +550,6 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
         'survey', 'stackoverflow', 'stack overflow', 'code', 'engineers', 'engineering'
     ]
     
-    # COMPREHENSIVE reject keywords - filter out clearly non-tech content
     reject_keywords = [
         # Adult/NSFW content
         'vibrator', 'sex', 'adult', 'porn', 'explicit', 'nsfw', 'erotic', 'sexual',
@@ -570,12 +563,20 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
         'get it now', 'buy now', 'order today', 'free trial', 'trial offer',
         'documentary subscription', 'movie subscription', 'tv subscription',
         'binge-watching', 'binge watch', 'entertainment subscription',
-        'curiosity stream', 'netflix', 'hulu', 'disney plus', 'amazon prime',
+        'reg.', 'save $', 'special offer', 'subscription plan',
+        
+        # Entertainment services
+        'curiosity stream', 'netflix', 'hulu', 'disney plus', 'amazon prime video',
+        'paramount plus', 'hbo max', 'apple tv', 'peacock', 'discovery plus',
+        'crunchyroll', 'funimation', 'showtime', 'starz', 'epix',
         
         # Government/Policy/Housing/Real Estate
         'government policy', 'housing policy', 'public housing', 'income ceiling',
         'eligibility criteria', 'bto', 'built to order', 'hdb', 'housing board',
         'minister', 'ministry', 'parliament', 'senator', 'congressman', 'mp',
+        'minister says', 'minister said', 'policy review', 'policy under review',
+        'eligibility age review', 'income ceiling review', 'public housing policy',
+        'national development minister', 'housing supply and demand',
         'national development', 'urban planning', 'housing scheme', 'property prices',
         'housing supply', 'housing demand', 'affordable housing', 'subsidized housing',
         'residential property', 'property market', 'real estate market', 'home ownership',
@@ -704,141 +705,67 @@ def assign_topic(title: str, summary: str, return_metadata: bool = False) -> Uni
         'expires soon', 'time sensitive', 'urgent', 'important notice'
     ]
     
-    # Count tech vs non-tech indicators
+    # Count no. of tech and reject keywords
     tech_score = sum(1 for keyword in tech_keywords if keyword in text)
     reject_score = sum(1 for keyword in reject_keywords if keyword in text)
     
-    # Additional pattern-based rejection (regex patterns for common non-tech content)
-    import re
-    
-    # Promotional patterns
-    promotional_patterns = [
-        r'get .* for \$\d+',  # "get a lifetime of documentaries for $200"
-        r'lifetime .* for \$\d+',  # "lifetime subscription for $99"
-        r'reg\. \$\d+',  # "reg. $399.99"
-        r'now \$\d+.*reg\. \$\d+',  # "now $199.99 (reg. $399.99)"
-        r'half off.*price',  # "half off the regular price"
-        r'tl;?dr:.*subscription',  # "TL;DR: ... subscription"
-        r'\$\d+.*reg\. \$\d+',  # "$199.99 (reg. $399.99)"
-        r'subscription.*plan.*off',  # "subscription to ... plan, now half off"
-        r'save \$\d+',  # "save $200"
-        r'discount.*\$\d+',  # "discount of $100"
-        r'special.*offer.*\$\d+',  # "special offer for $99"
-    ]
-    
-    # Government/policy patterns
-    policy_patterns = [
-        r'minister.*says?',  # "minister says"
-        r'government.*policy',  # "government policy"
-        r'policy.*review',  # "policy under review"
-        r'eligibility.*age.*review',  # "eligibility age for singles under review"
-        r'income.*ceiling.*review',  # "income ceilings under review"
-        r'public.*housing.*policy',  # "public housing policies"
-        r'national.*development.*minister',  # "National Development Minister"
-        r'housing.*supply.*demand',  # "housing supply and demand"
-        r'appropriate.*time.*depending',  # "appropriate time depending on supply and demand"
-    ]
-    
-    # Check for promotional patterns
-    promotional_matches = sum(1 for pattern in promotional_patterns if re.search(pattern, text, re.IGNORECASE))
-    
-    # Check for policy patterns  
-    policy_matches = sum(1 for pattern in policy_patterns if re.search(pattern, text, re.IGNORECASE))
-    
     # Calculate rejection and tech signals
-    total_rejection_signals = reject_score + promotional_matches + policy_matches
+    total_rejection_signals = reject_score
     
-    # Additional promotional checks
-    price_mentions = len(re.findall(r'\$\d+', text))
-    percentage_mentions = len(re.findall(r'\d+%\s*off', text))
+    # PATH 1: Clear keyword decision (accept or reject)
+    is_clear_reject = total_rejection_signals >= 2
+    is_clear_accept = tech_score >= 2 and total_rejection_signals == 0
     
-    # Check entertainment services
-    entertainment_services = [
-        'curiosity stream', 'netflix', 'hulu', 'disney plus', 'amazon prime video',
-        'paramount plus', 'hbo max', 'apple tv', 'peacock', 'discovery plus',
-        'crunchyroll', 'funimation', 'showtime', 'starz', 'epix'
-    ]
-    has_entertainment_service = any(service in text for service in entertainment_services)
-    
-    # === DECISION TREE ===
-    
-    # PATH 1: HARD REJECT - Strong negative signals (2+ reject keywords OR obvious promotional)
-    if total_rejection_signals >= 2 or price_mentions >= 3 or has_entertainment_service:
-        print(f"HARD REJECT: Strong negative signals (reject: {total_rejection_signals}, price: {price_mentions}, entertainment: {has_entertainment_service}) in '{title[:50]}...'")
-        classification_metadata['method'] = 'keyword_hard_reject'
+    if is_clear_reject:
+        print(f"KEYWORD REJECT: Strong non-tech signals (reject={total_rejection_signals}) in '{title[:50]}...'")
+        classification_metadata['method'] = 'keyword_reject'
         classification_metadata['confidence'] = 0.0
-        classification_metadata['reason'] = f'Strong non-tech signals: reject={total_rejection_signals}, price={price_mentions}'
+        classification_metadata['reason'] = f'Non-tech signals: reject={total_rejection_signals}'
         return (None, classification_metadata) if return_metadata else None
     
-    # PATH 2: HARD ACCEPT - Very strong tech signal (4+ tech keywords AND no reject keywords)
-    if tech_score >= 4 and total_rejection_signals == 0:
+    if is_clear_accept:
         topic = classify_topic_by_keywords(text, title)
-        print(f"HARD ACCEPT: Very strong tech signal ({tech_score} keywords, 0 reject) classified as '{topic}' for '{title[:50]}...'")
-        classification_metadata['method'] = 'keyword_hard_accept'
+        print(f"KEYWORD ACCEPT: Strong tech signal (tech={tech_score}, reject=0) → '{topic}' for '{title[:50]}...'")
+        classification_metadata['method'] = 'keyword_accept'
         classification_metadata['confidence'] = min(tech_score / 10.0, 0.95)
         classification_metadata['reason'] = f'Strong tech keywords: {tech_score}'
         return (topic, classification_metadata) if return_metadata else topic
     
-    # PATH 3: UNCERTAIN - Everything else → Use AI if available
-    # This includes:
-    # - 0-3 tech keywords with 0-1 reject keywords
-    # - Mixed signals (some tech + some reject keywords)
-    print(f"UNCERTAIN CASE: tech_score={tech_score}, reject_score={total_rejection_signals} - checking with AI...")
+    # PATH 2: Uncertain → Use AI if available, otherwise conservative keyword decision
+    print(f"UNCERTAIN: tech={tech_score}, reject={total_rejection_signals} → Using AI...")
     
     if HF_ENABLED:
         classification_metadata['ai_used'] = True
         ai_result = classify_with_ai(title, summary)
         
         if ai_result:
-            # AI successfully classified
             classification_metadata['method'] = ai_result['method']
             classification_metadata['confidence'] = ai_result['confidence']
             classification_metadata['reason'] = ai_result['reason']
             
             if not ai_result['is_tech']:
-                print(f"AI REJECT: Not tech content (confidence: {ai_result['confidence']:.2f})")
+                print(f"AI REJECT: Not tech (confidence={ai_result['confidence']:.2f})")
                 return (None, classification_metadata) if return_metadata else None
             
-            if ai_result['topic']:
-                # AI provided a topic classification
-                print(f"AI ACCEPT: Classified as '{ai_result['topic']}' (confidence: {ai_result['confidence']:.2f})")
-                return (ai_result['topic'], classification_metadata) if return_metadata else ai_result['topic']
-            else:
-                # AI confirmed tech but didn't classify topic - use keywords
-                topic = classify_topic_by_keywords(text, title)
-                print(f"HYBRID: AI confirmed tech, keyword classified as '{topic}'")
-                classification_metadata['method'] = 'hybrid_ai_keyword'
-                return (topic, classification_metadata) if return_metadata else topic
+            topic = ai_result['topic'] or classify_topic_by_keywords(text, title)
+            print(f"AI ACCEPT: '{topic}' (confidence={ai_result['confidence']:.2f})")
+            return (topic, classification_metadata) if return_metadata else topic
     
-    # PATH 4: FALLBACK - AI not available or failed, use keyword thresholds
-    print(f"AI UNAVAILABLE: Using keyword fallback logic")
+    # No AI available - conservative keyword-only decision
+    print(f"NO AI: Using conservative keyword logic")
     
-    # Stricter fallback logic when no AI:
-    # - Accept if: tech_score >= 3 AND total_rejection_signals == 0
-    # - Accept if: tech_score >= 4 AND tech_score > (total_rejection_signals * 2)
-    # - Reject otherwise
-    
-    if tech_score >= 3 and total_rejection_signals == 0:
+    if tech_score >= 3 and tech_score > (total_rejection_signals * 2):
         topic = classify_topic_by_keywords(text, title)
-        print(f"FALLBACK ACCEPT: Strong tech signal (tech={tech_score}, reject=0), classified as '{topic}'")
-        classification_metadata['method'] = 'keyword_fallback_accept'
+        print(f"KEYWORD FALLBACK ACCEPT: tech={tech_score} >> reject={total_rejection_signals} → '{topic}'")
+        classification_metadata['method'] = 'keyword_fallback'
         classification_metadata['confidence'] = min(tech_score / 10.0, 0.7)
-        classification_metadata['reason'] = f'Fallback: tech={tech_score}, reject=0'
+        classification_metadata['reason'] = f'Tech dominates: {tech_score} vs {total_rejection_signals}'
         return (topic, classification_metadata) if return_metadata else topic
-    
-    elif tech_score >= 4 and tech_score > (total_rejection_signals * 2):
-        topic = classify_topic_by_keywords(text, title)
-        print(f"FALLBACK ACCEPT: Tech dominates (tech={tech_score} >> reject={total_rejection_signals}), classified as '{topic}'")
-        classification_metadata['method'] = 'keyword_fallback_dominant'
-        classification_metadata['confidence'] = min((tech_score - total_rejection_signals) / 10.0, 0.6)
-        classification_metadata['reason'] = f'Fallback: tech={tech_score} >> reject={total_rejection_signals}'
-        return (topic, classification_metadata) if return_metadata else topic
-    
     else:
-        print(f"FALLBACK REJECT: Insufficient tech evidence (tech={tech_score}, reject={total_rejection_signals})")
+        print(f"KEYWORD FALLBACK REJECT: Insufficient evidence (tech={tech_score}, reject={total_rejection_signals})")
         classification_metadata['method'] = 'keyword_fallback_reject'
         classification_metadata['confidence'] = 0.2
-        classification_metadata['reason'] = f'Insufficient evidence: tech={tech_score}, reject={total_rejection_signals}'
+        classification_metadata['reason'] = f'Insufficient tech evidence'
         return (None, classification_metadata) if return_metadata else None
 
 

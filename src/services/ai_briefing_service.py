@@ -50,9 +50,6 @@ def clean_article_content(content: str) -> str:
     return content
 
 
-
-
-
 def generate_trending_briefing(articles: List[Dict]) -> str:
     """
     Generate simple briefing text from trending articles.

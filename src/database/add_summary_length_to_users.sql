@@ -1,5 +1,5 @@
 -- Add AI summary preferences columns to users table
--- Migration: 12_add_summary_preferences_to_users.sql
+-- Migration: add_summary_preferences_to_users.sql
 
 ALTER TABLE users 
 ADD COLUMN summary_type VARCHAR(20) DEFAULT 'tldr' 

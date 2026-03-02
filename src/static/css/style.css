@@ -3354,3 +3354,19 @@ button.profile-btn-secondary:hover {
         justify-content: center;
     }
 }
+
+/* Page wrapper for footer positioning */
+.page-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
+
+/* Ensure footer stays at bottom */
+.footer {
+    margin-top: auto;
+}

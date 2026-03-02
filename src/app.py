@@ -8,8 +8,7 @@ A Flask web application that provides personalized technology news aggregation:
 - Personalized content recommendations based on user interests
 - Fast-view mode for quick article consumption
 - User preference management and content interaction tracking
-
-Memory-optimized for 512MB hosting environments with efficient content processing.
+- Analytics dashboard for trending topics and user engagement insights
 """
 
 import random

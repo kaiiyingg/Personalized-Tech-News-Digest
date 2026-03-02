@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS users (
     totp_secret VARCHAR(32) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- AI summary preferences
+    summary_type VARCHAR(20) DEFAULT 'tldr' 
+        CHECK (summary_type IN ('tldr', 'key-points')),
+    summary_length VARCHAR(10) DEFAULT 'short' 
+        CHECK (summary_length IN ('short', 'medium', 'long'))
 );
 
 -- Drop the trigger if it exists (idempotent)

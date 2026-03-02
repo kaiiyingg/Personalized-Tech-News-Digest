@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-TechPulse Article Ingestion Script (On-Demand)
-
 This script fetches and ingests new articles from all RSS sources in your database.
 It is designed to be triggered on-demand via web interface for user-driven content updates.
 
@@ -12,7 +10,7 @@ Key points:
 - Optimized for user-driven updates rather than background scheduling.
 
 Usage:
-    python -m src.jobs.02_ingest_articles
+    python -m src.jobs.ingest_articles
     Or call fetch_and_ingest() function directly from web endpoints.
 """
 
@@ -35,9 +33,6 @@ HTML_ENTITY_PATTERN = r'&[a-zA-Z0-9#]+;'
 MAX_ARTICLES_PER_FEED = 10  # Commercial standard: 10 articles per feed
 FAST_REFRESH_MODE = True    # Enable speed optimizations
 CONCURRENT_FEEDS = 8        # Increased parallel processing for efficiency
-
-# Memory optimization: Disable AI processing for 512MB memory limit
-USE_AI_PROCESSING = False   # Set to False to avoid memory issues on free tier
 
 def cleanup_old_articles(days_to_keep=30):
     """Remove articles older than specified days to keep database manageable"""
@@ -75,9 +70,6 @@ def cleanup_old_articles(days_to_keep=30):
     except Exception as e:
         print(f"[Cleanup] Error during cleanup: {e}")
         return False
-
-## NOTE: RSS_SOURCES is not used for ingestion. The script fetches sources from your database.
-
 
 def fetch_and_ingest():
     print(f"[Ingestion] Starting at {datetime.now().isoformat()}")

@@ -126,4 +126,3 @@ Gmail: chongkaiying578@gmail.com
 LinkedIn: https://linkedin.com/in/kai-ying-907bb6178
 
 GitHub: https://github.com/kaiiyingg
-GitHub: https://github.com/kaiiyingg

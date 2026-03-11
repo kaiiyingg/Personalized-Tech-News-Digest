@@ -48,7 +48,7 @@ git clone https://github.com/kaiiyingg/Personalized-Tech-News-Digest.git
 cd Personalized-Tech-News-Digest
 ```
 
-- 2. Create and activate virtualenv
+- 2. Create and activate virtual environment
 
 ```bash
 python -m venv .venv

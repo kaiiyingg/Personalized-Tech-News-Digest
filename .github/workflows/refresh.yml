@@ -12,8 +12,18 @@ jobs:
     steps:
       - name: Trigger Content Refresh
         run: |
-          curl -X POST \
+          set -euo pipefail
+          response_file=$(mktemp)
+          status_code=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -d '{}' \
-            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest || true
+            --max-time 600 \
+            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest)
+          echo "HTTP status: $status_code"
+          echo "Response body:"
+          cat "$response_file"
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "Refresh endpoint failed with HTTP $status_code"
+            exit 1
+          fi
         timeout-minutes: 10

@@ -26,4 +26,11 @@ jobs:
             echo "Refresh endpoint failed with HTTP $status_code"
             exit 1
           fi
+          if grep -q '"success"' "$response_file"; then
+            success_value=$(jq -r '.success // empty' "$response_file")
+            if [ -n "$success_value" ] && [ "$success_value" != "true" ]; then
+              echo "Ingestion API reported failure."
+              exit 1
+            fi
+          fi
         timeout-minutes: 10

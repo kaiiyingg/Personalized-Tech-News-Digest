@@ -15,7 +15,7 @@ from src.models.source import Source
 from typing import List, Optional
 from psycopg2 import errors as pg_errors
 
-# ===== SOURCE MANAGEMENT FUNCTIONS =====
+# SOURCE MANAGEMENT FUNCTIONS
 
 def create_source(name: str, feed_url: str) -> Optional[Source]:
     """

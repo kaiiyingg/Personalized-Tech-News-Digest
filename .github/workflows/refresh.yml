@@ -12,8 +12,16 @@ jobs:
     steps:
       - name: Trigger Content Refresh
         run: |
-          curl -X POST \
+          RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d '{}' \
-            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest || true
+            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest) || true
+          echo "API response: $RESPONSE"
+          # Fail the job if the server responded but reported success=false
+          if echo "$RESPONSE" | grep -q '"success"'; then
+            if [ "$(echo "$RESPONSE" | jq -r '.success')" != "true" ]; then
+              echo "Ingestion API reported failure."
+              exit 1
+            fi
+          fi
         timeout-minutes: 10

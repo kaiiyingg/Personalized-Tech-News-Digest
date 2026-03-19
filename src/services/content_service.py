@@ -53,8 +53,7 @@ TOPIC_LABELS = [
     BIG_TECH_TOPIC, TECH_CULTURE_TOPIC, OPEN_SOURCE_TOPIC
 ]
 
-# ===== HYBRID CLASSIFICATION CONSTANTS =====
-# Updated API URL - using the new router endpoint (api-inference.huggingface.co is deprecated)
+# HYBRID CLASSIFICATION CONSTANTS
 HF_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli"
 HF_TOKEN = os.environ.get('HF_TOKEN', '')
 HF_ENABLED = bool(HF_TOKEN)  # Only use AI if token is configured
@@ -63,7 +62,7 @@ HF_ENABLED = bool(HF_TOKEN)  # Only use AI if token is configured
 API_CALL_DELAY = 0.5  # seconds between calls to avoid rate limits
 MAX_RETRIES = 2
 
-# ===== UTILITY FUNCTIONS =====
+# UTILITY FUNCTIONS
 
 def call_huggingface_api(text: str, candidate_labels: List[str], max_retries: int = MAX_RETRIES) -> Optional[Dict[str, Any]]:
     """
@@ -196,7 +195,7 @@ def format_datetime(dt) -> Optional[str]:
     else:
         return None
 
-# ===== DATA TRANSFORMATION HELPERS =====
+# DATA TRANSFORMATION HELPERS
 
 def build_article_dict(row, custom_topic=None) -> Dict[str, Any]:
     """
@@ -268,8 +267,7 @@ def build_simple_article_dict(row) -> Dict[str, Any]:
         'source_feed_url': row[9]
     }
 
-# ===== CONTENT CLASSIFICATION =====
-
+# CONTENT CLASSIFICATION
 def classify_topic_by_keywords(text: str, title: str) -> str:
     """
     Classify content into tech topics using keyword matching.
@@ -284,14 +282,14 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
     """
     combined_text = (title + " " + text).lower()
 
-    # Open Source keywords (expanded)
+    # Open Source keywords 
     opensource_keywords = [
         "open source", "github", "gitlab", "linux", "ubuntu", "debian", "fedora", "arch linux", "red hat", "centos",
         "apache", "mozilla", "gnu", "copyleft", "mit license", "gpl", "bsd license", "apache license", "eclipse foundation",
         "fork", "pull request", "contributor", "maintainer", "foss", "oss", "openstack", "kde", "gnome", "freebsd", "openbsd"
     ]
 
-    # Big Tech & Industry keywords (expanded)
+    # Big Tech & Industry keywords 
     bigtech_keywords = [
         "google", "microsoft", "apple", "amazon", "meta", "facebook", "twitter", "tesla", "nvidia", "intel", "amd", "samsung",
         "startup", "venture capital", "vc", "funding", "investment", "ipo", "acquisition", "merger", "spinoff", "spac",
@@ -299,14 +297,14 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         "bytedance", "tiktok", "baidu", "alibaba", "xiaomi", "huawei", "oracle", "ibm", "sap", "salesforce", "adobe", "paypal"
     ]
 
-    # Tech Culture & Work keywords (expanded)
+    # Tech Culture & Work keywords
     culture_keywords = [
         "remote work", "work from home", "developer survey", "salary", "job", "career", "hiring", "interview", "workplace", "team",
         "culture", "burnout", "productivity", "diversity", "inclusion", "tech workers", "engineers", "engineering", "stackoverflow",
         "stack overflow", "survey", "trends", "skills", "layoff", "fired", "promotion", "onboarding", "exit interview", "work visa"
     ]
 
-    # AI & ML keywords (expanded)
+    # AI & ML keywords 
     ai_keywords = [
         "ai", "artificial intelligence", "machine learning", "ml", "neural network", "deep learning", "nlp", "computer vision",
         "tensorflow", "pytorch", "chatgpt", "llm", "gpt", "bert", "transformer", "openai", "anthropic", "claude", "gemini", "copilot",
@@ -314,7 +312,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         "dalle", "dall-e", "slm", "small language model", "large language model", "prompt engineering", "vector db", "embedding", "inference"
     ]
 
-    # Cybersecurity keywords (expanded)
+    # Cybersecurity keywords 
     security_keywords = [
         "security", "cybersecurity", "hack", "hacker", "breach", "vulnerability", "exploit", "cve", "encryption", "privacy", "malware",
         "ransomware", "phishing", "zero-day", "firewall", "antivirus", "vpn", "authentication", "password", "biometric", "two-factor",
@@ -324,7 +322,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         "cyberattack", "cybercrime", "cyberwarfare", "cyber defense", "cyber offense", "zero trust", "mfa", "sso", "xss", "csrf", "sql injection"
     ]
 
-    # Cloud & DevOps keywords (expanded)
+    # Cloud & DevOps keywords 
     cloud_keywords = [
         "cloud", "aws", "azure", "gcp", "docker", "kubernetes", "devops", "ci/cd", "deployment", "infrastructure", "serverless",
         "microservices", "containerization", "orchestration", "scalability", "load balancing", "terraform", "ansible", "helm", "istio",
@@ -332,7 +330,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         "service mesh", "argo", "argo cd", "prometheus", "grafana", "monitoring", "observability", "opsgenie", "pagerduty"
     ]
 
-    # Software Development keywords (expanded)
+    # Software Development keywords 
     dev_keywords = [
         "programming", "coding", "developer", "software", "web development", "javascript", "python", "react", "node.js", "framework",
         "api", "frontend", "backend", "fullstack", "typescript", "angular", "vue", "php", "ruby", "java", "c++", "rust", "go", "scala",
@@ -340,7 +338,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         "next.js", "nuxt.js", "express.js", "django", "flask", "spring", "dotnet", ".net", "c#", "perl", "matlab", "assembly", "shell script"
     ]
 
-    # Data Science keywords (expanded)
+    # Data Science keywords 
     data_keywords = [
         "data science", "analytics", "big data", "database", "sql", "visualization", "statistics", "analysis", "pandas", "numpy",
         "matplotlib", "tableau", "power bi", "data mining", "etl", "data warehouse", "nosql", "mongodb", "postgresql", "mysql",
@@ -371,7 +369,7 @@ def classify_topic_by_keywords(text: str, title: str) -> str:
         return TECH_CULTURE_TOPIC
     return EMERGING_TECH_TOPIC  # Default fallback
 
-# --- Get article by ID (regardless of user/read status) ---
+# Get article by ID (regardless of user/read status)
 def get_article_by_id(article_id: int) -> Optional[Dict[str, Any]]:
     """
     Fetch a single article by its ID from the content table, including source info.

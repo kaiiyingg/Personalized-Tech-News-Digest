@@ -74,7 +74,6 @@ def cleanup_old_articles(days_to_keep=30):
 def fetch_and_ingest():
     print(f"[Ingestion] Starting at {datetime.now().isoformat()}")
     
-    # Step 1: Clean up old articles first
     if not cleanup_old_articles(days_to_keep=30):
         print("[Ingestion] Cleanup failed, continuing with ingestion...")
     
@@ -86,8 +85,8 @@ def fetch_and_ingest():
         print(f"[Ingestion] Found {len(sources_in_db)} sources in DB.")
         if not sources_in_db:
             print("[Ingestion] No sources found in DB. Did sync_sources run?")
-        # --- Round-robin ingestion: 1 article per source per round ---
-        # Step 1: Parse all feeds and collect entries per source
+        # Round-robin ingestion: 1 article per source per round 
+        # Parse all feeds and collect entries per source
         feeds = []  # List of dicts: { 'source_id': ..., 'entries': [...], 'feed_url': ... }
         for source in sources_in_db:
             feed_url = source.feed_url
@@ -96,7 +95,7 @@ def fetch_and_ingest():
             try:
                 feed = feedparser.parse(feed_url)
                 print(f"[Ingestion] {feed_url} returned {len(feed.entries)} entries.")
-                # Limit entries for faster refresh - take only the most recent ones
+                # Limit entries for faster refresh by taking only the most recent ones
                 limited_entries = list(feed.entries)[:MAX_ARTICLES_PER_FEED]
                 print(f"[Ingestion] Processing {len(limited_entries)} most recent entries for speed optimization.")
                 feeds.append({"source_id": source_id, "entries": limited_entries, "feed_url": feed_url})
@@ -137,7 +136,6 @@ def fetch_and_ingest():
                             else:
                                 article_text = title
                         
-                        # Memory optimization: Skip AI processing to stay within 512MB limit
                         # Create a simple excerpt from the article text
                         import re
                         
@@ -244,34 +242,34 @@ def fetch_and_ingest():
                             
                             return False
 
-                        # 1. media_content
+                        # media_content
                         if hasattr(entry, "media_content") and entry.media_content:
                             for media in entry.media_content:
                                 url = media.get("url") if isinstance(media, dict) else None
                                 if is_valid_img_url(url):
                                     image_url = url
                                     break
-                        # 2. media_thumbnail
+                        # media_thumbnail
                         if not image_url and hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
                             for thumb in entry.media_thumbnail:
                                 url = thumb.get("url") if isinstance(thumb, dict) else None
                                 if is_valid_img_url(url):
                                     image_url = url
                                     break
-                        # 3. enclosures
+                        # enclosures
                         if not image_url and hasattr(entry, "enclosures") and entry.enclosures:
                             for enc in entry.enclosures:
                                 url = enc.get("href") if isinstance(enc, dict) else None
                                 if is_valid_img_url(url):
                                     image_url = url
                                     break
-                        # 4. entry.image
+                        # entry.image
                         if not image_url and hasattr(entry, "image") and isinstance(entry.image, dict):
                             url = entry.image.get("href")
                             if is_valid_img_url(url):
                                 image_url = url
 
-                        # 5. Extract from summary/content HTML
+                        # Extract from summary/content HTML
                         def extract_img_from_html(html):
                             """
                             Extract best image from HTML content.
@@ -374,7 +372,7 @@ def fetch_and_ingest():
                                         image_url = img_from_content
                                         break
 
-                        # 6. Open Graph/Twitter meta tags in summary HTML
+                        # Open Graph/Twitter meta tags in summary HTML
                         if not image_url and summary:
                             soup = BeautifulSoup(summary, "html.parser")
                             og_img = soup.find("meta", property="og:image")
@@ -388,7 +386,7 @@ def fetch_and_ingest():
                                 if is_valid_img_url(content_val):
                                     image_url = content_val
 
-                        # 7. Fallback: first image found anywhere
+                        # Fallback: first image found anywhere
                         if not image_url and summary:
                             soup = BeautifulSoup(summary, "html.parser")
                             img_tag = soup.find("img")

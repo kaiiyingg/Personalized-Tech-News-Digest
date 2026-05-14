@@ -10,27 +10,67 @@ jobs:
   refresh-content:
     runs-on: ubuntu-latest
     steps:
+      - name: Wake Up Render Service
+        # Render free tier spins down after inactivity. Poll /healthz until the
+        # service responds 200 before triggering the long-running ingest job.
+        run: |
+          echo "Pinging health endpoint to wake up Render free-tier service..."
+          for i in $(seq 1 18); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 \
+              https://personalized-tech-news-digest.onrender.com/healthz || echo "000")
+            echo "Attempt $i/18: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "Service is awake and ready."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Service did not return 200 within 3 minutes — proceeding anyway."
+        timeout-minutes: 4
+
       - name: Trigger Content Refresh
         run: |
           set -euo pipefail
-          response_file=$(mktemp)
-          status_code=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -d '{}' \
-            --max-time 600 \
-            https://personalized-tech-news-digest.onrender.com/api/jobs/ingest)
-          echo "HTTP status: $status_code"
-          echo "Response body:"
-          cat "$response_file"
-          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
-            echo "Refresh endpoint failed with HTTP $status_code"
-            exit 1
-          fi
-          if grep -q '"success"' "$response_file"; then
-            success_value=$(jq -r '.success // empty' "$response_file")
-            if [ -n "$success_value" ] && [ "$success_value" != "true" ]; then
-              echo "Ingestion API reported failure."
-              exit 1
+
+          run_ingest() {
+            local response_file
+            response_file=$(mktemp)
+            local status_code
+            status_code=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -d '{}' \
+              --max-time 540 \
+              https://personalized-tech-news-digest.onrender.com/api/jobs/ingest)
+            echo "HTTP status: $status_code"
+            echo "Response body:"
+            cat "$response_file"
+            if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+              echo "Refresh endpoint failed with HTTP $status_code"
+              return 1
             fi
-          fi
-        timeout-minutes: 10
+            if grep -q '"success"' "$response_file"; then
+              local success_value
+              success_value=$(jq -r '.success // empty' "$response_file")
+              if [ -n "$success_value" ] && [ "$success_value" != "true" ]; then
+                echo "Ingestion API reported failure."
+                return 1
+              fi
+            fi
+            return 0
+          }
+
+          for attempt in 1 2 3; do
+            echo "--- Ingest attempt $attempt/3 ---"
+            if run_ingest; then
+              echo "Ingestion succeeded on attempt $attempt."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Attempt $attempt failed. Waiting 30s before retry..."
+              sleep 30
+            fi
+          done
+
+          echo "All 3 ingest attempts failed."
+          exit 1
+        timeout-minutes: 35

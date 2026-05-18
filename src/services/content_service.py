@@ -1064,6 +1064,39 @@ def _upsert_user_content_interaction(user_id: int, content_item_id: int,
     finally:
         close_db_connection(conn)
 
+def get_liked_articles(user_id: int) -> List[Dict[str, Any]]:
+    """
+    Fetch all articles liked by a user, regardless of age or pagination limits.
+    Drives the favorites dashboard so that liked articles are never lost to cleanup
+    or buried beyond the default digest limit.
+    """
+    conn = None
+    articles = []
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT
+                c.id, c.source_id, c.title, c.summary, c.article_url,
+                c.published_at, c.topic, c.image_url,
+                uci.is_read, uci.is_liked, uci.interaction_at,
+                s.source_name, s.feed_url
+            FROM user_content_interactions uci
+            JOIN content c ON c.id = uci.content_id
+            JOIN sources s ON c.source_id = s.id
+            WHERE uci.user_id = %s AND uci.is_liked = true
+            ORDER BY uci.interaction_at DESC
+        """
+        cur.execute(query, (user_id,))
+        for row in cur.fetchall():
+            articles.append(build_article_dict(row))
+    except Exception as e:
+        print(f"Error fetching liked articles for user {user_id}: {e}")
+    finally:
+        close_db_connection(conn)
+    return articles
+
+
 def mark_content_as_read(user_id: int, content_item_id: int, is_read: bool = True) -> bool:
     """Marks a content item as read/unread for a specific user."""
     return _upsert_user_content_interaction(user_id, content_item_id, is_read=is_read)

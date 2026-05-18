@@ -624,9 +624,7 @@ def favorites():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
-    # Get articles (including read ones) and filter for liked articles only
-    articles = content_service.get_personalized_digest(user_id, limit=100, include_read=True)
-    liked_articles = [a for a in articles if a.get('is_liked')]
+    liked_articles = content_service.get_liked_articles(user_id)
     username = session.get('username')
     current_year = datetime.now().year
     return render_template('favorites.html', articles=liked_articles, username=username, current_year=current_year)
@@ -753,8 +751,7 @@ def get_favorites_api():
     print("[get_favorites_api] Called. session:", dict(session))
     try:
         user_id = session['user_id']
-        articles = content_service.get_personalized_digest(user_id, limit=100, include_read=True)
-        liked_articles = [a for a in articles if a.get('is_liked')]
+        liked_articles = content_service.get_liked_articles(user_id)
         return jsonify(liked_articles), 200
     except Exception as e:
         print(f"Error in get_favorites_api: {e}")

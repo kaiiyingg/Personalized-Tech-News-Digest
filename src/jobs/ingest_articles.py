@@ -44,15 +44,31 @@ def cleanup_old_articles(days_to_keep=30):
         # Calculate cutoff date
         cutoff_date = datetime.now() - timedelta(days=days_to_keep)
         
-        # Get count before cleanup
-        cur.execute("SELECT COUNT(*) FROM content WHERE published_at < %s", (cutoff_date,))
+        # Get count before cleanup (exclude liked articles which are never removed)
+        cur.execute("""
+            SELECT COUNT(*) FROM content
+            WHERE published_at < %s
+            AND id NOT IN (
+                SELECT DISTINCT content_id
+                FROM user_content_interactions
+                WHERE is_liked = true
+            )
+        """, (cutoff_date,))
         old_count = cur.fetchone()[0]
         
         if old_count > 0:
             print(f"[Cleanup] Found {old_count} articles older than {cutoff_date.strftime('%Y-%m-%d')}")
-            
-            # Remove old articles (preserve user interactions by using CASCADE or handling separately)
-            cur.execute("DELETE FROM content WHERE published_at < %s", (cutoff_date,))
+
+            # Remove old articles, but never delete articles any user has liked
+            cur.execute("""
+                DELETE FROM content
+                WHERE published_at < %s
+                AND id NOT IN (
+                    SELECT DISTINCT content_id
+                    FROM user_content_interactions
+                    WHERE is_liked = true
+                )
+            """, (cutoff_date,))
             conn.commit()
             
             print(f"[Cleanup] Removed {old_count} old articles")
